@@ -4,7 +4,8 @@
     "description": "Server component for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "keywords": [
-        "HOOBS",
+        "hoobs",
+        "hoobsd",
         "homebridge",
         "smart-home",
         "smarthome",
@@ -13,10 +14,10 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git://github.com/hoobs-org/hoobs-core.git"
+        "url": "git://github.com/hoobs-org/hoobsd.git"
     },
     "bugs": {
-        "url": "https://github.com/hoobs-org/hoobs-core/issues"
+        "url": "https://github.com/hoobs-org/hoobsd/issues"
     },
     "main": "lib/daemon.js",
     "bin": {

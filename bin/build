@@ -26,25 +26,24 @@ const { join, dirname } = require("path");
 const { execSync } = require("child_process");
 
 const root = join(dirname(realpathSync(__filename)), "../");
-const version = (JSON.parse(readFileSync(join(root, "package.json")).toString())).version;
+const pjson = JSON.parse(readFileSync(join(root, "package.json")).toString());
 
-Program.version(version, "-v, --version", "output the current version")
+Program.version(pjson.version, "-v, --version", "output the current version")
     .allowUnknownOption();
 
 Program.command("server", { isDefault: true })
     .description("build hoobs server")
-    .option("-i, --isolate", "keep the build in the current project")
     .action(() => {
         execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, {
             cwd: root,
             stdio: ["inherit", "inherit", "inherit"],
         });
 
-        if (!existsSync(join(root, "lib"))){
+        if (!existsSync(join(root, "lib"))) {
             mkdirSync(join(root, "lib"));
         }
 
-        if (!existsSync(join(root, "bld"))){
+        if (!existsSync(join(root, "bld"))) {
             mkdirSync(join(root, "bld"));
         }
 
@@ -68,7 +67,7 @@ Program.command("server", { isDefault: true })
             stdio: ["inherit", "inherit", "inherit"],
         });
 
-        execSync(`mv ${join(root, `hoobs-hoobsd-${version}.tgz`)} ${join(root, "bld", "hoobsd.tgz")}`, {
+        execSync(`mv ${join(root, `hoobs-hoobsd-${pjson.version}.tgz`)} ${join(root, "bld", "hoobsd.tgz")}`, {
             cwd: root,
             stdio: ["inherit", "inherit", "inherit"],
         });
@@ -84,7 +83,7 @@ Program.command("container")
     .action(() => {
         const root = join(dirname(realpathSync(__filename)), "../");
 
-        execSync(`${join(root, "bin", "build")} server --isolate`, {
+        execSync(`${join(root, "bin", "build")} server`, {
             cwd: root,
             stdio: ["inherit", "inherit", "inherit"],
         });
@@ -98,8 +97,6 @@ Program.command("container")
 Program.command("publish <system>")
     .description("publish the server to npm or the docker container")
     .action((system) => {
-        const root = join(dirname(realpathSync(__filename)), "../");
-
         const questions = [
             {
                 type: "text",
@@ -131,7 +128,7 @@ Program.command("publish <system>")
             if (result && result.confirm === "yes") {
                 switch (system) {
                     case "server":
-                        execSync(`${join(root, "bin", "build")} server --isolate`, {
+                        execSync(`${join(root, "bin", "build")} server`, {
                             cwd: root,
                             stdio: ["inherit", "inherit", "inherit"],
                         });
@@ -150,7 +147,7 @@ Program.command("publish <system>")
                             stdio: ["inherit", "inherit", "inherit"],
                         });
 
-                        execSync(`${join(root, "bin", "build")} server --isolate`, {
+                        execSync(`${join(root, "bin", "build")} server`, {
                             cwd: root,
                             stdio: ["inherit", "inherit", "inherit"],
                         });
