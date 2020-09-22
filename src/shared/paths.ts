@@ -62,9 +62,9 @@ export default class Paths {
 
         let config: any = {};
 
-        if (Instance.id === "console") {
+        if (Instance.id === "api") {
             config = {
-                console: {
+                api: {
                     origin: "*",
                 },
                 description: "",
@@ -90,17 +90,17 @@ export default class Paths {
             config = _.extend(config, parseJson(readFileSync(Paths.configPath()).toString(), {}));
         }
 
-        if (Instance.id !== "console" && config?.ports !== undefined) {
+        if (Instance.id !== "api" && config?.ports !== undefined) {
             if (config?.ports?.start > config?.ports?.end) {
                 delete config?.ports;
             }
         }
 
-        if (Instance.id !== "console" && (!config?.bridge?.username || !(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/).test(config?.bridge?.username))) {
+        if (Instance.id !== "api" && (!config?.bridge?.username || !(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/).test(config?.bridge?.username))) {
             config.bridge.username = generateUsername();
         }
 
-        if (Instance.id !== "console") {
+        if (Instance.id !== "api") {
             let instances: any = [];
 
             if (existsSync(Paths.instancesPath())) {
@@ -142,7 +142,7 @@ export default class Paths {
             current = parseJson(readFileSync(Paths.configPath()).toString(), {});
         }
 
-        if (Instance.id !== "console") {
+        if (Instance.id !== "api") {
             config.accessories = config?.accessories || [];
             config.platforms = config?.platforms || [];
 

@@ -30,7 +30,7 @@ export default class ConfigController {
     }
 
     static async getConsole(_request: Request, response: Response): Promise<void> {
-        response.send(Instance.console?.config);
+        response.send(Instance.api?.config);
     }
 
     static async saveConsole(request: Request, response: Response): Promise<void> {

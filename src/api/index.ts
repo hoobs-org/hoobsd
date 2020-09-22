@@ -42,7 +42,7 @@ import RemoteController from "./remote";
 import StatusController from "./status";
 import SystemController from "./system";
 
-export default class Console extends EventEmitter {
+export default class API extends EventEmitter {
     declare time: number;
 
     declare readonly config: any;
@@ -64,7 +64,7 @@ export default class Console extends EventEmitter {
 
         this.time = 0;
         this.config = Paths.configuration();
-        this.settings = (this.config || {}).console || {};
+        this.settings = (this.config || {}).api || {};
         this.port = port || this.settings.port || 50820;
         this.instances = Instances.list();
         this.paths = [];

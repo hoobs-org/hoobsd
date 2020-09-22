@@ -31,8 +31,8 @@ import Pipe from "./server/pipe";
 import Server from "./server";
 import Bridge from "./bridge";
 import Heartbeat from "./server/heartbeat";
-import Console from "./console";
-import Monitor from "./console/monitor";
+import API from "./api";
+import Monitor from "./api/monitor";
 import { Log } from "./shared/logger";
 import { sanitize } from "./shared/helpers";
 
@@ -51,7 +51,7 @@ export = function Daemon(): void {
         .action(async (command) => {
             const options = command;
 
-            if (options.instance === "console") {
+            if (options.instance === "api") {
                 options.instance = undefined;
             }
 
@@ -99,15 +99,15 @@ export = function Daemon(): void {
             Heartbeat();
         });
 
-    Program.command("console")
-        .description("start the console service")
+    Program.command("api")
+        .description("start the api service")
         .option("-d, --debug", "turn on debug level logging")
         .option("-v, --verbose", "turn on verbose logging")
-        .option("-p, --port <port>", "change the port the console runs on")
+        .option("-p, --port <port>", "change the port the api runs on")
         .option("-c, --container", "run in a container")
         .action((command) => {
-            Instance.id = sanitize("console");
-            Instance.display = "Console";
+            Instance.id = sanitize("api");
+            Instance.display = "API";
             Instance.debug = command.debug;
             Instance.verbose = command.verbose;
             Instance.container = command.container;
@@ -121,17 +121,17 @@ export = function Daemon(): void {
                 });
             });
 
-            Instance.console = new Console(command.port);
+            Instance.api = new API(command.port);
 
-            Instance.console.on("listening", (port) => {
+            Instance.api.on("listening", (port) => {
                 Log.info(`API is running on port ${port}`);
             });
 
-            Instance.console.on("request", (method, url) => {
+            Instance.api.on("request", (method, url) => {
                 Log.debug(`"${method}" ${url}`);
             });
 
-            Instance.console.start();
+            Instance.api.start();
 
             Monitor();
         });

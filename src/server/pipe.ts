@@ -39,18 +39,18 @@ export function broadcast(event: string, body: any): Promise<any> {
         pipe.config.stopRetrying = true;
         pipe.config.retry = 1000;
 
-        pipe.connectTo("console.hoobs.bridge", () => {
-            pipe.of["console.hoobs.bridge"].on(session, () => {
-                pipe.disconnect("console.hoobs.bridge");
+        pipe.connectTo("api.hoobs.bridge", () => {
+            pipe.of["api.hoobs.bridge"].on(session, () => {
+                pipe.disconnect("api.hoobs.bridge");
 
                 resolve();
             });
 
-            pipe.of["console.hoobs.bridge"].on("error", () => {
+            pipe.of["api.hoobs.bridge"].on("error", () => {
                 resolve();
             });
 
-            pipe.of["console.hoobs.bridge"].emit(event, {
+            pipe.of["api.hoobs.bridge"].emit(event, {
                 session,
                 body,
             });

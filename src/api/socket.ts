@@ -61,9 +61,9 @@ export default class Socket extends EventEmitter {
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = false;
         this.pipe.config.logger = Print;
-        this.pipe.config.id = "console.hoobs.bridge";
+        this.pipe.config.id = "api.hoobs.bridge";
 
-        this.pipe.serve("/tmp/app.console.hoobs.bridge", () => {
+        this.pipe.serve("/tmp/app.api.hoobs.bridge", () => {
             this.pipe.server.on("log", (payload: any, socket: any) => {
                 this.emit("log", payload.body);
                 this.pipe.server.emit(socket, payload.socket, "complete");

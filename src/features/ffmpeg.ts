@@ -68,7 +68,7 @@ export default class FFMPEG {
             execSync("ldconfig -n /usr/local/lib", options);
             execSync("ldconfig", options);
 
-            Log.message("enable_feature", "console", {
+            Log.message("enable_feature", "api", {
                 name: "ffmpeg",
                 success: true,
             });
@@ -79,7 +79,7 @@ export default class FFMPEG {
         }
 
         if ((utsname.sysname || "").toLowerCase() !== "linux") {
-            Log.message("enable_feature", "console", {
+            Log.message("enable_feature", "api", {
                 name: "ffmpeg",
                 error: "this version of ffmpeg is only supported on linux",
             });
@@ -91,7 +91,7 @@ export default class FFMPEG {
         }
 
         if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
-            Log.message("enable_feature", "console", {
+            Log.message("enable_feature", "api", {
                 name: "ffmpeg",
                 error: "this version of ffmpeg is only supported on arm processors",
             });
@@ -103,7 +103,7 @@ export default class FFMPEG {
         }
 
         if (!findCommand("apt-get")) {
-            Log.message("enable_feature", "console", {
+            Log.message("enable_feature", "api", {
                 name: "ffmpeg",
                 error: "this version of ffmpeg requires the apt package manager",
             });
@@ -411,7 +411,7 @@ export default class FFMPEG {
             tryUnlink("/usr/local/share/man/man3/libswresample.3");
             tryUnlink("/usr/local/share/man/man3/libswscale.3");
 
-            Log.message("disable_feature", "console", {
+            Log.message("disable_feature", "api", {
                 name: "ffmpeg",
                 success: true,
             });
@@ -421,7 +421,7 @@ export default class FFMPEG {
             };
         }
 
-        Log.message("disable_feature", "console", {
+        Log.message("disable_feature", "api", {
             name: "ffmpeg",
             error: "this can only remove ffmpeg installed by hoobs",
         });

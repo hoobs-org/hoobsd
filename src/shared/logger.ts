@@ -90,7 +90,7 @@ class Logger {
             CACHE.shift();
         }
 
-        if (Instance.console) Instance.io?.sockets.emit("log", data);
+        if (Instance.api) Instance.io?.sockets.emit("log", data);
         if (Instance.server) broadcast("log", data);
 
         if ((level !== LogLevel.DEBUG && level !== LogLevel.WARN) || Instance.debug) {
@@ -203,7 +203,7 @@ class Logger {
             delete data.name;
         }
 
-        if (Instance.console) {
+        if (Instance.api) {
             Instance.io?.sockets.emit(event, {
                 instance,
                 name,

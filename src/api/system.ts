@@ -49,7 +49,7 @@ export default class SystemController {
             operating_system: await System.osInfo(),
         };
 
-        if (Instance.console?.config.system === "hoobs-box") {
+        if (Instance.api?.config.system === "hoobs-box") {
             data.system.manufacturer = "HOOBS.org";
             data.system.model = "HSLF-1";
             data.system.sku = "7-45114-12419-7";

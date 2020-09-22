@@ -25,8 +25,8 @@ import Cache from "./cache";
 import Pipe from "../server/pipe";
 import Server from "../server";
 import Bridge from "../bridge";
-import Console from "../console";
-import Socket from "../console/socket";
+import API from "../api";
+import Socket from "../api/socket";
 import { Loggers } from "./logger";
 
 export interface Application {
@@ -37,7 +37,7 @@ export interface Application {
     cache: Cache | undefined,
     server: Server | undefined,
     bridge: Bridge | undefined,
-    console: Console | undefined,
+    api: API | undefined,
 
     id: string,
     display: string,
@@ -64,7 +64,7 @@ const instance: Application = {
     cache: undefined,
     server: undefined,
     bridge: undefined,
-    console: undefined,
+    api: undefined,
 
     id: "default",
     display: "Default",

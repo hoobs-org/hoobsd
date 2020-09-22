@@ -23,7 +23,7 @@ import { execSync, spawn } from "child_process";
 import Paths from "./shared/paths";
 import Instance from "./shared/instance";
 import Instances from "./shared/instances";
-import Cockpit from "./console/cockpit";
+import Cockpit from "./api/cockpit";
 import Plugins from "./shared/plugins";
 import Ffmpeg from "./features/ffmpeg";
 
@@ -39,7 +39,7 @@ export = function Command(): void {
         .action((action, name, command) => {
             const options = command;
 
-            if (options.instance === "console") {
+            if (options.instance === "api") {
                 options.instance = null;
             }
 
@@ -169,7 +169,7 @@ export = function Command(): void {
         .description("manage the configuration for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .action((command) => {
-            Instance.id = sanitize(command.instance || "console");
+            Instance.id = sanitize(command.instance || "api");
             Instance.debug = true;
 
             const nano = spawn("nano", [Paths.configPath()], {
@@ -296,7 +296,7 @@ export = function Command(): void {
         .action((action, file, command) => {
             const options = command;
 
-            if (options.instance === "console") {
+            if (options.instance === "api") {
                 options.instance = null;
             }
 
@@ -357,7 +357,7 @@ export = function Command(): void {
         .description("start a remote support session")
         .action(() => {
             Instance.debug = true;
-            Instance.id = sanitize("console");
+            Instance.id = sanitize("api");
 
             const client = new Cockpit();
 

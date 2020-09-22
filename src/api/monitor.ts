@@ -21,7 +21,7 @@ import Instance from "../shared/instance";
 import { Log } from "../shared/logger";
 
 export default async function Monitor() {
-    Log.message("monitor", "console", {
+    Log.message("monitor", "api", {
         name: "load",
         cpu: await System.currentLoad(),
         memory: await System.mem(),
@@ -30,5 +30,5 @@ export default async function Monitor() {
 
     setTimeout(() => {
         Monitor();
-    }, (Instance.console?.settings?.polling_seconds || 3) * 1000);
+    }, (Instance.api?.settings?.polling_seconds || 3) * 1000);
 }
