@@ -69,7 +69,7 @@ export default class Instances {
             id: "api",
             type: "api",
             display: "API",
-            port: 50820,
+            port: 80,
         });
 
         for (let i = 0; i < instances.length; i += 1) {
@@ -374,7 +374,7 @@ export default class Instances {
                         execSync("echo \"[Service]\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"Type=simple\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"User=root\" >> /etc/systemd/system/api.hoobsd.service");
-                        execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api --port 50820" >> /etc/systemd/system/api.hoobsd.service`);
+                        execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api --port 80" >> /etc/systemd/system/api.hoobsd.service`);
                         execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"RestartSec=3\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"KillMode=process\" >> /etc/systemd/system/api.hoobsd.service");
@@ -481,7 +481,7 @@ export default class Instances {
                         execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.api.plist`);
                         execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"            <string>--port</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
-                        execSync("echo \"            <string>50820</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
+                        execSync("echo \"            <string>80</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");

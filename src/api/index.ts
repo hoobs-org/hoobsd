@@ -28,9 +28,11 @@ import { dirname, join } from "path";
 import Paths from "../shared/paths";
 import Instance from "../shared/instance";
 import Instances from "../shared/instances";
+import Users from "../shared/users";
 import Socket, { command } from "./socket";
 import { Log } from "../shared/logger";
 
+import AuthController from "./auth";
 import AccessoriesController from "./accessories";
 import BridgeController from "./bridge";
 import CacheController from "./cache";
@@ -51,6 +53,8 @@ export default class API extends EventEmitter {
 
     declare readonly port: number;
 
+    declare readonly users: Users;
+
     declare private enviornment: { [key: string]: string };
 
     declare private instances: any[];
@@ -65,7 +69,8 @@ export default class API extends EventEmitter {
         this.time = 0;
         this.config = Paths.configuration();
         this.settings = (this.config || {}).api || {};
-        this.port = port || this.settings.port || 50820;
+        this.port = port || 80;
+        this.users = new Users();
         this.instances = Instances.list();
         this.paths = [];
 
@@ -141,10 +146,34 @@ export default class API extends EventEmitter {
         if (Instance.debug) {
             Instance.app?.use((request, _response, next) => {
                 this.emit("request", request.method, request.url);
+
                 next();
             });
         }
 
+        Instance.app?.use(async (request, response, next) => {
+            if (this.settings.disable_auth) {
+                next();
+
+                return;
+            }
+
+            if (request.url.indexOf("/api") === 0 && [
+                "/api/auth",
+                this.users.count() > 0 ? "/api/auth/logon" : null,
+                this.users.count() === 0 ? "/api/auth/create" : null,
+            ].indexOf(request.url) === -1 && (!request.headers.authorization || !(await this.users.validateToken(request.headers.authorization)))) {
+                response.status(403).json({
+                    error: "unauthorized",
+                });
+
+                return;
+            }
+
+            next();
+        });
+
+        new AuthController(this.users);
         new AccessoriesController();
         new BridgeController();
         new CacheController();

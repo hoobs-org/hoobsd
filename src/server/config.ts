@@ -22,15 +22,15 @@ import { SocketRequest, SocketResponse } from "./pipe";
 
 export default class ConfigController {
     constructor() {
-        Instance.socket?.route("config:get", (request: SocketRequest, response: SocketResponse) => ConfigController.get(request, response));
-        Instance.socket?.route("config:save", (request: SocketRequest, response: SocketResponse) => ConfigController.save(request, response));
+        Instance.socket?.route("config:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
+        Instance.socket?.route("config:save", (request: SocketRequest, response: SocketResponse) => this.save(request, response));
     }
 
-    static get(_request: SocketRequest, response: SocketResponse): void {
+    get(_request: SocketRequest, response: SocketResponse): void {
         response.send(Instance.server?.config);
     }
 
-    static async save(request: SocketRequest, response: SocketResponse): Promise<void> {
+    async save(request: SocketRequest, response: SocketResponse): Promise<void> {
         Paths.saveConfig(request.body);
 
         if (Instance.bridge) {

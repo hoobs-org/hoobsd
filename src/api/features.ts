@@ -23,12 +23,12 @@ import { findCommand } from "../shared/helpers";
 
 export default class FeaturesController {
     constructor() {
-        Instance.app?.get("/api/features", (request, response) => FeaturesController.list(request, response));
-        Instance.app?.post("/api/features/:name", (request, response) => FeaturesController.enable(request, response));
-        Instance.app?.delete("/api/features/:name", (request, response) => FeaturesController.disable(request, response));
+        Instance.app?.get("/api/features", (request, response) => this.list(request, response));
+        Instance.app?.post("/api/features/:name", (request, response) => this.enable(request, response));
+        Instance.app?.delete("/api/features/:name", (request, response) => this.disable(request, response));
     }
 
-    static list(_request: Request, response: Response): Response {
+    list(_request: Request, response: Response): Response {
         return response.send([{
             feature: "ffmpeg",
             description: "enables ffmpeg camera support",
@@ -36,7 +36,7 @@ export default class FeaturesController {
         }]);
     }
 
-    static enable(request: Request, response: Response): Response {
+    enable(request: Request, response: Response): Response {
         let results: { success: boolean, error?: string | undefined } = {
             success: false,
         };
@@ -51,7 +51,7 @@ export default class FeaturesController {
         }
 
         if (results.success) {
-            return FeaturesController.list(request, response);
+            return this.list(request, response);
         }
 
         if (results.error) {
@@ -65,7 +65,7 @@ export default class FeaturesController {
         });
     }
 
-    static disable(request: Request, response: Response): Response {
+    disable(request: Request, response: Response): Response {
         let results: { success: boolean, error?: string | undefined } = {
             success: false,
         };
@@ -80,7 +80,7 @@ export default class FeaturesController {
         }
 
         if (results.success) {
-            return FeaturesController.list(request, response);
+            return this.list(request, response);
         } if (results.error) {
             return response.send({
                 error: results.error,

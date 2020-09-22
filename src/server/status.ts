@@ -22,10 +22,10 @@ import { SocketRequest, SocketResponse } from "./pipe";
 
 export default class StatusController {
     constructor() {
-        Instance.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => StatusController.status(request, response));
+        Instance.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
     }
 
-    static status(_request: SocketRequest, response: SocketResponse): void {
+    status(_request: SocketRequest, response: SocketResponse): void {
         response.send({
             id: Instance.id,
             instance: Instance.display || Instance.id,

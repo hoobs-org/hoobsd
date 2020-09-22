@@ -22,15 +22,15 @@ import { command } from "./socket";
 
 export default class CacheController {
     constructor() {
-        Instance.app?.get("/api/cache/:instance/parings", (request, response) => CacheController.listParings(request, response));
-        Instance.app?.get("/api/cache/:instance/accessories", (request, response) => CacheController.listAccessories(request, response));
+        Instance.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
+        Instance.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
     }
 
-    static async listParings(request: Request, response: Response): Promise<void> {
+    async listParings(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "cache:parings"));
     }
 
-    static async listAccessories(request: Request, response: Response): Promise<void> {
+    async listAccessories(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "cache:accessories"));
     }
 }

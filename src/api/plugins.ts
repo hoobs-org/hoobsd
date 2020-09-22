@@ -22,28 +22,28 @@ import { command } from "./socket";
 
 export default class PluginsController {
     constructor() {
-        Instance.app?.get("/api/plugins/:instance", (request, response) => PluginsController.installed(request, response));
-        Instance.app?.put("/api/plugins/:instance/:name", (request, response) => PluginsController.install(request, response));
-        Instance.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => PluginsController.install(request, response));
-        Instance.app?.post("/api/plugins/:instance/:name", (request, response) => PluginsController.upgrade(request, response));
-        Instance.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => PluginsController.upgrade(request, response));
-        Instance.app?.delete("/api/plugins/:instance/:name", (request, response) => PluginsController.uninstall(request, response));
-        Instance.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => PluginsController.uninstall(request, response));
+        Instance.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
+        Instance.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
+        Instance.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
+        Instance.app?.post("/api/plugins/:instance/:name", (request, response) => this.upgrade(request, response));
+        Instance.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
+        Instance.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
+        Instance.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
     }
 
-    static async installed(request: Request, response: Response): Promise<void> {
+    async installed(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "plugins:get"));
     }
 
-    static async install(request: Request, response: Response): Promise<void> {
+    async install(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "plugins:install", request.params));
     }
 
-    static async upgrade(request: Request, response: Response): Promise<void> {
+    async upgrade(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "plugins:upgrade", request.params));
     }
 
-    static async uninstall(request: Request, response: Response): Promise<void> {
+    async uninstall(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "plugins:uninstall", request.params));
     }
 }

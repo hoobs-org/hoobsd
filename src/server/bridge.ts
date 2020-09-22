@@ -22,13 +22,13 @@ import { SocketRequest, SocketResponse } from "./pipe";
 
 export default class BridgeController {
     constructor() {
-        Instance.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => BridgeController.start(request, response));
-        Instance.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => BridgeController.stop(request, response));
-        Instance.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => BridgeController.restart(request, response));
-        Instance.socket?.route("bridge:clean", (request: SocketRequest, response: SocketResponse) => BridgeController.clean(request, response));
+        Instance.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
+        Instance.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
+        Instance.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
+        Instance.socket?.route("bridge:clean", (request: SocketRequest, response: SocketResponse) => this.clean(request, response));
     }
 
-    static async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
+    async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (!Instance.bridge?.running) {
             await Instance.bridge?.start();
         }
@@ -38,7 +38,7 @@ export default class BridgeController {
         });
     }
 
-    static async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
+    async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (Instance.bridge?.running) {
             await Instance.bridge.stop();
         }
@@ -48,7 +48,7 @@ export default class BridgeController {
         });
     }
 
-    static async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
+    async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (Instance.bridge?.running) {
             await Instance.bridge.restart();
         }
@@ -58,7 +58,7 @@ export default class BridgeController {
         });
     }
 
-    static async clean(_request: SocketRequest, response: SocketResponse): Promise<void> {
+    async clean(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (Instance.bridge?.running) {
             await Instance.bridge.stop();
         }

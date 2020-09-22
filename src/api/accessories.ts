@@ -22,20 +22,20 @@ import { command } from "./socket";
 
 export default class AccessoriesController {
     constructor() {
-        Instance.app?.get("/api/accessories/:instance", (request, response) => AccessoriesController.list(request, response));
-        Instance.app?.get("/api/accessory/:instance/:id", (request, response) => AccessoriesController.get(request, response));
-        Instance.app?.put("/api/accessory/:instance/:id/:service", (request, response) => AccessoriesController.set(request, response));
+        Instance.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
+        Instance.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
+        Instance.app?.put("/api/accessory/:instance/:id/:service", (request, response) => this.set(request, response));
     }
 
-    static async list(request: Request, response: Response): Promise<void> {
+    async list(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "accessories:list"));
     }
 
-    static async get(request: Request, response: Response): Promise<void> {
+    async get(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "accessory:get", { id: request.params.id }));
     }
 
-    static async set(request: Request, response: Response): Promise<void> {
+    async set(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "accessory:set", { id: request.params.id }, request.body));
     }
 }

@@ -28,22 +28,22 @@ import { findCommand, network } from "../shared/helpers";
 export default class SystemController {
     constructor() {
         Instance.app?.get("/api/system", (request, response) => this.info(request, response));
-        Instance.app?.get("/api/system/cpu", (request, response) => SystemController.cpu(request, response));
-        Instance.app?.get("/api/system/memory", (request, response) => SystemController.memory(request, response));
-        Instance.app?.get("/api/system/network", (request, response) => SystemController.network(request, response));
-        Instance.app?.get("/api/system/filesystem", (request, response) => SystemController.filesystem(request, response));
-        Instance.app?.get("/api/system/activity", (request, response) => SystemController.activity(request, response));
-        Instance.app?.get("/api/system/temp", (request, response) => SystemController.temp(request, response));
-        Instance.app?.get("/api/system/backup", (request, response) => SystemController.backup(request, response));
-        Instance.app?.post("/api/system/restore", (request, response) => SystemController.restore(request, response));
-        Instance.app?.post("/api/system/upgrade", (request, response) => SystemController.upgrade(request, response));
-        Instance.app?.put("/api/system/reboot", (request, response) => SystemController.reboot(request, response));
-        Instance.app?.put("/api/system/reset", (request, response) => SystemController.reset(request, response));
+        Instance.app?.get("/api/system/cpu", (request, response) => this.cpu(request, response));
+        Instance.app?.get("/api/system/memory", (request, response) => this.memory(request, response));
+        Instance.app?.get("/api/system/network", (request, response) => this.network(request, response));
+        Instance.app?.get("/api/system/filesystem", (request, response) => this.filesystem(request, response));
+        Instance.app?.get("/api/system/activity", (request, response) => this.activity(request, response));
+        Instance.app?.get("/api/system/temp", (request, response) => this.temp(request, response));
+        Instance.app?.get("/api/system/backup", (request, response) => this.backup(request, response));
+        Instance.app?.post("/api/system/restore", (request, response) => this.restore(request, response));
+        Instance.app?.post("/api/system/upgrade", (request, response) => this.upgrade(request, response));
+        Instance.app?.put("/api/system/reboot", (request, response) => this.reboot(request, response));
+        Instance.app?.put("/api/system/reset", (request, response) => this.reset(request, response));
     }
 
     async info(_request: Request, response: Response): Promise<Response> {
         const data = {
-            mac: await SystemController.mac(),
+            mac: await this.mac(),
             ffmpeg_enabled: findCommand("ffmpeg"),
             system: await System.system(),
             operating_system: await System.osInfo(),
@@ -58,7 +58,7 @@ export default class SystemController {
         return response.send(data);
     }
 
-    static mac(): Promise<string | undefined> {
+    mac(): Promise<string | undefined> {
         return new Promise((resolve) => {
             Mac.one((error, address) => {
                 if (!error) {
@@ -70,11 +70,11 @@ export default class SystemController {
         });
     }
 
-    static async temp(_request: Request, response: Response): Promise<Response> {
+    async temp(_request: Request, response: Response): Promise<Response> {
         return response.send(await System.cpuTemperature());
     }
 
-    static async cpu(_request: Request, response: Response): Promise<Response> {
+    async cpu(_request: Request, response: Response): Promise<Response> {
         return response.send({
             information: await System.cpu(),
             speed: await System.cpuCurrentspeed(),
@@ -83,26 +83,26 @@ export default class SystemController {
         });
     }
 
-    static async memory(_request: Request, response: Response): Promise<Response> {
+    async memory(_request: Request, response: Response): Promise<Response> {
         return response.send({
             information: await System.memLayout(),
             load: await System.mem(),
         });
     }
 
-    static network(_request: Request, response: Response): Response {
+    network(_request: Request, response: Response): Response {
         return response.send(network());
     }
 
-    static async activity(_request: Request, response: Response): Promise<Response> {
+    async activity(_request: Request, response: Response): Promise<Response> {
         return response.send(await System.currentLoad());
     }
 
-    static async filesystem(_request: Request, response: Response): Promise<Response> {
+    async filesystem(_request: Request, response: Response): Promise<Response> {
         return response.send(await System.fsSize());
     }
 
-    static backup(_request: Request, response: Response): void {
+    backup(_request: Request, response: Response): void {
         Paths.backup().then((filename) => response.send({
             success: true,
             filename: `/backups/${filename}`,
@@ -111,7 +111,7 @@ export default class SystemController {
         }));
     }
 
-    static restore(request: Request, response: Response): void {
+    restore(request: Request, response: Response): void {
         const form = new Forms.IncomingForm();
 
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
@@ -120,17 +120,17 @@ export default class SystemController {
             Paths.restore(
                 files.file.path,
                 true,
-            ).finally(() => SystemController.reboot(request, response));
+            ).finally(() => this.reboot(request, response));
         });
     }
 
-    static upgrade(request: Request, response: Response): Response {
+    upgrade(request: Request, response: Response): Response {
         execSync("npm install -g --unsafe-perm @hoobs/server@latest");
 
-        return SystemController.reboot(request, response);
+        return this.reboot(request, response);
     }
 
-    static reboot(_request: Request, response: Response): Response {
+    reboot(_request: Request, response: Response): Response {
         exec("shutdown -r now");
 
         return response.send({
@@ -138,7 +138,7 @@ export default class SystemController {
         });
     }
 
-    static reset(request: Request, response: Response): Response {
+    reset(request: Request, response: Response): Response {
         if (Instance.container) {
             return response.send({
                 error: "Reset is not supported on Docker images",
@@ -147,6 +147,6 @@ export default class SystemController {
 
         Paths.reset();
 
-        return SystemController.reboot(request, response);
+        return this.reboot(request, response);
     }
 }

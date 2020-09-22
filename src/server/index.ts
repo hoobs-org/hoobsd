@@ -35,8 +35,6 @@ export default class Server extends EventEmitter {
 
     declare settings: any;
 
-    declare port: number;
-
     constructor() {
         super();
 

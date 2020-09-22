@@ -23,17 +23,17 @@ import { command } from "./socket";
 
 export default class ConfigController {
     constructor() {
-        Instance.app?.get("/api/config", (request, response) => ConfigController.getConsole(request, response));
-        Instance.app?.post("/api/config", (request, response) => ConfigController.saveConsole(request, response));
-        Instance.app?.get("/api/config/:instance", (request, response) => ConfigController.getInstance(request, response));
-        Instance.app?.post("/api/config/:instance", (request, response) => ConfigController.saveInstance(request, response));
+        Instance.app?.get("/api/config", (request, response) => this.getConsole(request, response));
+        Instance.app?.post("/api/config", (request, response) => this.saveConsole(request, response));
+        Instance.app?.get("/api/config/:instance", (request, response) => this.getInstance(request, response));
+        Instance.app?.post("/api/config/:instance", (request, response) => this.saveInstance(request, response));
     }
 
-    static async getConsole(_request: Request, response: Response): Promise<void> {
+    async getConsole(_request: Request, response: Response): Promise<void> {
         response.send(Instance.api?.config);
     }
 
-    static async saveConsole(request: Request, response: Response): Promise<void> {
+    async saveConsole(request: Request, response: Response): Promise<void> {
         Paths.saveConfig(request.body);
 
         if (Instance.bridge) {
@@ -45,11 +45,11 @@ export default class ConfigController {
         });
     }
 
-    static async getInstance(request: Request, response: Response): Promise<void> {
+    async getInstance(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "config:get"));
     }
 
-    static async saveInstance(request: Request, response: Response): Promise<void> {
+    async saveInstance(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "config:save", request.params, request.body));
     }
 }

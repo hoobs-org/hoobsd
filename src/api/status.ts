@@ -22,10 +22,10 @@ import { command } from "./socket";
 
 export default class StatusController {
     constructor() {
-        Instance.app?.get("/api/status/:instance", (request, response) => StatusController.status(request, response));
+        Instance.app?.get("/api/status/:instance", (request, response) => this.status(request, response));
     }
 
-    static async status(request: Request, response: Response): Promise<void> {
+    async status(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "status:get"));
     }
 }

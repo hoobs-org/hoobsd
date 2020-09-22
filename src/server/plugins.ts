@@ -24,13 +24,13 @@ import { SocketRequest, SocketResponse } from "./pipe";
 
 export default class PluginsController {
     constructor() {
-        Instance.socket?.route("plugins:get", (request: SocketRequest, response: SocketResponse) => PluginsController.installed(request, response));
-        Instance.socket?.route("plugins:install", (request: SocketRequest, response: SocketResponse) => PluginsController.install(request, response));
-        Instance.socket?.route("plugins:upgrade", (request: SocketRequest, response: SocketResponse) => PluginsController.upgrade(request, response));
-        Instance.socket?.route("plugins:uninstall", (request: SocketRequest, response: SocketResponse) => PluginsController.uninstall(request, response));
+        Instance.socket?.route("plugins:get", (request: SocketRequest, response: SocketResponse) => this.installed(request, response));
+        Instance.socket?.route("plugins:install", (request: SocketRequest, response: SocketResponse) => this.install(request, response));
+        Instance.socket?.route("plugins:upgrade", (request: SocketRequest, response: SocketResponse) => this.upgrade(request, response));
+        Instance.socket?.route("plugins:uninstall", (request: SocketRequest, response: SocketResponse) => this.uninstall(request, response));
     }
 
-    static async installed(_request: SocketRequest, response: SocketResponse): Promise<void> {
+    async installed(_request: SocketRequest, response: SocketResponse): Promise<void> {
         const results = [];
         const plugins = Plugins.installed();
 
@@ -61,7 +61,7 @@ export default class PluginsController {
         response.send(results);
     }
 
-    static install(request: SocketRequest, response: SocketResponse): void {
+    install(request: SocketRequest, response: SocketResponse): void {
         let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
         let scope: string | undefined = "";
 
@@ -91,7 +91,7 @@ export default class PluginsController {
         }));
     }
 
-    static upgrade(request: SocketRequest, response: SocketResponse): void {
+    upgrade(request: SocketRequest, response: SocketResponse): void {
         let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
         let scope: string | undefined = "";
 
@@ -121,7 +121,7 @@ export default class PluginsController {
         }));
     }
 
-    static uninstall(request: SocketRequest, response: SocketResponse): void {
+    uninstall(request: SocketRequest, response: SocketResponse): void {
         let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
         let scope: string | undefined = "";
 

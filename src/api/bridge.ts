@@ -22,25 +22,25 @@ import { command } from "./socket";
 
 export default class BridgeController {
     constructor() {
-        Instance.app?.post("/api/bridge/:instance/start", (request, response) => BridgeController.start(request, response));
-        Instance.app?.post("/api/bridge/:instance/stop", (request, response) => BridgeController.stop(request, response));
-        Instance.app?.post("/api/bridge/:instance/restart", (request, response) => BridgeController.restart(request, response));
-        Instance.app?.post("/api/bridge/:instance/clean", (request, response) => BridgeController.clean(request, response));
+        Instance.app?.post("/api/bridge/:instance/start", (request, response) => this.start(request, response));
+        Instance.app?.post("/api/bridge/:instance/stop", (request, response) => this.stop(request, response));
+        Instance.app?.post("/api/bridge/:instance/restart", (request, response) => this.restart(request, response));
+        Instance.app?.post("/api/bridge/:instance/clean", (request, response) => this.clean(request, response));
     }
 
-    static async start(request: Request, response: Response): Promise<void> {
+    async start(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "bridge:start"));
     }
 
-    static async stop(request: Request, response: Response): Promise<void> {
+    async stop(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "bridge:stop"));
     }
 
-    static async restart(request: Request, response: Response): Promise<void> {
+    async restart(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "bridge:restart"));
     }
 
-    static async clean(request: Request, response: Response): Promise<void> {
+    async clean(request: Request, response: Response): Promise<void> {
         response.send(await command(request.params.instance, "bridge:clean"));
     }
 }

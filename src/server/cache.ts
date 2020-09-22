@@ -25,16 +25,16 @@ import { SocketRequest, SocketResponse } from "./pipe";
 
 export default class CacheController {
     constructor() {
-        Instance.socket?.route("cache:log", (request: SocketRequest, response: SocketResponse) => CacheController.log(request, response));
-        Instance.socket?.route("cache:parings", (request: SocketRequest, response: SocketResponse) => CacheController.parings(request, response));
-        Instance.socket?.route("cache:accessories", (request: SocketRequest, response: SocketResponse) => CacheController.accessories(request, response));
+        Instance.socket?.route("cache:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
+        Instance.socket?.route("cache:parings", (request: SocketRequest, response: SocketResponse) => this.parings(request, response));
+        Instance.socket?.route("cache:accessories", (request: SocketRequest, response: SocketResponse) => this.accessories(request, response));
     }
 
-    static log(_request: SocketRequest, response: SocketResponse): void {
+    log(_request: SocketRequest, response: SocketResponse): void {
         response.send(Log.cache());
     }
 
-    static parings(_request: SocketRequest, response: SocketResponse): void {
+    parings(_request: SocketRequest, response: SocketResponse): void {
         const pairings = readdirSync(Paths.persistPath()).filter((d) => d.match(/AccessoryInfo\.([A-F,a-f,0-9]+)\.json/));
         const results = [];
 
@@ -58,7 +58,7 @@ export default class CacheController {
         response.send(results);
     }
 
-    static accessories(_request: SocketRequest, response: SocketResponse): void {
+    accessories(_request: SocketRequest, response: SocketResponse): void {
         const accessories = join(Paths.cachedAccessoryPath(), "cachedAccessories");
 
         if (existsSync(accessories)) {

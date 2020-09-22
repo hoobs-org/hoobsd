@@ -22,33 +22,33 @@ import Instances from "../shared/instances";
 
 export default class InstancesController {
     constructor() {
-        Instance.app?.get("/api/instances", (request, response) => InstancesController.list(request, response));
-        Instance.app?.put("/api/instance", (request, response) => InstancesController.create(request, response));
-        Instance.app?.post("/api/instance/:id", (request, response) => InstancesController.update(request, response));
-        Instance.app?.delete("/api/instance/:id", (request, response) => InstancesController.remove(request, response));
+        Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
+        Instance.app?.put("/api/instance", (request, response) => this.create(request, response));
+        Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
+        Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
     }
 
-    static list(_request: Request, response: Response): Response {
+    list(_request: Request, response: Response): Response {
         return response.send(Instances.list());
     }
 
-    static create(request: Request, response: Response): void {
+    create(request: Request, response: Response): void {
         Instances.createService(
             request.body.name,
             parseInt(request.body.port, 10),
-        ).then(() => InstancesController.list(request, response));
+        ).then(() => this.list(request, response));
     }
 
-    static update(request: Request, response: Response): void {
+    update(request: Request, response: Response): void {
         Instances.renameInstance(
             request.params.id,
             request.body.name,
-        ).then(() => InstancesController.list(request, response));
+        ).then(() => this.list(request, response));
     }
 
-    static remove(request: Request, response: Response): void {
+    remove(request: Request, response: Response): void {
         Instances.removeService(
             request.params.id,
-        ).then(() => InstancesController.list(request, response));
+        ).then(() => this.list(request, response));
     }
 }
