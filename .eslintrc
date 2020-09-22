@@ -1,0 +1,64 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+        "airbnb-typescript/base",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module",
+        "project": "./tsconfig.json"
+    },
+    "ignorePatterns": [
+        "bin/",
+        "lib/"
+    ],
+    "rules": {
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "@typescript-eslint/quotes": [
+            "error",
+            "double"
+        ],
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "@typescript-eslint/indent": [
+            "error",
+            4
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "comma-dangle": [
+            "error",
+            "always-multiline"
+        ],
+        "max-len": [
+            "error",
+            {
+                "code": 220
+            }
+        ],
+        "no-loop-func": "off",
+        "no-await-in-loop": "off",
+        "no-param-reassign": "off",
+        "spaced-comment": "off",
+        "no-console": "off",
+        "default-case": "off",
+        "no-new": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "class-methods-use-this": "off",
+        "import/no-cycle": "off",
+        "import/no-extraneous-dependencies": "off"
+    }
+}

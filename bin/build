@@ -1,0 +1,173 @@
+#!/usr/bin/env node
+
+/**************************************************************************************************
+ * HOOBSD                                                                                         *
+ * Copyright (C) 2020 HOOBS                                                                       *
+ *                                                                                                *
+ * This program is free software: you can redistribute it and/or modify                           *
+ * it under the terms of the GNU General Public License as published by                           *
+ * the Free Software Foundation, either version 3 of the License, or                              *
+ * (at your option) any later version.                                                            *
+ *                                                                                                *
+ * This program is distributed in the hope that it will be useful,                                *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of                                 *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                                  *
+ * GNU General Public License for more details.                                                   *
+ *                                                                                                *
+ * You should have received a copy of the GNU General Public License                              *
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
+ **************************************************************************************************/
+
+const Program = require("commander");
+const Prompt = require("prompts");
+
+const { existsSync, mkdirSync, realpathSync, readFileSync } = require("fs-extra");
+const { join, dirname } = require("path");
+const { execSync } = require("child_process");
+
+const root = join(dirname(realpathSync(__filename)), "../");
+const version = (JSON.parse(readFileSync(join(root, "package.json")).toString())).version;
+
+Program.version(version, "-v, --version", "output the current version")
+    .allowUnknownOption();
+
+Program.command("server", { isDefault: true })
+    .description("build hoobs server")
+    .option("-i, --isolate", "keep the build in the current project")
+    .action(() => {
+        execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+
+        if (!existsSync(join(root, "lib"))){
+            mkdirSync(join(root, "lib"));
+        }
+
+        if (!existsSync(join(root, "bld"))){
+            mkdirSync(join(root, "bld"));
+        }
+
+        execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+        
+        execSync(`${join(root, "node_modules", ".bin", "tsc")}`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+
+        execSync("npm pack", {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+
+        execSync(`rm -f ${join(root, "bld", "hoobsd.tgz")}`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+
+        execSync(`mv ${join(root, `hoobs-hoobsd-${version}.tgz`)} ${join(root, "bld", "hoobsd.tgz")}`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+
+        execSync(`chmod 755 ${join(root, "bld", "hoobsd.tgz")}`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+    });
+
+Program.command("container")
+    .description("build docker image")
+    .action(() => {
+        const root = join(dirname(realpathSync(__filename)), "../");
+
+        execSync(`${join(root, "bin", "build")} server --isolate`, {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+
+        execSync("docker image build -t hoobs/hoobsd:dev --no-cache .", {
+            cwd: root,
+            stdio: ["inherit", "inherit", "inherit"],
+        });
+    });
+
+Program.command("publish <system>")
+    .description("publish the server to npm or the docker container")
+    .action((system) => {
+        const root = join(dirname(realpathSync(__filename)), "../");
+
+        const questions = [
+            {
+                type: "text",
+                name: "confirm",
+                initial: "no",
+                message: "type yes to confirm",
+                format: (value) => value.toLowerCase(),
+            },
+        ];
+
+        switch (system) {
+            case "container":
+            case "docker":
+                questions.unshift({
+                    type: "text",
+                    name: "tag",
+                    initial: "latest",
+                    message: "enter a tag for this release",
+                });
+
+                break;
+
+            default:
+                console.log(Program.helpInformation());
+                break;
+        }
+
+        Prompt(questions).then((result) => {
+            if (result && result.confirm === "yes") {
+                switch (system) {
+                    case "server":
+                        execSync(`${join(root, "bin", "build")} server --isolate`, {
+                            cwd: root,
+                            stdio: ["inherit", "inherit", "inherit"],
+                        });
+
+                        execSync("npm publish --access public", {
+                            cwd: root,
+                            stdio: ["inherit", "inherit", "inherit"],
+                        });
+
+                        break;
+
+                    case "container":
+                    case "docker":
+                        execSync("docker login", {
+                            cwd: root,
+                            stdio: ["inherit", "inherit", "inherit"],
+                        });
+
+                        execSync(`${join(root, "bin", "build")} server --isolate`, {
+                            cwd: root,
+                            stdio: ["inherit", "inherit", "inherit"],
+                        });
+
+                        execSync(`docker buildx build --no-cache --platform linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 -t hoobs/hoobs:${result.tag} --push .`, {
+                            cwd: root,
+                            stdio: ["inherit", "inherit", "inherit"],
+                        });
+
+                        break;
+
+                    default:
+                        console.log(Program.helpInformation());
+                        break;
+                }
+            }
+        });
+    });
+
+Program.parse(process.argv);

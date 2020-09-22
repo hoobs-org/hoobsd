@@ -1,0 +1,13 @@
+.vscode
+bin/build
+bld
+node_modules
+.gitignore
+.npmignore
+CHANGELOG.md
+install
+*.spec.ts
+src/
+jest.config.js
+tsconfig.json
+*.tgz
