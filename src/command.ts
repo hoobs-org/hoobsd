@@ -27,7 +27,7 @@ import Cockpit from "./console/cockpit";
 import Plugins from "./shared/plugins";
 import Ffmpeg from "./features/ffmpeg";
 
-import { sanitize, findModule, findCommand } from "./shared/helpers";
+import { sanitize, findCommand } from "./shared/helpers";
 
 export = function Command(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
@@ -359,19 +359,13 @@ export = function Command(): void {
             Instance.debug = true;
             Instance.id = sanitize("console");
 
-            const pty = findModule("node-pty");
+            const client = new Cockpit();
 
-            if (pty) {
-                const client = new Cockpit();
-
-                client.start(true).then((registration) => {
-                    console.log(`access code ${registration}`);
-                }).catch(() => {
-                    console.log("unable to connect");
-                });
-            } else {
-                console.log("cockpit is not enabled");
-            }
+            client.start(true).then((registration) => {
+                console.log(`access code ${registration}`);
+            }).catch(() => {
+                console.log("unable to connect");
+            });
         });
 
     Program.parse(process.argv);
