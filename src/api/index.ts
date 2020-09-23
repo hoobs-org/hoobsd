@@ -31,6 +31,7 @@ import Instances from "../shared/instances";
 import Users from "../shared/users";
 import Socket, { command } from "./socket";
 import { Log } from "../shared/logger";
+import { findModule } from "../shared/helpers";
 
 import AuthController from "./auth";
 import AccessoriesController from "./accessories";
@@ -41,7 +42,6 @@ import FeaturesController from "./features";
 import InstancesController from "./instances";
 import PluginsController from "./plugins";
 import RemoteController from "./remote";
-import StatusController from "./status";
 import SystemController from "./system";
 
 export default class API extends EventEmitter {
@@ -59,6 +59,8 @@ export default class API extends EventEmitter {
 
     declare private instances: any[];
 
+    declare private bridges: any[];
+
     declare private paths: string[];
 
     declare private socket: Socket;
@@ -72,6 +74,7 @@ export default class API extends EventEmitter {
         this.port = port || 80;
         this.users = new Users();
         this.instances = Instances.list();
+        this.bridges = this.instances.filter((i) => i.type === "bridge");
         this.paths = [];
 
         for (let i = 0; i < this.instances.length; i += 1) {
@@ -173,18 +176,33 @@ export default class API extends EventEmitter {
             next();
         });
 
+        Instance.app?.get("/api", (_request, response) => response.send({ version: Instance.version }));
+
         new AuthController(this.users);
-        new AccessoriesController();
-        new BridgeController();
-        new CacheController();
+        new AccessoriesController(this.bridges);
+        new BridgeController(this.bridges);
+        new CacheController(this.bridges);
         new ConfigController();
         new FeaturesController();
         new InstancesController();
-        new PluginsController();
+        new PluginsController(this.bridges);
         new RemoteController();
-        new StatusController();
         new SystemController();
 
+        let gui: string | undefined = findModule("@hoobs/console");
+
+        if (gui && existsSync(join(gui, "dist"))) {
+            gui = join(gui, "dist");
+        }
+
+        let touch: string | undefined = findModule("@hoobs/touch");
+
+        if (touch && existsSync(join(touch, "dist"))) {
+            touch = join(touch, "dist");
+        }
+
+        Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(dirname(realpathSync(__filename)), "../../var")));
+        Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(dirname(realpathSync(__filename)), "../../var")));
         Instance.app?.use("/backups", Express.static(Paths.backupPath()));
     }
 

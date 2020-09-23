@@ -24,8 +24,21 @@ export default class RemoteController {
     declare client: Cockpit;
 
     constructor() {
+        Instance.app?.get("/api/remote", (request, response) => this.status(request, response));
         Instance.app?.get("/api/remote/start", (request, response) => this.start(request, response));
         Instance.app?.get("/api/remote/disconnect", (request, response) => this.disconnect(request, response));
+    }
+
+    status(_request: Request, response: Response): Response {
+        if (this.client) {
+            return response.send({
+                active: true,
+            });
+        }
+
+        return response.send({
+            active: false,
+        });
     }
 
     start(_request: Request, response: Response): void {

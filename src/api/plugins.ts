@@ -21,7 +21,12 @@ import Instance from "../shared/instance";
 import { command } from "./socket";
 
 export default class PluginsController {
-    constructor() {
+    declare private instances: any[];
+
+    constructor(instances: any[]) {
+        this.instances = instances;
+
+        Instance.app?.get("/api/plugins", (request, response) => this.all(request, response));
         Instance.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
         Instance.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
         Instance.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
@@ -29,6 +34,23 @@ export default class PluginsController {
         Instance.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
         Instance.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
         Instance.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
+    }
+
+    async all(_request: Request, response: Response): Promise<void> {
+        const results = [];
+
+        for (let i = 0; i < this.instances.length; i += 1) {
+            const plugins = await command(this.instances[i].id, "plugins:get");
+
+            if (plugins) {
+                results.push({
+                    instance: this.instances[i].id,
+                    plugins,
+                });
+            }
+        }
+
+        response.send(results);
     }
 
     async installed(request: Request, response: Response): Promise<void> {

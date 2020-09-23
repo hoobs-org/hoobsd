@@ -22,7 +22,7 @@ import Instances from "../shared/instances";
 
 export default class InstancesController {
     constructor() {
-        Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
+        Instance.app?.get("/api/instance", (request, response) => this.list(request, response));
         Instance.app?.put("/api/instance", (request, response) => this.create(request, response));
         Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
         Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));

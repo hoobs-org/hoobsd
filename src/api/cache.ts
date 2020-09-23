@@ -21,9 +21,44 @@ import Instance from "../shared/instance";
 import { command } from "./socket";
 
 export default class CacheController {
-    constructor() {
+    declare private instances: any[];
+
+    constructor(instances: any[]) {
+        this.instances = instances;
+
+        Instance.app?.get("/api/cache", (request, response) => this.all(request, response));
+        Instance.app?.get("/api/cache/:instance", (request, response) => this.list(request, response));
         Instance.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
         Instance.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
+    }
+
+    async all(_request: Request, response: Response): Promise<void> {
+        const results = [];
+
+        for (let i = 0; i < this.instances.length; i += 1) {
+            const parings = await command(this.instances[i].id, "cache:parings");
+            const accessories = await command(this.instances[i].id, "cache:accessories");
+
+            if (parings || accessories) {
+                results.push({
+                    instance: this.instances[i].id,
+                    parings,
+                    accessories,
+                });
+            }
+        }
+
+        response.send(results);
+    }
+
+    async list(request: Request, response: Response): Promise<void> {
+        const parings = await command(request.params.instance, "cache:parings");
+        const accessories = await command(request.params.instance, "cache:accessories");
+
+        response.send({
+            parings,
+            accessories,
+        });
     }
 
     async listParings(request: Request, response: Response): Promise<void> {
