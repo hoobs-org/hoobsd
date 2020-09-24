@@ -8,7 +8,6 @@ src/
 .gitignore
 .npmignore
 CHANGELOG.md
-jest.config.js
 tsconfig.json
 *.spec.ts
 *.tgz
