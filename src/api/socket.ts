@@ -27,9 +27,8 @@ export function command(instance: string, path: string, params?: { [key: string]
 
         pipe.config.logInColor = false;
         pipe.config.logger = Print;
-        pipe.config.maxRetries = 3;
+        pipe.config.maxRetries = 0;
         pipe.config.stopRetrying = true;
-        pipe.config.retry = 1000;
 
         pipe.connectTo(`${instance}.hoobs.bridge`, () => {
             pipe.of[`${instance}.hoobs.bridge`].on(session, (data: any) => {
@@ -39,6 +38,8 @@ export function command(instance: string, path: string, params?: { [key: string]
             });
 
             pipe.of[`${instance}.hoobs.bridge`].on("error", () => {
+                pipe.disconnect(`${instance}.hoobs.bridge`);
+
                 resolve();
             });
 

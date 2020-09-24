@@ -29,5 +29,5 @@ export default async function Heartbeat() {
 
     setTimeout(() => {
         Heartbeat();
-    }, (Instance.server?.settings.polling_seconds || 3) * 1000);
+    }, (Instance.server?.settings.polling_seconds || 5) * 1000);
 }

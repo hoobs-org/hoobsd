@@ -23,6 +23,7 @@ import { Log } from "../shared/logger";
 export default async function Monitor() {
     Log.message("monitor", "api", {
         name: "load",
+        instances: Instance.status,
         cpu: await System.currentLoad(),
         memory: await System.mem(),
         temp: await System.cpuTemperature(),
@@ -30,5 +31,5 @@ export default async function Monitor() {
 
     setTimeout(() => {
         Monitor();
-    }, (Instance.api?.settings?.polling_seconds || 3) * 1000);
+    }, (Instance.api?.settings?.polling_seconds || 5) * 1000);
 }

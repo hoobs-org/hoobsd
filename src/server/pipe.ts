@@ -35,9 +35,8 @@ export function broadcast(event: string, body: any): Promise<any> {
 
         pipe.config.logInColor = false;
         pipe.config.logger = Print;
-        pipe.config.maxRetries = 3;
+        pipe.config.maxRetries = 0;
         pipe.config.stopRetrying = true;
-        pipe.config.retry = 1000;
 
         pipe.connectTo("api.hoobs.bridge", () => {
             pipe.of["api.hoobs.bridge"].on(session, () => {
@@ -47,6 +46,8 @@ export function broadcast(event: string, body: any): Promise<any> {
             });
 
             pipe.of["api.hoobs.bridge"].on("error", () => {
+                pipe.disconnect("api.hoobs.bridge");
+
                 resolve();
             });
 
