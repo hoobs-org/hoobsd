@@ -189,7 +189,7 @@ export default class API extends EventEmitter {
         new RemoteController();
         new SystemController();
 
-        let gui: string | undefined = findModule("@hoobs/console");
+        let gui: string | undefined = findModule("@hoobs/gui");
 
         if (gui && existsSync(join(gui, "dist"))) {
             gui = join(gui, "dist");
