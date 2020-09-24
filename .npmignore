@@ -1,6 +1,6 @@
 .vscode
 bin/build
-bld/
+lib/hoobsd.tgz
 node_modules/
 src/
 .editorconfig

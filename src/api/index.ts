@@ -191,14 +191,14 @@ export default class API extends EventEmitter {
 
         let gui: string | undefined = findModule("@hoobs/gui");
 
-        if (gui && existsSync(join(gui, "dist"))) {
-            gui = join(gui, "dist");
+        if (gui && existsSync(join(gui, "lib"))) {
+            gui = join(gui, "lib");
         }
 
         let touch: string | undefined = findModule("@hoobs/touch");
 
-        if (touch && existsSync(join(touch, "dist"))) {
-            touch = join(touch, "dist");
+        if (touch && existsSync(join(touch, "lib"))) {
+            touch = join(touch, "lib");
         }
 
         Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(dirname(realpathSync(__filename)), "../../var")));

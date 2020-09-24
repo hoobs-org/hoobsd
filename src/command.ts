@@ -172,12 +172,10 @@ export = function Command(): void {
             Instance.id = sanitize(command.instance || "api");
             Instance.debug = true;
 
-            const nano = spawn("nano", [Paths.configPath()], {
+            spawn("nano", [Paths.configPath()], {
                 stdio: "inherit",
                 detached: true,
-            });
-
-            nano.on("data", (data) => {
+            }).on("data", (data) => {
                 process.stdout.pipe(data);
             });
         });
