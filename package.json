@@ -31,6 +31,8 @@
     },
     "preferGlobal": true,
     "scripts": {
+        "api": "bin/hoobsd api -dv -p 8080",
+        "bridge": "bin/hoobsd start -dv -i default -p 51826",
         "build": "bin/build",
         "lint": "eslint 'src/**/*.ts'"
     },
