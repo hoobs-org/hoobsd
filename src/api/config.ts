@@ -19,7 +19,7 @@
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../shared/instance";
 import Paths from "../shared/paths";
-import { command } from "./socket";
+import Socket from "./socket";
 
 export default class ConfigController {
     constructor() {
@@ -46,10 +46,10 @@ export default class ConfigController {
     }
 
     async getInstance(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "config:get"));
+        response.send(await Socket.fetch(request.params.instance, "config:get"));
     }
 
     async saveInstance(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "config:save", request.params, request.body));
+        response.send(await Socket.fetch(request.params.instance, "config:save", request.params, request.body));
     }
 }

@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 import RawIPC from "node-ipc";
+import Paths from "../shared/paths";
 import { Print } from "../shared/logger";
 
 export interface SocketRequest {
@@ -28,38 +29,7 @@ export interface SocketResponse {
     send: (body: any) => void
 }
 
-export function broadcast(event: string, body: any): Promise<any> {
-    return new Promise((resolve) => {
-        const session = `${new Date().getTime()}:${Math.random()}`;
-        const pipe = new RawIPC.IPC();
-
-        pipe.config.logInColor = false;
-        pipe.config.logger = Print;
-        pipe.config.maxRetries = 0;
-        pipe.config.stopRetrying = true;
-
-        pipe.connectTo("api.hoobs.bridge", () => {
-            pipe.of["api.hoobs.bridge"].on(session, () => {
-                pipe.disconnect("api.hoobs.bridge");
-
-                resolve();
-            });
-
-            pipe.of["api.hoobs.bridge"].on("error", () => {
-                pipe.disconnect("api.hoobs.bridge");
-
-                resolve();
-            });
-
-            pipe.of["api.hoobs.bridge"].emit(event, {
-                session,
-                body,
-            });
-        });
-    });
-}
-
-export default class Pipe {
+export default class Socket {
     declare private pipe: any;
 
     declare private name: string;
@@ -72,11 +42,13 @@ export default class Pipe {
         this.name = name;
         this.routes = {};
         this.pipe = new RawIPC.IPC();
-        this.pipe.config.logInColor = false;
+        this.pipe.config.logInColor = true;
         this.pipe.config.logger = Print;
-        this.pipe.config.id = `${this.name}.hoobs.bridge`;
+        this.pipe.config.appspace = "/";
+        this.pipe.config.socketRoot = Paths.storagePath();
+        this.pipe.config.id = `${this.name}.sock`;
 
-        this.pipe.serve(`/tmp/app.${this.name}.hoobs.bridge`, () => {
+        this.pipe.serve(() => {
             this.pipe.server.on("request", (payload: any, socket: any) => {
                 this.routes[payload.path]({
                     params: payload.params,
@@ -95,10 +67,44 @@ export default class Pipe {
     }
 
     start(): void {
+        this.pipe.server.on("error", () => {
+            this.pipe?.server?.stop();
+            this.pipe?.server?.start();
+        });
+
         this.pipe.server.start();
     }
 
     stop() {
         this.pipe.server.stop();
+    }
+
+    static fetch(event: string, body: any): Promise<any> {
+        return new Promise((resolve) => {
+            const session = `${new Date().getTime()}:${Math.random()}`;
+            const pipe = new RawIPC.IPC();
+
+            pipe.config.appspace = "/";
+            pipe.config.socketRoot = Paths.storagePath();
+            pipe.config.logInColor = true;
+            pipe.config.logger = Print;
+            pipe.config.maxRetries = 0;
+            pipe.config.stopRetrying = true;
+
+            pipe.connectTo("api.sock", () => {
+                pipe.of["api.sock"].on(session, () => {
+                    resolve();
+                });
+
+                pipe.of["api.sock"].on("destroy", () => {
+                    resolve();
+                });
+
+                pipe.of["api.sock"].emit(event, {
+                    session,
+                    body,
+                });
+            });
+        });
     }
 }

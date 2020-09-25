@@ -19,7 +19,7 @@
 import Utility from "util";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import Instance from "./instance";
-import { broadcast } from "../server/pipe";
+import Socket from "../server/socket";
 
 export interface Message {
     level: LogLevel,
@@ -51,7 +51,6 @@ interface IntermediateLogger {
     debug?(message: string, ...parameters: any[]): void;
 
     log?(level: LogLevel, message: string, ...parameters: any[]): void;
-    transmit?(data: Message): void;
 }
 
 const CONSOLE_LOG = console.log;
@@ -73,16 +72,22 @@ class Logger {
         return CACHE;
     }
 
-    log(level: LogLevel, message: string, ...parameters: any[]): void {
-        const data: Message = {
-            level,
-            instance: Instance.id,
-            display: Instance.display,
-            timestamp: new Date().getTime(),
-            plugin: this.plugin,
-            prefix: this.prefix,
-            message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge"), ...parameters),
-        };
+    log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
+        let data: Message;
+
+        if (typeof message === "string") {
+            data = {
+                level,
+                instance: Instance.id,
+                display: Instance.display,
+                timestamp: new Date().getTime(),
+                plugin: this.plugin,
+                prefix: this.prefix,
+                message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge"), ...parameters),
+            };
+        } else {
+            data = message;
+        }
 
         CACHE.push(data);
 
@@ -91,38 +96,20 @@ class Logger {
         }
 
         if (Instance.api) Instance.io?.sockets.emit("log", data);
-        if (Instance.server) broadcast("log", data);
-
-        if ((level !== LogLevel.DEBUG && level !== LogLevel.WARN) || Instance.debug) {
-            const formatted = data.prefix ? `[${data.prefix}] ${data.message}` : data.message;
-
-            switch (level) {
-                case LogLevel.WARN:
-                case LogLevel.ERROR:
-                    CONSOLE_ERROR(formatted);
-                    break;
-
-                default:
-                    if (Instance.debug) {
-                        CONSOLE_LOG(formatted);
-                    }
-
-                    break;
-            }
-        }
-    }
-
-    transmit(data: Message): void {
-        CACHE.push(data);
-
-        while (CACHE.length >= 500) {
-            CACHE.shift();
-        }
-
-        Instance.io?.sockets.emit("log", data);
+        if (Instance.server) Socket.fetch("log", data);
 
         if ((data.level !== LogLevel.DEBUG && data.level !== LogLevel.WARN) || Instance.debug) {
-            const formatted = data.prefix ? `[${data.instance} - ${data.prefix}] ${data.message}` : `[${data.instance}] ${data.message}`;
+            const prefixes = [];
+
+            if (typeof message !== "string" && data.instance && data.instance !== "" && data.instance !== "api") {
+                prefixes.push(data.instance);
+            }
+
+            if (data.prefix && data.prefix !== "") {
+                prefixes.push(data.prefix);
+            }
+
+            const formatted = prefixes.length > 0 ? `[${prefixes.join(" - ")}] ${data.message}` : data.message;
 
             switch (data.level) {
                 case LogLevel.WARN:
@@ -195,7 +182,7 @@ class Logger {
     }
 
     message(event: string, instance: string, data: any): void {
-        let name;
+        let name = event;
 
         if (Object.prototype.hasOwnProperty.call(data, "name")) {
             name = `${data.name}`;
@@ -212,7 +199,7 @@ class Logger {
         }
 
         if (Instance.server) {
-            broadcast(event, {
+            Socket.fetch(event, {
                 instance,
                 name,
                 data,
@@ -249,7 +236,7 @@ export function Print(...parameters: any[]) {
     }
 }
 
-export const Log: Logger = system;
+export const Console: Logger = system;
 
 export function Prefixed(plugin: string, prefix: string) {
     if (!Instance.loggers[prefix]) {

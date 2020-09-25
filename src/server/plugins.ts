@@ -20,7 +20,7 @@ import { PluginManager } from "homebridge/lib/pluginManager";
 import Instance from "../shared/instance";
 import Plugins from "../shared/plugins";
 import { loadPackage, loadSchema } from "../shared/helpers";
-import { SocketRequest, SocketResponse } from "./pipe";
+import { SocketRequest, SocketResponse } from "./socket";
 
 export default class PluginsController {
     constructor() {

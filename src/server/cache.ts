@@ -20,8 +20,8 @@ import { existsSync, readdirSync, readJsonSync } from "fs-extra";
 import { join } from "path";
 import Instance from "../shared/instance";
 import Paths from "../shared/paths";
-import { Log } from "../shared/logger";
-import { SocketRequest, SocketResponse } from "./pipe";
+import { Console } from "../shared/logger";
+import { SocketRequest, SocketResponse } from "./socket";
 
 export default class CacheController {
     constructor() {
@@ -31,7 +31,7 @@ export default class CacheController {
     }
 
     log(_request: SocketRequest, response: SocketResponse): void {
-        response.send(Log.cache());
+        response.send(Console.cache());
     }
 
     parings(_request: SocketRequest, response: SocketResponse): void {

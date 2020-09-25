@@ -18,11 +18,10 @@
 
 import System from "systeminformation";
 import Instance from "../shared/instance";
-import { Log } from "../shared/logger";
+import { Console } from "../shared/logger";
 
 export default async function Monitor() {
-    Log.message("monitor", "api", {
-        name: "load",
+    Console.message("monitor", "api", {
         instances: Instance.status,
         cpu: await System.currentLoad(),
         memory: await System.mem(),

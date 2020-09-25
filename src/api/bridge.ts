@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../shared/instance";
-import { command } from "./socket";
+import Socket from "./socket";
 
 export default class BridgeController {
     declare private instances: any[];
@@ -38,7 +38,7 @@ export default class BridgeController {
         const results = [];
 
         for (let i = 0; i < this.instances.length; i += 1) {
-            const status = await command(this.instances[i].id, "status:get");
+            const status = await Socket.fetch(this.instances[i].id, "status:get");
 
             if (status) {
                 results.push({
@@ -52,22 +52,22 @@ export default class BridgeController {
     }
 
     async status(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "status:get"));
+        response.send(await Socket.fetch(request.params.instance, "status:get"));
     }
 
     async start(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "bridge:start"));
+        response.send(await Socket.fetch(request.params.instance, "bridge:start"));
     }
 
     async stop(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "bridge:stop"));
+        response.send(await Socket.fetch(request.params.instance, "bridge:stop"));
     }
 
     async restart(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "bridge:restart"));
+        response.send(await Socket.fetch(request.params.instance, "bridge:restart"));
     }
 
     async clean(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "bridge:clean"));
+        response.send(await Socket.fetch(request.params.instance, "bridge:clean"));
     }
 }

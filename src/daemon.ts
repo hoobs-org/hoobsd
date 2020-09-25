@@ -27,13 +27,13 @@ import { existsSync } from "fs-extra";
 import Instance from "./shared/instance";
 import Instances from "./shared/instances";
 import Paths from "./shared/paths";
-import Pipe from "./server/pipe";
+import Socket from "./server/socket";
 import Server from "./server";
 import Bridge from "./bridge";
 import Heartbeat from "./server/heartbeat";
 import API from "./api";
 import Monitor from "./api/monitor";
-import { Log } from "./shared/logger";
+import { Console } from "./shared/logger";
 import { sanitize } from "./shared/helpers";
 
 export = function Daemon(): void {
@@ -64,26 +64,26 @@ export = function Daemon(): void {
 
             HAPStorage.setCustomStoragePath(Paths.persistPath());
 
-            Instance.socket = new Pipe(Instance.id);
+            Instance.socket = new Socket(Instance.id);
             Instance.server = new Server();
             Instance.bridge = new Bridge(parseInt(options.port, 10) || undefined);
 
             Instance.server.on("request", (method, url) => {
-                Log.debug(`"${method}" ${url}`);
+                Console.debug(`"${method}" ${url}`);
             });
 
             Instance.bridge?.on("publishSetupUri", (uri) => {
-                Log.debug(`Setup URI "${uri}"`);
+                Console.debug(`Setup URI "${uri}"`);
             });
 
             Instance.bridge?.on("listening", () => {
-                Log.message("bridge_start", Instance.id, {
+                Console.message("bridge_start", Instance.id, {
                     time: new Date().getTime(),
                 });
             });
 
             Instance.bridge?.on("shutdown", () => {
-                Log.message("bridge_stop", Instance.id, {
+                Console.message("bridge_stop", Instance.id, {
                     time: new Date().getTime(),
                 });
             });
@@ -117,18 +117,18 @@ export = function Daemon(): void {
 
             Instance.io.on("connection", (socket: IO.Socket) => {
                 socket.on("log_history", () => {
-                    socket.emit("log_cache", Log.cache());
+                    socket.emit("log_cache", Console.cache());
                 });
             });
 
             Instance.api = new API(command.port);
 
             Instance.api.on("listening", (port) => {
-                Log.info(`API is running on port ${port}`);
+                Console.info(`API is running on port ${port}`);
             });
 
             Instance.api.on("request", (method, url) => {
-                Log.debug(`"${method}" ${url}`);
+                Console.debug(`"${method}" ${url}`);
             });
 
             Instance.api.start();
@@ -147,15 +147,15 @@ export = function Daemon(): void {
                 if (success) {
                     switch (action) {
                         case "start":
-                            Log.info(`${command.instance || "Default"} instance started`);
+                            Console.info(`${command.instance || "Default"} instance started`);
                             break;
 
                         case "stop":
-                            Log.info(`${command.instance || "Default"} instance stoped`);
+                            Console.info(`${command.instance || "Default"} instance stoped`);
                             break;
 
                         case "restart":
-                            Log.info(`${command.instance || "Default"} instance restarted`);
+                            Console.info(`${command.instance || "Default"} instance restarted`);
                             break;
 
                         default:
@@ -163,7 +163,7 @@ export = function Daemon(): void {
                             break;
                     }
                 } else {
-                    Log.error("Unable to control service");
+                    Console.error("Unable to control service");
                 }
             });
         });
@@ -183,8 +183,8 @@ export = function Daemon(): void {
 
             Instance.terminating = true;
 
-            Log.debug("");
-            Log.debug("Shutting down");
+            Console.debug("");
+            Console.debug("Shutting down");
 
             if (Instance.bridge) {
                 await Instance.bridge.stop();
@@ -194,14 +194,14 @@ export = function Daemon(): void {
                 Instance.socket.stop();
             }
 
-            Log.debug("Stopped");
+            Console.debug("Stopped");
 
             process.exit(128 + signals[signal]);
         });
     });
 
     process.on("uncaughtException", (error) => {
-        Log.error(`${error.stack}`);
+        Console.error(`${error.stack}`);
 
         if (!Instance.terminating) {
             process.kill(process.pid, "SIGTERM");
@@ -210,7 +210,7 @@ export = function Daemon(): void {
 
     process.on("unhandledRejection", (_reason, promise) => {
         promise.catch((error) => {
-            Log.error(error.stack);
+            Console.error(error.stack);
         });
     });
 };

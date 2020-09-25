@@ -17,10 +17,10 @@
  **************************************************************************************************/
 
 import Instance from "../shared/instance";
-import { Log } from "../shared/logger";
+import { Console } from "../shared/logger";
 
 export default async function Heartbeat() {
-    Log.message("heartbeat", Instance.id, {
+    Console.message("heartbeat", Instance.id, {
         version: Instance.version,
         running: Instance.bridge?.running,
         status: Instance.bridge?.running ? "running" : "stopped",

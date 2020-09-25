@@ -18,7 +18,7 @@
 
 import Instance from "../shared/instance";
 import Paths from "../shared/paths";
-import { SocketRequest, SocketResponse } from "./pipe";
+import { SocketRequest, SocketResponse } from "./socket";
 
 export default class BridgeController {
     constructor() {

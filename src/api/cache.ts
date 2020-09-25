@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../shared/instance";
-import { command } from "./socket";
+import Socket from "./socket";
 
 export default class CacheController {
     declare private instances: any[];
@@ -36,8 +36,8 @@ export default class CacheController {
         const results = [];
 
         for (let i = 0; i < this.instances.length; i += 1) {
-            const parings = await command(this.instances[i].id, "cache:parings");
-            const accessories = await command(this.instances[i].id, "cache:accessories");
+            const parings = await Socket.fetch(this.instances[i].id, "cache:parings");
+            const accessories = await Socket.fetch(this.instances[i].id, "cache:accessories");
 
             if (parings || accessories) {
                 results.push({
@@ -52,8 +52,8 @@ export default class CacheController {
     }
 
     async list(request: Request, response: Response): Promise<void> {
-        const parings = await command(request.params.instance, "cache:parings");
-        const accessories = await command(request.params.instance, "cache:accessories");
+        const parings = await Socket.fetch(request.params.instance, "cache:parings");
+        const accessories = await Socket.fetch(request.params.instance, "cache:accessories");
 
         response.send({
             parings,
@@ -62,10 +62,10 @@ export default class CacheController {
     }
 
     async listParings(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "cache:parings"));
+        response.send(await Socket.fetch(request.params.instance, "cache:parings"));
     }
 
     async listAccessories(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "cache:accessories"));
+        response.send(await Socket.fetch(request.params.instance, "cache:accessories"));
     }
 }

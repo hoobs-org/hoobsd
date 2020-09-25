@@ -63,7 +63,7 @@ import Paths from "../shared/paths";
 import Instance from "../shared/instance";
 import Plugins from "../shared/plugins";
 import Client from "./client";
-import { Log, Prefixed } from "../shared/logger";
+import { Console, Prefixed } from "../shared/logger";
 
 const accessoryStorage: LocalStorage = storage.create();
 
@@ -119,7 +119,7 @@ export default class Server extends EventEmitter {
 
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        Logger.internal = Log;
+        Logger.internal = Console;
 
         (async () => {
             await accessoryStorage.init({
@@ -194,7 +194,7 @@ export default class Server extends EventEmitter {
                 this.emit("shutdown");
 
                 resolve();
-            }, 500);
+            }, 3000);
         });
     }
 
@@ -216,7 +216,7 @@ export default class Server extends EventEmitter {
         info.setCharacteristic(Characteristic.FirmwareRevision, Instance.version);
 
         this.bridge.on(AccessoryEventTypes.LISTENING, (port: number) => {
-            Log.info("Homebridge is running on port %s.", port);
+            Console.info("Homebridge is running on port %s.", port);
         });
 
         const publishInfo: PublishInfo = {
@@ -256,14 +256,14 @@ export default class Server extends EventEmitter {
                         accessory._associatedPlugin = plugin.getPluginIdentifier();
                     }
                 } catch (error) {
-                    Log.info(`Could not find the associated plugin for the accessory '${accessory.displayName}'.`);
+                    Console.info(`Could not find the associated plugin for the accessory '${accessory.displayName}'.`);
                 }
             }
 
             const platformPlugins = plugin && plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
             if (!platformPlugins) {
-                Log.info(`Failed to find plugin to handle accessory ${accessory._associatedHAPAccessory.displayName}`);
+                Console.info(`Failed to find plugin to handle accessory ${accessory._associatedHAPAccessory.displayName}`);
 
                 if (!this.keepOrphanedCachedAccessories) {
                     return false;
@@ -295,7 +295,7 @@ export default class Server extends EventEmitter {
     }
 
     private loadAccessories(): void {
-        Log.info(`Loading ${this.config.accessories.length} accessories...`);
+        Console.info(`Loading ${this.config.accessories.length} accessories...`);
 
         this.config.accessories.forEach((accessoryConfig) => {
             if (!accessoryConfig.accessory) {
@@ -333,7 +333,7 @@ export default class Server extends EventEmitter {
     }
 
     private loadPlatforms(): Promise<void>[] {
-        Log.info(`Loading ${this.config.platforms.length} platforms...`);
+        Console.info(`Loading ${this.config.platforms.length} platforms...`);
 
         const promises: Promise<void>[] = [];
 
@@ -427,7 +427,7 @@ export default class Server extends EventEmitter {
                     }).finally(() => {
                         this.emit("accessoryChange", service, data.newValue);
 
-                        Log.message("accessory_change", Instance.id, {
+                        Console.message("accessory_change", Instance.id, {
                             accessory: service,
                             value: data.newValue,
                         });
@@ -485,10 +485,10 @@ export default class Server extends EventEmitter {
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
                 if (!platforms) {
-                    Log.warn("The plugin '%s' registered a new accessory for the platform '%s'. The platform couldn't be found though!", accessory._associatedPlugin!, accessory._associatedPlatform!);
+                    Console.warn("The plugin '%s' registered a new accessory for the platform '%s'. The platform couldn't be found though!", accessory._associatedPlugin!, accessory._associatedPlatform!);
                 }
             } else {
-                Log.warn("A platform configured a new accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
+                Console.warn("A platform configured a new accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
             }
 
             return accessory._associatedHAPAccessory;
@@ -533,7 +533,7 @@ export default class Server extends EventEmitter {
 
                     accessoryPort = this.nextExternalPort;
                 } else {
-                    Log.warn("External port pool ran out of ports. Fallback to random assign.");
+                    Console.warn("External port pool ran out of ports. Fallback to random assign.");
                 }
             }
 
@@ -555,11 +555,11 @@ export default class Server extends EventEmitter {
                     informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
                 }
             } else if (PluginManager.isQualifiedPluginIdentifier(accessory._associatedPlugin!)) { // we did already complain in api.ts if it wasn't a qualified name
-                Log.warn("A platform configured a external accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
+                Console.warn("A platform configured a external accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
             }
 
             hapAccessory.on(AccessoryEventTypes.LISTENING, (port: number) => {
-                Log.info("%s is running on port %s.", hapAccessory.displayName, port);
+                Console.info("%s is running on port %s.", hapAccessory.displayName, port);
             });
 
             hapAccessory.publish({

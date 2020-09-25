@@ -22,11 +22,10 @@ import { join } from "path";
 import { readFileSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import Cache from "./cache";
-import Pipe from "../server/pipe";
+import Socket from "../server/socket";
 import Server from "../server";
 import Bridge from "../bridge";
 import API from "../api";
-import Socket from "../api/socket";
 import { Loggers } from "./logger";
 
 interface Status {
@@ -50,7 +49,7 @@ export interface Application {
     app: Express | undefined,
     listner: HTTP.Server | undefined,
     io: IO.Server | undefined,
-    socket: Pipe | undefined,
+    socket: Socket | undefined,
     cache: Cache | undefined,
     server: Server | undefined,
     bridge: Bridge | undefined,
@@ -68,10 +67,9 @@ export interface Application {
     version: string,
     manager: string,
     loggers: Loggers,
-    status: { [key: string]: Status }
+    status: { [key: string]: Status },
 
     plugins: { [key: string]: any },
-    connections: Socket[],
 }
 
 const instance: Application = {
@@ -99,7 +97,6 @@ const instance: Application = {
     status: {},
 
     plugins: {},
-    connections: [],
 };
 
 export default instance;

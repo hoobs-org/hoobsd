@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../shared/instance";
-import { command } from "./socket";
+import Socket from "./socket";
 
 export default class AccessoriesController {
     declare private instances: any[];
@@ -36,7 +36,7 @@ export default class AccessoriesController {
         const results = [];
 
         for (let i = 0; i < this.instances.length; i += 1) {
-            const accessories = await command(this.instances[i].id, "accessories:list");
+            const accessories = await Socket.fetch(this.instances[i].id, "accessories:list");
 
             if (accessories) {
                 results.push({
@@ -50,14 +50,14 @@ export default class AccessoriesController {
     }
 
     async list(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "accessories:list"));
+        response.send(await Socket.fetch(request.params.instance, "accessories:list"));
     }
 
     async get(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "accessory:get", { id: request.params.id }));
+        response.send(await Socket.fetch(request.params.instance, "accessory:get", { id: request.params.id }));
     }
 
     async set(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "accessory:set", { id: request.params.id }, request.body));
+        response.send(await Socket.fetch(request.params.instance, "accessory:set", { id: request.params.id }, request.body));
     }
 }

@@ -23,7 +23,7 @@ import { existsSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../shared/paths";
 import Instances from "../shared/instances";
-import { Log } from "../shared/logger";
+import { Console } from "../shared/logger";
 
 export default class Cockpit {
     declare socket: Socket;
@@ -110,7 +110,7 @@ export default class Cockpit {
                 this.socket = new Socket(`wss://cockpit.hoobs.org/${this.registration}`);
 
                 this.socket.on("open", () => {
-                    Log.info("Remote session started");
+                    Console.info("Remote session started");
 
                     this.shell?.onData((data) => {
                         this.socket.send(data);
@@ -118,7 +118,7 @@ export default class Cockpit {
 
                     this.socket.onmessage = (message) => {
                         if (message.data === "{EXIT}") {
-                            Log.info("Remote session stopped");
+                            Console.info("Remote session stopped");
 
                             this.disconnect();
                         } else {

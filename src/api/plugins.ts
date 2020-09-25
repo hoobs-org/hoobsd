@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../shared/instance";
-import { command } from "./socket";
+import Socket from "./socket";
 
 export default class PluginsController {
     declare private instances: any[];
@@ -40,7 +40,7 @@ export default class PluginsController {
         const results = [];
 
         for (let i = 0; i < this.instances.length; i += 1) {
-            const plugins = await command(this.instances[i].id, "plugins:get");
+            const plugins = await Socket.fetch(this.instances[i].id, "plugins:get");
 
             if (plugins) {
                 results.push({
@@ -54,18 +54,18 @@ export default class PluginsController {
     }
 
     async installed(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "plugins:get"));
+        response.send(await Socket.fetch(request.params.instance, "plugins:get"));
     }
 
     async install(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "plugins:install", request.params));
+        response.send(await Socket.fetch(request.params.instance, "plugins:install", request.params));
     }
 
     async upgrade(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "plugins:upgrade", request.params));
+        response.send(await Socket.fetch(request.params.instance, "plugins:upgrade", request.params));
     }
 
     async uninstall(request: Request, response: Response): Promise<void> {
-        response.send(await command(request.params.instance, "plugins:uninstall", request.params));
+        response.send(await Socket.fetch(request.params.instance, "plugins:uninstall", request.params));
     }
 }

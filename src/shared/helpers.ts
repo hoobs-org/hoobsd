@@ -30,7 +30,7 @@ import {
 
 import { execSync } from "child_process";
 import { join } from "path";
-import { Log } from "./logger";
+import { Console } from "./logger";
 
 export function sanitize(value: string): string {
     return Sanitize(value).toLowerCase().replace(/ /gi, ".");
@@ -198,8 +198,8 @@ export function loadPackage(directory: string): any {
         try {
             results = JSON.parse(readFileSync(filename).toString());
         } catch (error) {
-            Log.error(`Plugin ${filename} contains an invalid package`);
-            Log.error(error.stack);
+            Console.error(`Plugin ${filename} contains an invalid package`);
+            Console.error(error.stack);
         }
     }
 
@@ -215,8 +215,8 @@ export function loadSchema(directory: string): any {
         try {
             results = JSON.parse(readFileSync(filename).toString());
         } catch (error) {
-            Log.error(`Plugin ${filename} contains an invalid config schema`);
-            Log.error(error.stack);
+            Console.error(`Plugin ${filename} contains an invalid config schema`);
+            Console.error(error.stack);
         }
     }
 

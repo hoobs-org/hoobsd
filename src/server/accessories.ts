@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import Instance from "../shared/instance";
-import { Log } from "../shared/logger";
-import { SocketRequest, SocketResponse } from "./pipe";
+import { Console } from "../shared/logger";
+import { SocketRequest, SocketResponse } from "./socket";
 
 export default class AccessoriesController {
     declare rooms: any[];
@@ -58,7 +58,7 @@ export default class AccessoriesController {
                 value = request.body.value ? 1 : 0;
             }
 
-            Log.debug(`Update - ${request.params?.service}: ${value} (${typeof value})`);
+            Console.debug(`Update - ${request.params?.service}: ${value} (${typeof value})`);
 
             service.set(parseInt(request.params?.service, 10), value).then((results: any) => {
                 accessory = results;

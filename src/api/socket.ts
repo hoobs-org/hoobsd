@@ -18,40 +18,8 @@
 
 import RawIPC from "node-ipc";
 import { EventEmitter } from "events";
+import Paths from "../shared/paths";
 import { Print } from "../shared/logger";
-
-export function command(instance: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
-    return new Promise((resolve) => {
-        const session = `${new Date().getTime()}:${Math.random()}`;
-        const pipe = new RawIPC.IPC();
-
-        pipe.config.logInColor = false;
-        pipe.config.logger = Print;
-        pipe.config.maxRetries = 0;
-        pipe.config.stopRetrying = true;
-
-        pipe.connectTo(`${instance}.hoobs.bridge`, () => {
-            pipe.of[`${instance}.hoobs.bridge`].on(session, (data: any) => {
-                pipe.disconnect(`${instance}.hoobs.bridge`);
-
-                resolve(data);
-            });
-
-            pipe.of[`${instance}.hoobs.bridge`].on("error", () => {
-                pipe.disconnect(`${instance}.hoobs.bridge`);
-
-                resolve();
-            });
-
-            pipe.of[`${instance}.hoobs.bridge`].emit("request", {
-                path,
-                session,
-                params,
-                body,
-            });
-        });
-    });
-}
 
 export default class Socket extends EventEmitter {
     declare private pipe: any;
@@ -60,11 +28,13 @@ export default class Socket extends EventEmitter {
         super();
 
         this.pipe = new RawIPC.IPC();
-        this.pipe.config.logInColor = false;
+        this.pipe.config.logInColor = true;
         this.pipe.config.logger = Print;
-        this.pipe.config.id = "api.hoobs.bridge";
+        this.pipe.config.appspace = "/";
+        this.pipe.config.socketRoot = Paths.storagePath();
+        this.pipe.config.id = "api.sock";
 
-        this.pipe.serve("/tmp/app.api.hoobs.bridge", () => {
+        this.pipe.serve(() => {
             this.pipe.server.on("log", (payload: any, socket: any) => {
                 this.emit("log", payload.body);
                 this.pipe.server.emit(socket, payload.socket, "complete");
@@ -105,15 +75,49 @@ export default class Socket extends EventEmitter {
                 this.pipe.server.emit(socket, payload.socket, "complete");
             });
         });
-
-        this.pipe.config.retry = 1500;
     }
 
     start(): void {
+        this.pipe.server.on("error", () => {
+            this.pipe?.server?.stop();
+            this.pipe?.server?.start();
+        });
+
         this.pipe.server.start();
     }
 
     stop() {
         this.pipe.server.stop();
+    }
+
+    static fetch(instance: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
+        return new Promise((resolve) => {
+            const session = `${new Date().getTime()}:${Math.random()}`;
+            const pipe = new RawIPC.IPC();
+
+            pipe.config.appspace = "/";
+            pipe.config.socketRoot = Paths.storagePath();
+            pipe.config.logInColor = true;
+            pipe.config.logger = Print;
+            pipe.config.maxRetries = 0;
+            pipe.config.stopRetrying = true;
+
+            pipe.connectTo(`${instance}.sock`, () => {
+                pipe.of[`${instance}.sock`].on(session, (data: any) => {
+                    resolve(data);
+                });
+
+                pipe.of[`${instance}.sock`].on("destroy", () => {
+                    resolve();
+                });
+
+                pipe.of[`${instance}.sock`].emit("request", {
+                    path,
+                    session,
+                    params,
+                    body,
+                });
+            });
+        });
     }
 }

@@ -35,7 +35,7 @@ import { PluginIdentifier, PluginName } from "homebridge/lib/api";
 import Instance from "./instance";
 import Instances from "./instances";
 import Paths from "./paths";
-import { Log } from "./logger";
+import { Console } from "./logger";
 import { loadPackage, loadSchema, parseJson } from "./helpers";
 
 export default class Plugins {
@@ -55,12 +55,14 @@ export default class Plugins {
                     const directory = join(Plugins.directory, plugins[j]);
                     const pjson = loadPackage(directory);
 
-                    const identifier: PluginIdentifier = pjson.name;
-                    const name: PluginName = PluginManager.extractPluginName(identifier);
-                    const scope = PluginManager.extractPluginScope(identifier);
+                    if (pjson) {
+                        const identifier: PluginIdentifier = pjson.name;
+                        const name: PluginName = PluginManager.extractPluginName(identifier);
+                        const scope = PluginManager.extractPluginScope(identifier);
 
-                    if (existsSync(directory) && pjson) {
-                        results.push(new Plugin(name, directory, pjson, scope));
+                        if (existsSync(directory) && pjson) {
+                            results.push(new Plugin(name, directory, pjson, scope));
+                        }
                     }
                 }
             }
@@ -135,7 +137,7 @@ export default class Plugins {
 
                     Paths.saveConfig(config);
 
-                    Log.message("plugin_install", Instance.id, {
+                    Console.message("plugin_install", Instance.id, {
                         name,
                         tag,
                         success: true,
@@ -143,7 +145,7 @@ export default class Plugins {
 
                     return resolve();
                 }
-                Log.message("plugin_install", Instance.id, {
+                Console.message("plugin_install", Instance.id, {
                     name,
                     tag,
                     error: "unable to install plugin",
@@ -196,7 +198,7 @@ export default class Plugins {
 
                     Paths.saveConfig(config);
 
-                    Log.message("plugin_uninstall", Instance.id, {
+                    Console.message("plugin_uninstall", Instance.id, {
                         name,
                         success: true,
                     });
@@ -204,7 +206,7 @@ export default class Plugins {
                     return resolve();
                 }
 
-                Log.message("plugin_uninstall", Instance.id, {
+                Console.message("plugin_uninstall", Instance.id, {
                     name,
                     error: "unable to uninstall plugin",
                 });
@@ -237,7 +239,7 @@ export default class Plugins {
             });
 
             proc.on("close", () => {
-                Log.message("plugin_upgrade", Instance.id, {
+                Console.message("plugin_upgrade", Instance.id, {
                     name,
                     tag,
                     success: true,
@@ -338,8 +340,8 @@ export default class Plugins {
                     plugin.default(options);
                 }
             } catch (error) {
-                Log.error(`Unable to determine plugin type for "${name}"`);
-                Log.error(error.stack);
+                Console.error(`Unable to determine plugin type for "${name}"`);
+                Console.error(error.stack);
             }
 
             delete require.cache[require.resolve(join(Plugins.directory, main))];

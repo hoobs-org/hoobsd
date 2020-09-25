@@ -25,12 +25,13 @@ import PTY from "node-pty";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
 import { dirname, join } from "path";
+import { LogLevel } from "homebridge/lib/logger";
 import Paths from "../shared/paths";
 import Instance from "../shared/instance";
 import Instances from "../shared/instances";
 import Users from "../shared/users";
-import Socket, { command } from "./socket";
-import { Log } from "../shared/logger";
+import Socket from "./socket";
+import { Console } from "../shared/logger";
 import { findModule } from "../shared/helpers";
 
 import AuthController from "./auth";
@@ -104,8 +105,8 @@ export default class API extends EventEmitter {
                 } catch (error) {
                     shell = undefined;
 
-                    Log.error(error.message);
-                    Log.debug(error.stack);
+                    Console.error(error.message);
+                    Console.debug(error.stack);
 
                     return;
                 }
@@ -217,7 +218,7 @@ export default class API extends EventEmitter {
             Instance.status[instance] = data.data;
         });
 
-        this.socket.on("log", (data: any) => Log.transmit(data));
+        this.socket.on("log", (data: any) => Console.log(LogLevel.INFO, data));
         this.socket.on("bridge_start", (data: any) => Instance.io?.sockets.emit("bridge_start", data));
         this.socket.on("bridge_stop", (data: any) => Instance.io?.sockets.emit("bridge_stop", data));
         this.socket.on("accessory_change", (data: any) => Instance.io?.sockets.emit("accessory_change", data));
@@ -229,7 +230,7 @@ export default class API extends EventEmitter {
 
         for (let i = 0; i < this.instances.length; i += 1) {
             if (this.instances[i].type === "bridge") {
-                Log.import((await command(this.instances[i].id, "cache:log")) || []);
+                Console.import((await Socket.fetch(this.instances[i].id, "cache:log")) || []);
             }
         }
 
