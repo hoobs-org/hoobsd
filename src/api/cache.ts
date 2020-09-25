@@ -21,11 +21,7 @@ import Instance from "../shared/instance";
 import Socket from "./socket";
 
 export default class CacheController {
-    declare private instances: any[];
-
-    constructor(instances: any[]) {
-        this.instances = instances;
-
+    constructor() {
         Instance.app?.get("/api/cache", (request, response) => this.all(request, response));
         Instance.app?.get("/api/cache/:instance", (request, response) => this.list(request, response));
         Instance.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
@@ -35,13 +31,13 @@ export default class CacheController {
     async all(_request: Request, response: Response): Promise<void> {
         const results = [];
 
-        for (let i = 0; i < this.instances.length; i += 1) {
-            const parings = await Socket.fetch(this.instances[i].id, "cache:parings");
-            const accessories = await Socket.fetch(this.instances[i].id, "cache:accessories");
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            const parings = await Socket.fetch(Instance.instances[i].id, "cache:parings");
+            const accessories = await Socket.fetch(Instance.instances[i].id, "cache:accessories");
 
             if (parings || accessories) {
                 results.push({
-                    instance: this.instances[i].id,
+                    instance: Instance.instances[i].id,
                     parings,
                     accessories,
                 });

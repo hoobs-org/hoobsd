@@ -20,7 +20,6 @@ import Crypto from "crypto";
 import { join } from "path";
 
 import {
-    readFileSync,
     existsSync,
     unlinkSync,
     appendFileSync,
@@ -28,7 +27,7 @@ import {
 
 import Instance from "./instance";
 import Paths from "./paths";
-import { parseJson, formatJson } from "./helpers";
+import { parseJson, formatJson, loadJson } from "./helpers";
 
 export interface UserRecord {
     id: number,
@@ -40,21 +39,19 @@ export interface UserRecord {
 }
 
 export default class Users {
-    declare private users: UserRecord[];
-
-    constructor() {
+    static list() {
         if (!existsSync(join(Paths.storagePath(), "access.json"))) {
-            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson([]));
+            appendFileSync(join(Paths.storagePath(), "access.json"), "[]");
         }
 
-        this.users = parseJson(readFileSync(join(Paths.storagePath(), "access.json")).toString(), []);
+        return loadJson<UserRecord[]>(join(Paths.storagePath(), "access.json"), []);
     }
 
-    count(): number {
-        return this.users.length;
+    static count(): number {
+        return Instance.users.length;
     }
 
-    generateSalt(): Promise<string> {
+    static generateSalt(): Promise<string> {
         return new Promise((resolve, reject) => {
             Crypto.randomBytes(32, (error, buffer) => {
                 if (error) {
@@ -66,7 +63,7 @@ export default class Users {
         });
     }
 
-    hashValue(value: string, salt: string): Promise<string> {
+    static hashValue(value: string, salt: string): Promise<string> {
         return new Promise((resolve, reject) => {
             Crypto.pbkdf2(value, salt, 1000, 64, "sha512", (error, key) => {
                 if (error) {
@@ -78,9 +75,9 @@ export default class Users {
         });
     }
 
-    async generateToken(id: number, remember?: boolean): Promise<string | boolean> {
-        const user: UserRecord = this.users.filter((u) => u.id === id)[0];
-        const key: string = await this.generateSalt();
+    static async generateToken(id: number, remember?: boolean): Promise<string | boolean> {
+        const user: UserRecord = Instance.users.filter((u) => u.id === id)[0];
+        const key: string = await Users.generateSalt();
 
         if (user) {
             const token = {
@@ -90,7 +87,7 @@ export default class Users {
                 username: user.username,
                 admin: user.admin,
                 ttl: remember ? 525600 : Instance.api?.settings.inactive_logoff || 30,
-                token: await this.hashValue(user.password, key),
+                token: await Users.hashValue(user.password, key),
             };
 
             Instance.cache?.set(Buffer.from(JSON.stringify(token), "utf8").toString("base64"), true, token.ttl);
@@ -101,15 +98,15 @@ export default class Users {
         return false;
     }
 
-    decodeToken(token: string): { [key: string]: any } | boolean {
+    static decodeToken(token: string): { [key: string]: any } | boolean {
         if (!token || token === "") {
             return {};
         }
 
-        const data = parseJson(Buffer.from(token, "base64").toString(), undefined);
+        const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
         if (data) {
-            const user: UserRecord = this.users.filter((u) => u.id === data.id)[0];
+            const user: UserRecord = Instance.users.filter((u) => u.id === data.id)[0];
 
             if (!user) {
                 return {};
@@ -121,7 +118,7 @@ export default class Users {
         return false;
     }
 
-    async validateToken(token: string | undefined): Promise<boolean> {
+    static async validateToken(token: string | undefined): Promise<boolean> {
         if (!token || token === "") {
             return false;
         }
@@ -132,10 +129,10 @@ export default class Users {
             return false;
         }
 
-        const data = parseJson(Buffer.from(token, "base64").toString(), undefined);
+        const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
         if (data) {
-            const user = this.users.filter((u) => u.id === data.id)[0];
+            const user = Instance.users.filter((u) => u.id === data.id)[0];
 
             if (!user) {
                 return false;
@@ -153,73 +150,73 @@ export default class Users {
         return false;
     }
 
-    get(username: string): UserRecord | undefined {
-        return this.users.filter((u) => u.username.toLowerCase() === username.toLowerCase())[0];
+    static get(username: string): UserRecord | undefined {
+        return Instance.users.filter((u) => u.username.toLowerCase() === username.toLowerCase())[0];
     }
 
-    async create(name: string, username: string, password: string, admin: boolean): Promise<UserRecord> {
+    static async create(name: string, username: string, password: string, admin: boolean): Promise<UserRecord> {
         const user = {
             id: 1,
             name,
             admin,
             username,
             password,
-            salt: await this.generateSalt(),
+            salt: await Users.generateSalt(),
         };
 
         user.admin = admin;
         user.password = await this.hashValue(user.password, user.salt);
 
-        if (this.users.length > 0) {
-            user.id = this.users[this.users.length - 1].id + 1;
+        if (Instance.users.length > 0) {
+            user.id = Instance.users[Instance.users.length - 1].id + 1;
         }
 
-        this.users.push(user);
+        Instance.users.push(user);
 
         if (existsSync(join(Paths.storagePath(), "access.json"))) {
             unlinkSync(join(Paths.storagePath(), "access.json"));
         }
 
-        appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(this.users));
+        appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
 
         return user;
     }
 
-    async update(id: number, name: string, username: string, password?: string, admin?: boolean): Promise<UserRecord | boolean> {
-        const index = this.users.findIndex((u) => u.id === id);
+    static async update(id: number, name: string, username: string, password?: string, admin?: boolean): Promise<UserRecord | boolean> {
+        const index = Instance.users.findIndex((u) => u.id === id);
 
         if (index >= 0) {
-            this.users[index].name = name;
-            this.users[index].username = username;
-            this.users[index].admin = admin!;
+            Instance.users[index].name = name;
+            Instance.users[index].username = username;
+            Instance.users[index].admin = admin!;
 
             if (password) {
-                this.users[index].password = await this.hashValue(password, this.users[index].salt);
+                Instance.users[index].password = await this.hashValue(password, Instance.users[index].salt);
             }
 
             if (existsSync(join(Paths.storagePath(), "access.json"))) {
                 unlinkSync(join(Paths.storagePath(), "access.json"));
             }
 
-            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(this.users));
+            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
 
-            return this.users[index];
+            return Instance.users[index];
         }
 
         return false;
     }
 
-    delete(id: number): boolean {
-        const index = this.users.findIndex((u) => u.id === id);
+    static delete(id: number): boolean {
+        const index = Instance.users.findIndex((u) => u.id === id);
 
         if (index >= 0) {
-            this.users.splice(index, 1);
+            Instance.users.splice(index, 1);
 
             if (existsSync(join(Paths.storagePath(), "access.json"))) {
                 unlinkSync(join(Paths.storagePath(), "access.json"));
             }
 
-            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(this.users));
+            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
 
             return true;
         }

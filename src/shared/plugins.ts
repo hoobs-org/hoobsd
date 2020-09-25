@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { existsSync, readFileSync } from "fs-extra";
+import { existsSync } from "fs-extra";
 import { spawn } from "child_process";
 import { join } from "path";
 
@@ -33,10 +33,9 @@ import { Plugin } from "homebridge/lib/plugin";
 import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
 import { PluginIdentifier, PluginName } from "homebridge/lib/api";
 import Instance from "./instance";
-import Instances from "./instances";
 import Paths from "./paths";
 import { Console } from "./logger";
-import { loadPackage, loadSchema, parseJson } from "./helpers";
+import { loadPackage, loadSchema, loadJson } from "./helpers";
 
 export default class Plugins {
     static get directory(): string {
@@ -45,11 +44,10 @@ export default class Plugins {
 
     static installed(): Plugin[] {
         const results: Plugin[] = [];
-        const instances = Instances.list();
 
-        for (let i = 0; i < instances.length; i += 1) {
-            if (instances[i].plugins && existsSync(join(Paths.storagePath(instances[i].id), "package.json"))) {
-                const plugins = Object.keys(parseJson(readFileSync(join(Paths.storagePath(instances[i].id), "package.json")).toString(), {}).dependencies || {});
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            if (Instance.instances[i].plugins && existsSync(join(Paths.storagePath(Instance.instances[i].id), "package.json"))) {
+                const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(Instance.instances[i].id), "package.json"), {}).dependencies || {});
 
                 for (let j = 0; j < plugins.length; j += 1) {
                     const directory = join(Plugins.directory, plugins[j]);

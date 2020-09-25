@@ -21,11 +21,7 @@ import Instance from "../shared/instance";
 import Socket from "./socket";
 
 export default class PluginsController {
-    declare private instances: any[];
-
-    constructor(instances: any[]) {
-        this.instances = instances;
-
+    constructor() {
         Instance.app?.get("/api/plugins", (request, response) => this.all(request, response));
         Instance.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
         Instance.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
@@ -39,12 +35,12 @@ export default class PluginsController {
     async all(_request: Request, response: Response): Promise<void> {
         const results = [];
 
-        for (let i = 0; i < this.instances.length; i += 1) {
-            const plugins = await Socket.fetch(this.instances[i].id, "plugins:get");
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
 
             if (plugins) {
                 results.push({
-                    instance: this.instances[i].id,
+                    instance: Instance.instances[i].id,
                     plugins,
                 });
             }

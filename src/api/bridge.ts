@@ -21,11 +21,7 @@ import Instance from "../shared/instance";
 import Socket from "./socket";
 
 export default class BridgeController {
-    declare private instances: any[];
-
-    constructor(instances: any[]) {
-        this.instances = instances;
-
+    constructor() {
         Instance.app?.get("/api/bridge", (request, response) => this.all(request, response));
         Instance.app?.get("/api/bridge/:instance", (request, response) => this.status(request, response));
         Instance.app?.post("/api/bridge/:instance/start", (request, response) => this.start(request, response));
@@ -37,12 +33,12 @@ export default class BridgeController {
     async all(_request: Request, response: Response): Promise<void> {
         const results = [];
 
-        for (let i = 0; i < this.instances.length; i += 1) {
-            const status = await Socket.fetch(this.instances[i].id, "status:get");
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            const status = await Socket.fetch(Instance.instances[i].id, "status:get");
 
             if (status) {
                 results.push({
-                    instance: this.instances[i].id,
+                    instance: Instance.instances[i].id,
                     status,
                 });
             }

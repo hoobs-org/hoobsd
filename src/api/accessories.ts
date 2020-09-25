@@ -21,11 +21,7 @@ import Instance from "../shared/instance";
 import Socket from "./socket";
 
 export default class AccessoriesController {
-    declare private instances: any[];
-
-    constructor(instances: any[]) {
-        this.instances = instances;
-
+    constructor() {
         Instance.app?.get("/api/accessories", (request, response) => this.all(request, response));
         Instance.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
         Instance.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
@@ -35,12 +31,12 @@ export default class AccessoriesController {
     async all(_request: Request, response: Response): Promise<void> {
         const results = [];
 
-        for (let i = 0; i < this.instances.length; i += 1) {
-            const accessories = await Socket.fetch(this.instances[i].id, "accessories:list");
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
 
             if (accessories) {
                 results.push({
-                    instance: this.instances[i].id,
+                    instance: Instance.instances[i].id,
                     accessories,
                 });
             }

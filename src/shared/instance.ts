@@ -19,7 +19,7 @@
 import HTTP from "http";
 import IO from "socket.io";
 import { join } from "path";
-import { readFileSync } from "fs-extra";
+import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import Cache from "./cache";
 import Socket from "../server/socket";
@@ -27,6 +27,9 @@ import Server from "../server";
 import Bridge from "../bridge";
 import API from "../api";
 import { Loggers } from "./logger";
+import { InstanceRecord } from "./instances";
+import { UserRecord } from "./users";
+import { loadJson } from "./helpers";
 
 export interface Application {
     app: Express | undefined,
@@ -49,6 +52,8 @@ export interface Application {
 
     version: string,
     manager: string,
+    instances: InstanceRecord[],
+    users: UserRecord[],
     loggers: Loggers,
 
     plugins: { [key: string]: any },
@@ -73,8 +78,10 @@ const instance: Application = {
     container: false,
     terminating: false,
 
-    version: (JSON.parse(readFileSync(join(__dirname, "../../package.json")).toString()))?.version,
-    manager: "npm",
+    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
+    manager: existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm",
+    instances: [],
+    users: [],
     loggers: {},
 
     plugins: {},

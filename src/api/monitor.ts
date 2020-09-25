@@ -21,21 +21,21 @@ import Instance from "../shared/instance";
 import { Console } from "../shared/logger";
 import Socket from "./socket";
 
-export default async function Monitor(bridges: any[]) {
-    const instances: { [key: string]: any } = {};
+export default async function Monitor() {
+    const results: { [key: string]: any } = {};
 
-    for (let i = 0; i < bridges.length; i += 1) {
-        const status = await Socket.fetch(bridges[i].id, "status:get");
+    for (let i = 0; i < Instance.instances.length; i += 1) {
+        const status = await Socket.fetch(Instance.instances[i].id, "status:get");
 
         if (status) {
-            instances[bridges[i].id] = {
+            results[Instance.instances[i].id] = {
                 version: status.version,
                 running: status.running,
                 status: status.status,
                 uptime: status.uptime,
             };
         } else {
-            instances[bridges[i].id] = {
+            results[Instance.instances[i].id] = {
                 running: false,
                 status: "unavailable",
                 uptime: 0,
@@ -44,13 +44,13 @@ export default async function Monitor(bridges: any[]) {
     }
 
     Console.message("monitor", "api", {
-        instances,
+        instances: results,
         cpu: await System.currentLoad(),
         memory: await System.mem(),
         temp: await System.cpuTemperature(),
     });
 
     setTimeout(() => {
-        Monitor(bridges);
+        Monitor();
     }, (Instance.api?.settings?.polling_seconds || 5) * 1000);
 }

@@ -22,14 +22,13 @@ import HTTP from "http";
 import Express from "express";
 import Program from "commander";
 import IO from "socket.io";
-import { HAPStorage } from "hap-nodejs";
-import { existsSync } from "fs-extra";
+import Watcher from "chokidar";
+import { join } from "path";
 import Instance from "./shared/instance";
 import Instances from "./shared/instances";
-import Paths from "./shared/paths";
-import Socket from "./server/socket";
+import Users from "./shared/users";
 import Server from "./server";
-import Bridge from "./bridge";
+import Paths from "./shared/paths";
 import API from "./api";
 import { Console } from "./shared/logger";
 import { sanitize } from "./shared/helpers";
@@ -47,22 +46,16 @@ export = function Daemon(): void {
         .option("-o, --orphans", "keep cached accessories for orphaned plugins")
         .option("-c, --container", "run in a container")
         .action(async (command) => {
-            const options = command;
+            Instance.id = sanitize(command.instance, "api");
+            Instance.debug = command.debug;
+            Instance.verbose = command.verbose;
+            Instance.orphans = !command.orphans;
+            Instance.container = command.container;
 
-            if (options.instance === "api") options.instance = undefined;
+            Instance.instances = Instances.list();
+            Instance.users = Users.list();
 
-            Instance.id = sanitize(options.instance || "default");
-            Instance.debug = options.debug;
-            Instance.verbose = options.verbose;
-            Instance.orphans = !options.orphans;
-            Instance.container = options.container;
-            Instance.manager = existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm";
-
-            HAPStorage.setCustomStoragePath(Paths.persistPath());
-
-            Instance.socket = new Socket(Instance.id);
-            Instance.server = new Server();
-            Instance.bridge = new Bridge(parseInt(options.port, 10) || undefined);
+            Instance.server = new Server(command.port);
 
             Instance.server.on("request", (method, url) => {
                 Console.debug(`"${method}" ${url}`);
@@ -84,13 +77,15 @@ export = function Daemon(): void {
                 });
             });
 
-            if ((Instance.server.config.server.autostart || 0) >= 0) {
-                setTimeout(() => {
-                    Instance.bridge?.start();
-                }, (Instance.server.config.server.autostart || 0) * 1000);
-            }
+            Watcher.watch(Paths.instancesPath()).on("change", () => {
+                Instance.instances = Instances.list();
+            });
 
-            Instance.socket.start();
+            Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
+                Instance.users = Users.list();
+            });
+
+            Instance.server.start();
         });
 
     Program.command("api")
@@ -105,6 +100,10 @@ export = function Daemon(): void {
             Instance.debug = command.debug;
             Instance.verbose = command.verbose;
             Instance.container = command.container;
+
+            Instance.instances = Instances.list();
+            Instance.users = Users.list();
+
             Instance.app = Express();
             Instance.listner = HTTP.createServer(Instance.app);
             Instance.io = IO(Instance.listner);
@@ -123,6 +122,14 @@ export = function Daemon(): void {
 
             Instance.api.on("request", (method, url) => {
                 Console.debug(`"${method}" ${url}`);
+            });
+
+            Watcher.watch(Paths.instancesPath()).on("change", () => {
+                Instance.instances = Instances.list();
+            });
+
+            Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
+                Instance.users = Users.list();
             });
 
             Instance.api.start();
@@ -173,15 +180,8 @@ export = function Daemon(): void {
 
             Instance.terminating = true;
 
-            Console.debug("");
-            Console.debug("Shutting down");
-
-            if (Instance.bridge) await Instance.bridge.stop();
-
-            Console.debug("Stopped");
-
+            if (Instance.server) await Instance.server.stop();
             if (Instance.api) Instance.api.stop();
-            if (Instance.socket) Instance.socket.stop();
 
             process.exit(128 + signals[signal]);
         });

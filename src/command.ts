@@ -45,7 +45,6 @@ export = function Command(): void {
 
             Instance.id = sanitize(options.instance || "default");
             Instance.debug = true;
-            Instance.manager = existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm";
 
             let plugin = name;
             let plugins = [];
@@ -297,7 +296,7 @@ export = function Command(): void {
 
             switch (action) {
                 case "upgrade":
-                    execSync("npm install -g --unsafe-perm @hoobs/server@latest");
+                    execSync("npm install -g --unsafe-perm @hoobs/hoobsd@latest");
                     break;
 
                 case "backup":

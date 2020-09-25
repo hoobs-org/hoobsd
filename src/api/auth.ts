@@ -21,11 +21,7 @@ import Instance from "../shared/instance";
 import Users, { UserRecord } from "../shared/users";
 
 export default class AuthController {
-    declare private users: Users;
-
-    constructor(users: Users) {
-        this.users = users;
-
+    constructor() {
         Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
         Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
         Instance.app?.put("/api/auth/create", (request, response) => this.create(request, response));
@@ -38,7 +34,7 @@ export default class AuthController {
             });
         }
 
-        if (this.users.count() === 0) {
+        if (Users.count() === 0) {
             return response.send({
                 state: "uninitialized",
             });
@@ -50,7 +46,7 @@ export default class AuthController {
     }
 
     async logon(request: Request, response: Response): Promise<Response> {
-        const user: UserRecord | undefined = this.users.get(request.body.username);
+        const user: UserRecord | undefined = Users.get(request.body.username);
 
         if (!user) {
             return response.send({
@@ -59,7 +55,7 @@ export default class AuthController {
             });
         }
 
-        const challenge: string = await this.users.hashValue(request.body.password, user.salt);
+        const challenge: string = await Users.hashValue(request.body.password, user.salt);
 
         if (challenge !== user.password) {
             return response.send({
@@ -71,12 +67,12 @@ export default class AuthController {
         const remember: boolean = request.body.remember || false;
 
         return response.send({
-            token: await this.users.generateToken(user.id, remember),
+            token: await Users.generateToken(user.id, remember),
         });
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        if (this.users.count() > 0 && !(await this.users.validateToken(request.headers.authorization))) {
+        if (Users.count() > 0 && !(await Users.validateToken(request.headers.authorization))) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -97,14 +93,14 @@ export default class AuthController {
             });
         }
 
-        if (this.users.count() === 0) {
+        if (Users.count() === 0) {
             request.body.admin = true;
         }
 
-        const user = await this.users.create(request.body.name, request.body.username, request.body.password, request.body.admin);
+        const user = await Users.create(request.body.name, request.body.username, request.body.password, request.body.admin);
 
         return response.send({
-            token: await this.users.generateToken(user.id),
+            token: await Users.generateToken(user.id),
         });
     }
 }

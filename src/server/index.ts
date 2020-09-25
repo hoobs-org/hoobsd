@@ -17,9 +17,13 @@
  **************************************************************************************************/
 
 import { EventEmitter } from "events";
+import { HAPStorage } from "hap-nodejs";
 import Instance from "../shared/instance";
 import Paths from "../shared/paths";
 import Cache from "../shared/cache";
+import Socket from "./socket";
+import Bridge from "../bridge";
+import { Console } from "../shared/logger";
 
 import CacheController from "./cache";
 import StatusController from "./status";
@@ -35,13 +39,20 @@ export default class Server extends EventEmitter {
 
     declare settings: any;
 
-    constructor() {
+    declare readonly port: number;
+
+    constructor(port: number | undefined) {
         super();
 
+        HAPStorage.setCustomStoragePath(Paths.persistPath());
+
         this.time = 0;
+        this.port = port || 51826;
         this.config = Paths.configuration();
         this.settings = (this.config || {}).server || {};
 
+        Instance.socket = new Socket(Instance.id);
+        Instance.bridge = new Bridge(this.port || undefined);
         Instance.cache = new Cache();
 
         new CacheController();
@@ -50,5 +61,26 @@ export default class Server extends EventEmitter {
         new BridgeController();
         new PluginsController();
         new AccessoriesController();
+    }
+
+    start(): void {
+        if ((this.config.server.autostart || 0) >= 0) {
+            setTimeout(() => {
+                Instance.bridge?.start();
+            }, (this.config.server.autostart || 0) * 1000);
+        }
+
+        Instance.socket?.start();
+    }
+
+    async stop(): Promise<void> {
+        Console.debug("");
+        Console.debug("Shutting down");
+
+        if (Instance.bridge) await Instance.bridge.stop();
+
+        Console.debug("Stopped");
+
+        if (Instance.socket) Instance.socket.stop();
     }
 }

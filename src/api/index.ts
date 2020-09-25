@@ -28,7 +28,6 @@ import { dirname, join } from "path";
 import { LogLevel } from "homebridge/lib/logger";
 import Paths from "../shared/paths";
 import Instance from "../shared/instance";
-import Instances from "../shared/instances";
 import Users from "../shared/users";
 import Socket from "./socket";
 import Monitor from "./monitor";
@@ -55,15 +54,7 @@ export default class API extends EventEmitter {
 
     declare readonly port: number;
 
-    declare readonly users: Users;
-
     declare private enviornment: { [key: string]: string };
-
-    declare private instances: any[];
-
-    declare private bridges: any[];
-
-    declare private paths: string[];
 
     declare private socket: Socket;
 
@@ -74,19 +65,17 @@ export default class API extends EventEmitter {
         this.config = Paths.configuration();
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
-        this.users = new Users();
-        this.instances = Instances.list();
-        this.bridges = this.instances.filter((i) => i.type === "bridge");
-        this.paths = [];
 
-        for (let i = 0; i < this.instances.length; i += 1) {
-            if (this.instances[i].plugins && existsSync(join(this.instances[i].plugins, ".bin"))) {
-                this.paths.push(join(this.instances[i].plugins, ".bin"));
+        const paths = [];
+
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            if (Instance.instances[i].plugins && existsSync(join(<string>Instance.instances[i].plugins, ".bin"))) {
+                paths.push(join(<string>Instance.instances[i].plugins, ".bin"));
             }
         }
 
         this.enviornment = {
-            PATH: `${join(dirname(realpathSync(join(__filename, "../../"))), "cmd")}:${process.env.PATH}:${this.paths.join(":")}`,
+            PATH: `${join(dirname(realpathSync(join(__filename, "../../"))), "cmd")}:${process.env.PATH}:${paths.join(":")}`,
         };
 
         if (existsSync("/etc/ssl/certs/cacert.pem")) {
@@ -165,9 +154,9 @@ export default class API extends EventEmitter {
 
             if (request.url.indexOf("/api") === 0 && [
                 "/api/auth",
-                this.users.count() > 0 ? "/api/auth/logon" : null,
-                this.users.count() === 0 ? "/api/auth/create" : null,
-            ].indexOf(request.url) === -1 && (!request.headers.authorization || !(await this.users.validateToken(request.headers.authorization)))) {
+                Users.count() > 0 ? "/api/auth/logon" : null,
+                Users.count() === 0 ? "/api/auth/create" : null,
+            ].indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
                 response.status(403).json({
                     error: "unauthorized",
                 });
@@ -180,14 +169,14 @@ export default class API extends EventEmitter {
 
         Instance.app?.get("/api", (_request, response) => response.send({ version: Instance.version }));
 
-        new AuthController(this.users);
-        new AccessoriesController(this.bridges);
-        new BridgeController(this.bridges);
-        new CacheController(this.bridges);
+        new AuthController();
+        new AccessoriesController();
+        new BridgeController();
+        new CacheController();
         new ConfigController();
         new FeaturesController();
         new InstancesController();
-        new PluginsController(this.bridges);
+        new PluginsController();
         new RemoteController();
         new SystemController();
 
@@ -221,17 +210,18 @@ export default class API extends EventEmitter {
 
         this.socket.start();
 
-        for (let i = 0; i < this.instances.length; i += 1) {
-            if (this.instances[i].type === "bridge") {
-                Console.import((await Socket.fetch(this.instances[i].id, "cache:log")) || []);
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            if (Instance.instances[i].type === "bridge") {
+                Console.import((await Socket.fetch(Instance.instances[i].id, "cache:log")) || []);
             }
         }
 
         Instance.listner?.listen(this.port, () => {
+            this.time = new Date().getTime();
             this.emit("listening", this.port);
         });
 
-        Monitor(this.bridges);
+        Monitor();
     }
 
     stop() {

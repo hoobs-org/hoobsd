@@ -29,7 +29,7 @@ export default class InstancesController {
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send(Instances.list());
+        return response.send(Instance.instances);
     }
 
     create(request: Request, response: Response): void {

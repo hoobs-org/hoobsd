@@ -22,7 +22,7 @@ import PTY from "node-pty";
 import { existsSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../shared/paths";
-import Instances from "../shared/instances";
+import Instance from "../shared/instance";
 import { Console } from "../shared/logger";
 
 export default class Cockpit {
@@ -84,12 +84,11 @@ export default class Cockpit {
             Cockpit.register().then((registration) => {
                 this.registration = registration;
 
-                const instances = Instances.list();
                 const paths = [];
 
-                for (let i = 0; i < instances.length; i += 1) {
-                    if (instances[i].plugins && existsSync(join(instances[i].plugins, "node_modules", ".bin"))) {
-                        paths.push(join(instances[i].plugins, "node_modules", ".bin"));
+                for (let i = 0; i < Instance.instances.length; i += 1) {
+                    if (Instance.instances[i].plugins && existsSync(join(<string>Instance.instances[i].plugins, "node_modules", ".bin"))) {
+                        paths.push(join(<string>Instance.instances[i].plugins, "node_modules", ".bin"));
                     }
                 }
 

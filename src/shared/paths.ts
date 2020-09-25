@@ -24,7 +24,6 @@ import {
     existsSync,
     createWriteStream,
     createReadStream,
-    readFileSync,
     readdirSync,
     lstatSync,
     renameSync,
@@ -38,11 +37,12 @@ import {
 import { HomebridgeConfig } from "homebridge/lib/server";
 import { join } from "path";
 import Instance from "./instance";
+import { InstanceRecord } from "./instances";
 
 import {
     generateUsername,
-    parseJson,
     formatJson,
+    loadJson,
     jsonEquals,
 } from "./helpers";
 
@@ -55,7 +55,7 @@ export default class Paths {
         };
 
         if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-            pjson = _.extend(pjson, parseJson(readFileSync(join(Paths.storagePath(Instance.id), "package.json")).toString(), {}));
+            pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}));
         }
 
         Paths.savePackage(pjson);
@@ -87,7 +87,7 @@ export default class Paths {
         }
 
         if (existsSync(Paths.configPath())) {
-            config = _.extend(config, parseJson(readFileSync(Paths.configPath()).toString(), {}));
+            config = _.extend(config, loadJson<any>(Paths.configPath(), {}));
         }
 
         if (Instance.id !== "api" && config?.ports !== undefined) {
@@ -104,7 +104,7 @@ export default class Paths {
             let instances: any = [];
 
             if (existsSync(Paths.instancesPath())) {
-                instances = parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
             }
 
             const index = instances.findIndex((n: any) => n.id === Instance.id);
@@ -123,7 +123,7 @@ export default class Paths {
         let current: any = {};
 
         if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-            current = parseJson(readFileSync(join(Paths.storagePath(Instance.id), "package.json")).toString(), {});
+            current = loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {});
         }
 
         if (!jsonEquals(current, pjson)) {
@@ -139,7 +139,7 @@ export default class Paths {
         let current: any = {};
 
         if (existsSync(Paths.configPath())) {
-            current = parseJson(readFileSync(Paths.configPath()).toString(), {});
+            current = loadJson<any>(Paths.configPath(), {});
         }
 
         if (Instance.id !== "api") {

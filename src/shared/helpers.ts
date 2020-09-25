@@ -32,7 +32,10 @@ import { execSync } from "child_process";
 import { join } from "path";
 import { Console } from "./logger";
 
-export function sanitize(value: string): string {
+export function sanitize(value: string, prevent?: string): string {
+    if (!value || value === "") return "default";
+    if (prevent && prevent !== "" && prevent.toLowerCase() === value.toLowerCase()) return "default";
+
     return Sanitize(value).toLowerCase().replace(/ /gi, ".");
 }
 
@@ -68,12 +71,18 @@ export function format(value: number | string): string | undefined {
     return parsed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function parseJson(value: string, replacement: any): any {
+export function parseJson<T>(value: string, replacement: T): T {
     try {
-        return JSON.parse(value);
+        return <T>JSON.parse(value);
     } catch (_error) {
         return replacement;
     }
+}
+
+export function loadJson<T>(file: string, replacement: T): T {
+    if (!existsSync(file)) return replacement;
+
+    return parseJson<T>(readFileSync(file).toString(), replacement);
 }
 
 export function jsonEquals(source: any, value: any): boolean {

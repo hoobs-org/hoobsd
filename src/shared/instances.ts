@@ -22,7 +22,6 @@ import Prompt from "prompts";
 
 import {
     existsSync,
-    readFileSync,
     appendFileSync,
     unlinkSync,
 } from "fs-extra";
@@ -30,7 +29,24 @@ import {
 import { execSync } from "child_process";
 import { join } from "path";
 import Paths from "./paths";
-import { network, parseJson, sanitize } from "./helpers";
+
+import {
+    network,
+    loadJson,
+    formatJson,
+    sanitize,
+} from "./helpers";
+
+export interface InstanceRecord {
+    id: string,
+    type: string,
+    display: string,
+    port: number,
+    host?: string,
+    ssl?: boolean,
+    plugins?: string,
+    service?: string,
+}
 
 export default class Instances {
     static locate() {
@@ -55,22 +71,15 @@ export default class Instances {
         return null;
     }
 
-    static list(): any[] {
+    static list(): InstanceRecord[] {
         const type = Instances.initSystem();
         const host = network()[0];
 
-        let instances: any[] = [];
+        let instances: InstanceRecord[] = [];
 
         if (existsSync(Paths.instancesPath())) {
-            instances = <any[]>parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+            instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
         }
-
-        instances.unshift({
-            id: "api",
-            type: "api",
-            display: "API",
-            port: 80,
-        });
 
         for (let i = 0; i < instances.length; i += 1) {
             instances[i].host = host;
@@ -207,10 +216,10 @@ export default class Instances {
 
             const id = sanitize(name);
 
-            let instances: any[] = [];
+            let instances: InstanceRecord[] = [];
 
             if (existsSync(Paths.instancesPath())) {
-                instances = <any[]>parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
             }
 
             const index = instances.findIndex((n) => n.id === id);
@@ -222,7 +231,7 @@ export default class Instances {
                     unlinkSync(Paths.instancesPath());
                 }
 
-                appendFileSync(Paths.instancesPath(), JSON.stringify(instances, null, 4));
+                appendFileSync(Paths.instancesPath(), formatJson(instances));
 
                 return resolve(true);
             }
@@ -277,13 +286,13 @@ export default class Instances {
 
             const id = sanitize(name);
 
-            let instances: any[] = [];
+            let instances: InstanceRecord[] = [];
 
             if (existsSync(Paths.instancesPath())) {
-                instances = <any[]>parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
             }
 
-            const index = instances.findIndex((n) => n.id === id);
+            const index = instances.findIndex((n: InstanceRecord) => n.id === id);
 
             if (index >= 0) {
                 switch (type) {
@@ -296,10 +305,7 @@ export default class Instances {
                                     unlinkSync(Paths.instancesPath());
                                 }
 
-                                appendFileSync(
-                                    Paths.instancesPath(),
-                                    JSON.stringify(instances, null, 4),
-                                );
+                                appendFileSync(Paths.instancesPath(), formatJson(instances));
                             }
 
                             return resolve(success);
@@ -316,10 +322,7 @@ export default class Instances {
                                     unlinkSync(Paths.instancesPath());
                                 }
 
-                                appendFileSync(
-                                    Paths.instancesPath(),
-                                    JSON.stringify(instances, null, 4),
-                                );
+                                appendFileSync(Paths.instancesPath(), formatJson(instances));
                             }
 
                             return resolve(success);
@@ -333,7 +336,7 @@ export default class Instances {
                             unlinkSync(Paths.instancesPath());
                         }
 
-                        appendFileSync(Paths.instancesPath(), JSON.stringify(instances, null, 4));
+                        appendFileSync(Paths.instancesPath(), formatJson(instances));
 
                         return resolve(true);
                 }
@@ -345,10 +348,10 @@ export default class Instances {
 
     static createSystemd(name: string, port: number) {
         return new Promise((resolve) => {
-            let instances: any[] = [];
+            let instances: InstanceRecord[] = [];
 
             if (existsSync(Paths.instancesPath())) {
-                instances = <any[]>parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
             }
 
             const id = sanitize(name);
@@ -422,7 +425,7 @@ export default class Instances {
                         unlinkSync(Paths.instancesPath());
                     }
 
-                    appendFileSync(Paths.instancesPath(), JSON.stringify(instances, null, 4));
+                    appendFileSync(Paths.instancesPath(), formatJson(instances));
 
                     resolve(true);
                 } catch (_error) {
@@ -442,10 +445,10 @@ export default class Instances {
 
     static createLaunchd(name: string, port: number) {
         return new Promise((resolve) => {
-            let instances: any[] = [];
+            let instances: InstanceRecord[] = [];
 
             if (existsSync(Paths.instancesPath())) {
-                instances = <any[]>parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
             }
 
             const id = sanitize(name);
@@ -544,7 +547,7 @@ export default class Instances {
                         unlinkSync(Paths.instancesPath());
                     }
 
-                    appendFileSync(Paths.instancesPath(), JSON.stringify(instances, null, 4));
+                    appendFileSync(Paths.instancesPath(), formatJson(instances));
 
                     resolve(true);
                 } catch (_error) {
@@ -570,7 +573,7 @@ export default class Instances {
                 resolve(false);
             } else {
                 if (!existsSync(Paths.instancesPath())) {
-                    appendFileSync(Paths.instancesPath(), JSON.stringify([]));
+                    appendFileSync(Paths.instancesPath(), "[]");
                 }
 
                 if (name && port) {
@@ -594,10 +597,10 @@ export default class Instances {
                             break;
                     }
                 } else {
-                    let instances: any[] = [];
+                    let instances: InstanceRecord[] = [];
 
                     if (existsSync(Paths.instancesPath())) {
-                        instances = <any[]>parseJson(readFileSync(Paths.instancesPath()).toString(), []);
+                        instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
                     }
 
                     port = port || 51826;
