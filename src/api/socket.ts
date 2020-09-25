@@ -24,6 +24,8 @@ import { Print } from "../shared/logger";
 export default class Socket extends EventEmitter {
     declare private pipe: any;
 
+    declare private terminating: boolean;
+
     constructor() {
         super();
 
@@ -34,7 +36,13 @@ export default class Socket extends EventEmitter {
         this.pipe.config.socketRoot = Paths.storagePath();
         this.pipe.config.id = "api.sock";
 
+        Print("Starting IPC Socket");
+
         this.pipe.serve(() => {
+            this.pipe.server.on("ping", (_payload: any, socket: any) => {
+                this.pipe.server.emit(socket, "pong");
+            });
+
             this.pipe.server.on("log", (payload: any, socket: any) => {
                 this.emit("log", payload.body);
                 this.pipe.server.emit(socket, payload.socket, "complete");
@@ -74,19 +82,53 @@ export default class Socket extends EventEmitter {
                 this.emit("plugin_uninstall", payload.body);
                 this.pipe.server.emit(socket, payload.socket, "complete");
             });
+
+            this.heartbeat();
+        });
+    }
+
+    heartbeat() {
+        const pipe = new RawIPC.IPC();
+
+        pipe.config.appspace = "/";
+        pipe.config.socketRoot = Paths.storagePath();
+        pipe.config.logInColor = true;
+        pipe.config.logger = () => {};
+        pipe.config.maxRetries = 0;
+        pipe.config.stopRetrying = true;
+
+        pipe.connectTo("api.sock", () => {
+            pipe.of["api.sock"].on("pong", () => {
+                pipe.of["api.sock"].off("pong", "*");
+            });
+
+            pipe.of["api.sock"].on("error", () => {
+                pipe.of["api.sock"].off("pong", "*");
+                pipe.disconnect("api.sock");
+
+                Print("Restarting IPC Socket");
+
+                this.pipe.server.stop();
+                this.pipe.server.start();
+            });
+
+            pipe.of["api.sock"].emit("ping");
+
+            if (!this.terminating) {
+                setTimeout(() => {
+                    this.heartbeat();
+                }, 5 * 1000);
+            }
         });
     }
 
     start(): void {
-        this.pipe.server.on("error", () => {
-            this.pipe?.server?.stop();
-            this.pipe?.server?.start();
-        });
-
+        this.terminating = false;
         this.pipe.server.start();
     }
 
     stop() {
+        this.terminating = true;
         this.pipe.server.stop();
     }
 
@@ -104,10 +146,15 @@ export default class Socket extends EventEmitter {
 
             pipe.connectTo(`${instance}.sock`, () => {
                 pipe.of[`${instance}.sock`].on(session, (data: any) => {
+                    pipe.of[`${instance}.sock`].off(session, "*");
+
                     resolve(data);
                 });
 
-                pipe.of[`${instance}.sock`].on("destroy", () => {
+                pipe.of[`${instance}.sock`].on("error", () => {
+                    pipe.of[`${instance}.sock`].off(session, "*");
+                    pipe.disconnect(`${instance}.sock`);
+
                     resolve();
                 });
 

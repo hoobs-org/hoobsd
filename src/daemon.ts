@@ -51,9 +51,7 @@ export = function Daemon(): void {
         .action(async (command) => {
             const options = command;
 
-            if (options.instance === "api") {
-                options.instance = undefined;
-            }
+            if (options.instance === "api") options.instance = undefined;
 
             Instance.id = sanitize(options.instance || "default");
             Instance.debug = options.debug;
@@ -177,24 +175,19 @@ export = function Daemon(): void {
 
     Object.keys(signals).forEach((signal) => {
         process.on(signal, async () => {
-            if (Instance.terminating) {
-                return;
-            }
+            if (Instance.terminating) return;
 
             Instance.terminating = true;
 
             Console.debug("");
             Console.debug("Shutting down");
 
-            if (Instance.bridge) {
-                await Instance.bridge.stop();
-            }
-
-            if (Instance.socket) {
-                Instance.socket.stop();
-            }
+            if (Instance.bridge) await Instance.bridge.stop();
 
             Console.debug("Stopped");
+
+            if (Instance.api) Instance.api.stop();
+            if (Instance.socket) Instance.socket.stop();
 
             process.exit(128 + signals[signal]);
         });
@@ -203,9 +196,7 @@ export = function Daemon(): void {
     process.on("uncaughtException", (error) => {
         Console.error(`${error.stack}`);
 
-        if (!Instance.terminating) {
-            process.kill(process.pid, "SIGTERM");
-        }
+        if (!Instance.terminating) process.kill(process.pid, "SIGTERM");
     });
 
     process.on("unhandledRejection", (_reason, promise) => {

@@ -198,9 +198,7 @@ export = function Command(): void {
                         if (success) {
                             instances = Instances.list();
 
-                            if (instances.length > 0) {
-                                console.table(instances);
-                            }
+                            if (instances.length > 0) console.table(instances);
                         }
                     });
 
@@ -211,9 +209,7 @@ export = function Command(): void {
                         if (success) {
                             instances = Instances.list();
 
-                            if (instances.length > 0) {
-                                console.table(instances);
-                            }
+                            if (instances.length > 0) console.table(instances);
                         }
                     });
 
@@ -294,9 +290,7 @@ export = function Command(): void {
         .action((action, file, command) => {
             const options = command;
 
-            if (options.instance === "api") {
-                options.instance = null;
-            }
+            if (options.instance === "api") options.instance = undefined;
 
             Instance.id = sanitize(options.instance || "default");
             Instance.debug = true;
