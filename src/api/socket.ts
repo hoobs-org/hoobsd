@@ -18,16 +18,20 @@
 
 import RawIPC from "node-ipc";
 import { EventEmitter } from "events";
+import { existsSync } from "fs-extra";
+import { join } from "path";
 import Paths from "../shared/paths";
 import { Print } from "../shared/logger";
 
 export default class Socket extends EventEmitter {
     declare private pipe: any;
 
-    declare private terminating: boolean;
+    declare private defined: boolean;
 
     constructor() {
         super();
+
+        this.defined = false;
 
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = true;
@@ -36,54 +40,55 @@ export default class Socket extends EventEmitter {
         this.pipe.config.socketRoot = Paths.storagePath();
         this.pipe.config.id = "api.sock";
 
-        Print("Starting IPC Socket");
-
         this.pipe.serve(() => {
-            this.pipe.server.on("ping", (_payload: any, socket: any) => {
-                this.pipe.server.emit(socket, "pong");
-            });
+            if (!this.defined) {
+                this.pipe.server.on("ping", (_payload: any, socket: any) => {
+                    this.pipe.server.emit(socket, "pong");
+                });
 
-            this.pipe.server.on("log", (payload: any, socket: any) => {
-                this.emit("log", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("log", (payload: any, socket: any) => {
+                    this.emit("log", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("bridge_start", (payload: any, socket: any) => {
-                this.emit("bridge_start", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("bridge_start", (payload: any, socket: any) => {
+                    this.emit("bridge_start", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("bridge_stop", (payload: any, socket: any) => {
-                this.emit("bridge_stop", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("bridge_stop", (payload: any, socket: any) => {
+                    this.emit("bridge_stop", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("accessory_change", (payload: any, socket: any) => {
-                this.emit("accessory_change", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("accessory_change", (payload: any, socket: any) => {
+                    this.emit("accessory_change", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("heartbeat", (payload: any, socket: any) => {
-                this.emit("heartbeat", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("heartbeat", (payload: any, socket: any) => {
+                    this.emit("heartbeat", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("plugin_install", (payload: any, socket: any) => {
-                this.emit("plugin_install", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("plugin_install", (payload: any, socket: any) => {
+                    this.emit("plugin_install", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("plugin_uninstall", (payload: any, socket: any) => {
-                this.emit("plugin_install", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("plugin_uninstall", (payload: any, socket: any) => {
+                    this.emit("plugin_install", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
 
-            this.pipe.server.on("plugin_upgrade", (payload: any, socket: any) => {
-                this.emit("plugin_uninstall", payload.body);
-                this.pipe.server.emit(socket, payload.socket, "complete");
-            });
+                this.pipe.server.on("plugin_upgrade", (payload: any, socket: any) => {
+                    this.emit("plugin_uninstall", payload.body);
+                    this.pipe.server.emit(socket, payload.socket, "complete");
+                });
+            }
 
             this.heartbeat();
+            this.defined = true;
         });
     }
 
@@ -100,6 +105,10 @@ export default class Socket extends EventEmitter {
         pipe.connectTo("api.sock", () => {
             pipe.of["api.sock"].on("pong", () => {
                 pipe.of["api.sock"].off("pong", "*");
+
+                setTimeout(() => {
+                    this.heartbeat();
+                }, 5 * 1000);
             });
 
             pipe.of["api.sock"].on("error", () => {
@@ -108,32 +117,32 @@ export default class Socket extends EventEmitter {
 
                 Print("Restarting IPC Socket");
 
-                this.pipe.server.stop();
-                this.pipe.server.start();
+                this.stop();
+                this.start();
             });
 
             pipe.of["api.sock"].emit("ping");
-
-            if (!this.terminating) {
-                setTimeout(() => {
-                    this.heartbeat();
-                }, 5 * 1000);
-            }
         });
     }
 
     start(): void {
-        this.terminating = false;
+        Print("Starting IPC Socket");
+
         this.pipe.server.start();
     }
 
     stop() {
-        this.terminating = true;
         this.pipe.server.stop();
     }
 
     static fetch(instance: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
         return new Promise((resolve) => {
+            if (!existsSync(join(Paths.storagePath(), `${instance}.sock`))) {
+                resolve();
+
+                return;
+            }
+
             const session = `${new Date().getTime()}:${Math.random()}`;
             const pipe = new RawIPC.IPC();
 

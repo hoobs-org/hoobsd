@@ -17,6 +17,8 @@
  **************************************************************************************************/
 
 import RawIPC from "node-ipc";
+import { existsSync } from "fs-extra";
+import { join } from "path";
 import Paths from "../shared/paths";
 import { Print } from "../shared/logger";
 
@@ -38,11 +40,12 @@ export default class Socket {
 
     declare private routes: { [key: string]: (request: SocketRequest, response: SocketResponse) => any };
 
-    declare private terminating: boolean;
+    declare private defined: boolean;
 
     constructor(name: string) {
         this.name = name;
         this.routes = {};
+        this.defined = false;
 
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = true;
@@ -51,25 +54,26 @@ export default class Socket {
         this.pipe.config.socketRoot = Paths.storagePath();
         this.pipe.config.id = `${this.name}.sock`;
 
-        Print("Starting IPC Socket");
-
         this.pipe.serve(() => {
-            this.pipe.server.on("ping", (_payload: any, socket: any) => {
-                this.pipe.server.emit(socket, "pong");
-            });
-
-            this.pipe.server.on("request", (payload: any, socket: any) => {
-                this.routes[payload.path]({
-                    params: payload.params,
-                    body: payload.body,
-                }, {
-                    send: (body: any) => {
-                        this.pipe.server.emit(socket, payload.session, body);
-                    },
+            if (!this.defined) {
+                this.pipe.server.on("ping", (_payload: any, socket: any) => {
+                    this.pipe.server.emit(socket, "pong");
                 });
-            });
+
+                this.pipe.server.on("request", (payload: any, socket: any) => {
+                    this.routes[payload.path]({
+                        params: payload.params,
+                        body: payload.body,
+                    }, {
+                        send: (body: any) => {
+                            this.pipe.server.emit(socket, payload.session, body);
+                        },
+                    });
+                });
+            }
 
             this.heartbeat();
+            this.defined = true;
         });
     }
 
@@ -86,6 +90,10 @@ export default class Socket {
         pipe.connectTo(`${this.name}.sock`, () => {
             pipe.of[`${this.name}.sock`].on("pong", () => {
                 pipe.of[`${this.name}.sock`].off("pong", "*");
+
+                setTimeout(() => {
+                    this.heartbeat();
+                }, 5 * 1000);
             });
 
             pipe.of[`${this.name}.sock`].on("error", () => {
@@ -94,17 +102,11 @@ export default class Socket {
 
                 Print("Restarting IPC Socket");
 
-                this.pipe.server.stop();
-                this.pipe.server.start();
+                this.stop();
+                this.start();
             });
 
             pipe.of[`${this.name}.sock`].emit("ping");
-
-            if (!this.terminating) {
-                setTimeout(() => {
-                    this.heartbeat();
-                }, 5 * 1000);
-            }
         });
     }
 
@@ -113,17 +115,23 @@ export default class Socket {
     }
 
     start(): void {
-        this.terminating = false;
+        Print("Starting IPC Socket");
+
         this.pipe.server.start();
     }
 
     stop() {
-        this.terminating = true;
         this.pipe.server.stop();
     }
 
     static fetch(event: string, body: any): Promise<any> {
         return new Promise((resolve) => {
+            if (!existsSync(join(Paths.storagePath(), "api.sock"))) {
+                resolve();
+
+                return;
+            }
+
             const session = `${new Date().getTime()}:${Math.random()}`;
             const pipe = new RawIPC.IPC();
 
