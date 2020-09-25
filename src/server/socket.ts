@@ -17,10 +17,12 @@
  **************************************************************************************************/
 
 import RawIPC from "node-ipc";
-import { existsSync } from "fs-extra";
+import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../shared/paths";
 import { Print } from "../shared/logger";
+
+const sockets: { [key: string]: any } = [];
 
 export interface SocketRequest {
     params?: { [key: string]: any },
@@ -78,27 +80,31 @@ export default class Socket {
     }
 
     heartbeat() {
-        const pipe = new RawIPC.IPC();
+        if (!sockets[`${this.name}.sock`]) {
+            sockets[`${this.name}.sock`] = new RawIPC.IPC();
 
-        pipe.config.appspace = "/";
-        pipe.config.socketRoot = Paths.storagePath();
-        pipe.config.logInColor = true;
-        pipe.config.logger = () => {};
-        pipe.config.maxRetries = 0;
-        pipe.config.stopRetrying = true;
+            sockets[`${this.name}.sock`].config.appspace = "/";
+            sockets[`${this.name}.sock`].config.socketRoot = Paths.storagePath();
+            sockets[`${this.name}.sock`].config.logInColor = true;
+            sockets[`${this.name}.sock`].config.logger = () => {};
+            sockets[`${this.name}.sock`].config.maxRetries = 0;
+            sockets[`${this.name}.sock`].config.stopRetrying = true;
+            sockets[`${this.name}.sock`].config.id = `${this.name}.sock`;
+        }
 
-        pipe.connectTo(`${this.name}.sock`, () => {
-            pipe.of[`${this.name}.sock`].on("pong", () => {
-                pipe.of[`${this.name}.sock`].off("pong", "*");
+        sockets[`${this.name}.sock`].connectTo(`${this.name}.sock`, () => {
+            sockets[`${this.name}.sock`].of[`${this.name}.sock`].on("pong", () => {
+                sockets[`${this.name}.sock`].of[`${this.name}.sock`].off("pong", "*");
+                sockets[`${this.name}.sock`].disconnect();
 
                 setTimeout(() => {
                     this.heartbeat();
                 }, 5 * 1000);
             });
 
-            pipe.of[`${this.name}.sock`].on("error", () => {
-                pipe.of[`${this.name}.sock`].off("pong", "*");
-                pipe.disconnect(`${this.name}.sock`);
+            sockets[`${this.name}.sock`].of[`${this.name}.sock`].on("error", () => {
+                sockets[`${this.name}.sock`].of[`${this.name}.sock`].off("pong", "*");
+                sockets[`${this.name}.sock`].disconnect();
 
                 Print("Restarting IPC Socket");
 
@@ -106,7 +112,7 @@ export default class Socket {
                 this.start();
             });
 
-            pipe.of[`${this.name}.sock`].emit("ping");
+            sockets[`${this.name}.sock`].of[`${this.name}.sock`].emit("ping");
         });
     }
 
@@ -122,41 +128,49 @@ export default class Socket {
 
     stop() {
         this.pipe.server.stop();
+
+        if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) {
+            unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
+        }
     }
 
     static fetch(event: string, body: any): Promise<any> {
         return new Promise((resolve) => {
+            const session = `${new Date().getTime()}:${Math.random()}`;
+
             if (!existsSync(join(Paths.storagePath(), "api.sock"))) {
                 resolve();
 
                 return;
             }
 
-            const session = `${new Date().getTime()}:${Math.random()}`;
-            const pipe = new RawIPC.IPC();
+            if (!sockets["api.sock"]) {
+                sockets["api.sock"] = new RawIPC.IPC();
 
-            pipe.config.appspace = "/";
-            pipe.config.socketRoot = Paths.storagePath();
-            pipe.config.logInColor = true;
-            pipe.config.logger = Print;
-            pipe.config.maxRetries = 0;
-            pipe.config.stopRetrying = true;
+                sockets["api.sock"].config.appspace = "/";
+                sockets["api.sock"].config.socketRoot = Paths.storagePath();
+                sockets["api.sock"].config.logInColor = true;
+                sockets["api.sock"].config.logger = Print;
+                sockets["api.sock"].config.maxRetries = 0;
+                sockets["api.sock"].config.stopRetrying = true;
+            }
 
-            pipe.connectTo("api.sock", () => {
-                pipe.of["api.sock"].on(session, () => {
-                    pipe.of["api.sock"].off(session, "*");
-
-                    resolve();
-                });
-
-                pipe.of["api.sock"].on("error", () => {
-                    pipe.of["api.sock"].off(session, "*");
-                    pipe.disconnect("api.sock");
+            sockets["api.sock"].connectTo("api.sock", () => {
+                sockets["api.sock"].of["api.sock"].on(session, () => {
+                    sockets["api.sock"].of["api.sock"].off(session, "*");
+                    sockets["api.sock"].disconnect();
 
                     resolve();
                 });
 
-                pipe.of["api.sock"].emit(event, {
+                sockets["api.sock"].of["api.sock"].on("error", () => {
+                    sockets["api.sock"].of["api.sock"].off(session, "*");
+                    sockets["api.sock"].disconnect();
+
+                    resolve();
+                });
+
+                sockets["api.sock"].of["api.sock"].emit(event, {
                     session,
                     body,
                 });

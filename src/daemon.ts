@@ -30,9 +30,7 @@ import Paths from "./shared/paths";
 import Socket from "./server/socket";
 import Server from "./server";
 import Bridge from "./bridge";
-import Heartbeat from "./server/heartbeat";
 import API from "./api";
-import Monitor from "./api/monitor";
 import { Console } from "./shared/logger";
 import { sanitize } from "./shared/helpers";
 
@@ -93,8 +91,6 @@ export = function Daemon(): void {
             }
 
             Instance.socket.start();
-
-            Heartbeat();
         });
 
     Program.command("api")
@@ -130,8 +126,6 @@ export = function Daemon(): void {
             });
 
             Instance.api.start();
-
-            Monitor();
         });
 
     Program.command("service <action>")

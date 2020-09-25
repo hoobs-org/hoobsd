@@ -339,6 +339,13 @@ export = function Command(): void {
 
                     break;
 
+                case "lsof":
+                    execSync(`lsof | grep '${Paths.storagePath()}'`, {
+                        stdio: "inherit",
+                    });
+
+                    break;
+
                 default:
                     console.log("unsupported");
                     break;

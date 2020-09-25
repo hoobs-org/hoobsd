@@ -31,6 +31,7 @@ import Instance from "../shared/instance";
 import Instances from "../shared/instances";
 import Users from "../shared/users";
 import Socket from "./socket";
+import Monitor from "./monitor";
 import { Console } from "../shared/logger";
 import { findModule } from "../shared/helpers";
 
@@ -237,6 +238,8 @@ export default class API extends EventEmitter {
         Instance.listner?.listen(this.port, () => {
             this.emit("listening", this.port);
         });
+
+        Monitor(this.bridges);
     }
 
     stop() {
