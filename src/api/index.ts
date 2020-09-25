@@ -211,14 +211,6 @@ export default class API extends EventEmitter {
     async start() {
         this.socket = new Socket();
 
-        this.socket.on("heartbeat", (data: any) => {
-            const { instance } = data;
-
-            delete data.instance;
-
-            Instance.status[instance] = data.data;
-        });
-
         this.socket.on("log", (data: any) => Console.log(LogLevel.INFO, data));
         this.socket.on("bridge_start", (data: any) => Instance.io?.sockets.emit("bridge_start", data));
         this.socket.on("bridge_stop", (data: any) => Instance.io?.sockets.emit("bridge_stop", data));

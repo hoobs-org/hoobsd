@@ -28,23 +28,6 @@ import Bridge from "../bridge";
 import API from "../api";
 import { Loggers } from "./logger";
 
-interface Status {
-    id: number,
-    instance: string,
-    running: boolean,
-    status: string,
-    uptime: number,
-    bridge_name: string,
-    product: string,
-    version: string,
-    node_version: string,
-    username: string,
-    bridge_port: number,
-    setup_pin: string,
-    setup_id: string,
-    storage_path: string,
-}
-
 export interface Application {
     app: Express | undefined,
     listner: HTTP.Server | undefined,
@@ -67,7 +50,6 @@ export interface Application {
     version: string,
     manager: string,
     loggers: Loggers,
-    status: { [key: string]: Status },
 
     plugins: { [key: string]: any },
 }
@@ -94,7 +76,6 @@ const instance: Application = {
     version: (JSON.parse(readFileSync(join(__dirname, "../../package.json")).toString()))?.version,
     manager: "npm",
     loggers: {},
-    status: {},
 
     plugins: {},
 };
