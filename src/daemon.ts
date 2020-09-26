@@ -34,7 +34,7 @@ export = function Daemon(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
-    Program.command("start")
+    Program.command("start", { isDefault: true })
         .description("start a server instance")
         .option("-d, --debug", "turn on debug level logging")
         .option("-v, --verbose", "turn on verbose logging")
