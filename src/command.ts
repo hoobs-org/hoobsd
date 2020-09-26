@@ -45,6 +45,7 @@ export = function Command(): void {
 
             Instance.id = sanitize(options.instance || "default");
             Instance.debug = true;
+            Instance.instances = Instances.list();
 
             let plugin = name;
             let plugins = [];
@@ -147,7 +148,7 @@ export = function Command(): void {
 
                     break;
 
-                default:
+                case "list":
                     plugins = Plugins.installed();
 
                     if (plugins.length > 0) {
@@ -160,6 +161,10 @@ export = function Command(): void {
                         console.log("no plugins installed");
                     }
 
+                    break;
+
+                default:
+                    console.log(Program.helpInformation());
                     break;
             }
         });
@@ -185,6 +190,7 @@ export = function Command(): void {
         .option("-p, --port <port>", "change the port the bridge runs on")
         .action((action, command) => {
             Instance.debug = true;
+            Instance.instances = Instances.list();
 
             let instances = [];
 
@@ -214,7 +220,7 @@ export = function Command(): void {
 
                     break;
 
-                default:
+                case "list":
                     instances = Instances.list();
 
                     if (instances.length > 0) {
@@ -224,6 +230,10 @@ export = function Command(): void {
                     }
 
                     break;
+
+                default:
+                    console.log(Program.helpInformation());
+                    break;
             }
         });
 
@@ -231,6 +241,7 @@ export = function Command(): void {
         .description("enable additional server features")
         .action((feature) => {
             Instance.debug = true;
+            Instance.instances = Instances.list();
 
             let results: { [key: string]: any } = {};
 
@@ -259,6 +270,7 @@ export = function Command(): void {
         .description("disables additional server features")
         .action((feature) => {
             Instance.debug = true;
+            Instance.instances = Instances.list();
 
             let results: { [key: string]: any } = {};
 
@@ -293,6 +305,7 @@ export = function Command(): void {
 
             Instance.id = sanitize(options.instance || "default");
             Instance.debug = true;
+            Instance.instances = Instances.list();
 
             switch (action) {
                 case "upgrade":
@@ -338,15 +351,19 @@ export = function Command(): void {
 
                     break;
 
-                case "lsof":
-                    execSync(`lsof | grep '${Paths.storagePath()}'`, {
-                        stdio: "inherit",
-                    });
+                case "sockets":
+                    try {
+                        execSync(`lsof | grep '${Paths.storagePath()}'`, {
+                            stdio: "inherit",
+                        });
+                    } catch (_error) {
+                        console.log("no sockets started");
+                    }
 
                     break;
 
                 default:
-                    console.log("unsupported");
+                    console.log(Program.helpInformation());
                     break;
             }
         });
@@ -356,6 +373,7 @@ export = function Command(): void {
         .action(() => {
             Instance.debug = true;
             Instance.id = sanitize("api");
+            Instance.instances = Instances.list();
 
             const client = new Cockpit();
 
