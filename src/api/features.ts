@@ -50,9 +50,7 @@ export default class FeaturesController {
                 break;
         }
 
-        if (results.success) {
-            return this.list(request, response);
-        }
+        if (results.success) return this.list(request, response);
 
         if (results.error) {
             return response.send({
@@ -79,9 +77,9 @@ export default class FeaturesController {
                 break;
         }
 
-        if (results.success) {
-            return this.list(request, response);
-        } if (results.error) {
+        if (results.success) return this.list(request, response);
+
+        if (results.error) {
             return response.send({
                 error: results.error,
             });

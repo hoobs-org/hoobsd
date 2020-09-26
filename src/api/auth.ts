@@ -93,9 +93,7 @@ export default class AuthController {
             });
         }
 
-        if (Users.count() === 0) {
-            request.body.admin = true;
-        }
+        if (Users.count() === 0) request.body.admin = true;
 
         const user = await Users.create(request.body.name, request.body.username, request.body.password, request.body.admin);
 

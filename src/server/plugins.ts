@@ -79,9 +79,7 @@ export default class PluginsController {
         }
 
         Plugins.install((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            if (Instance.bridge) {
-                await Instance.bridge.restart();
-            }
+            if (Instance.bridge) await Instance.bridge.restart();
 
             response.send({
                 success: true,
@@ -109,9 +107,7 @@ export default class PluginsController {
         }
 
         Plugins.upgrade((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            if (Instance.bridge) {
-                await Instance.bridge.restart();
-            }
+            if (Instance.bridge) await Instance.bridge.restart();
 
             response.send({
                 success: true,
@@ -131,14 +127,10 @@ export default class PluginsController {
             name = name.split("/").pop();
         }
 
-        if ((name || "").indexOf("@") >= 0) {
-            name = (name || "").split("@").shift();
-        }
+        if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
         Plugins.uninstall((scope || "") !== "" ? `@${scope}/${name}` : (name || "")).then(async () => {
-            if (Instance.bridge) {
-                await Instance.bridge.restart();
-            }
+            if (Instance.bridge) await Instance.bridge.restart();
 
             response.send({
                 success: true,

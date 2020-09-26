@@ -54,9 +54,7 @@ export default class Paths {
             dependencies: {},
         };
 
-        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-            pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}));
-        }
+        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}));
 
         Paths.savePackage(pjson);
 
@@ -86,14 +84,10 @@ export default class Paths {
             };
         }
 
-        if (existsSync(Paths.configPath())) {
-            config = _.extend(config, loadJson<any>(Paths.configPath(), {}));
-        }
+        if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}));
 
         if (Instance.id !== "api" && config?.ports !== undefined) {
-            if (config?.ports?.start > config?.ports?.end) {
-                delete config?.ports;
-            }
+            if (config?.ports?.start > config?.ports?.end) delete config?.ports;
         }
 
         if (Instance.id !== "api" && (!config?.bridge?.username || !(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/).test(config?.bridge?.username))) {
@@ -103,15 +97,11 @@ export default class Paths {
         if (Instance.id !== "api") {
             let instances: any = [];
 
-            if (existsSync(Paths.instancesPath())) {
-                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-            }
+            if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
             const index = instances.findIndex((n: any) => n.id === Instance.id);
 
-            if (index >= 0) {
-                Instance.display = instances[index].display;
-            }
+            if (index >= 0) Instance.display = instances[index].display;
         }
 
         Paths.saveConfig(config);
@@ -127,9 +117,7 @@ export default class Paths {
         }
 
         if (!jsonEquals(current, pjson)) {
-            if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-                unlinkSync(join(Paths.storagePath(Instance.id), "package.json"));
-            }
+            if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) unlinkSync(join(Paths.storagePath(Instance.id), "package.json"));
 
             appendFileSync(join(Paths.storagePath(Instance.id), "package.json"), formatJson(pjson));
         }
@@ -138,9 +126,7 @@ export default class Paths {
     static saveConfig(config: any): void {
         let current: any = {};
 
-        if (existsSync(Paths.configPath())) {
-            current = loadJson<any>(Paths.configPath(), {});
-        }
+        if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {});
 
         if (Instance.id !== "api") {
             config.accessories = config?.accessories || [];
@@ -151,9 +137,7 @@ export default class Paths {
         }
 
         if (!jsonEquals(current, config)) {
-            if (existsSync(Paths.configPath())) {
-                unlinkSync(Paths.configPath());
-            }
+            if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
 
             appendFileSync(Paths.configPath(), formatJson(config));
         }
@@ -192,9 +176,7 @@ export default class Paths {
             path = join(process.env.HOME || "", ".hoobs");
         }
 
-        if (instance && instance !== "") {
-            path = join(path, instance);
-        }
+        if (instance && instance !== "") path = join(path, instance);
 
         ensureDirSync(path);
 
@@ -234,15 +216,11 @@ export default class Paths {
     }
 
     static clean(): void {
-        if (existsSync(join(Paths.storagePath(), `${Instance.id}.persist`))) {
-            removeSync(join(Paths.storagePath(), `${Instance.id}.persist`));
-        }
+        if (existsSync(join(Paths.storagePath(), `${Instance.id}.persist`))) removeSync(join(Paths.storagePath(), `${Instance.id}.persist`));
 
         ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
 
-        if (existsSync(join(Paths.storagePath(), `${Instance.id}.accessories`))) {
-            removeSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
-        }
+        if (existsSync(join(Paths.storagePath(), `${Instance.id}.accessories`))) removeSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
 
         ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
     }

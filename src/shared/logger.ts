@@ -91,7 +91,7 @@ class Logger {
 
         CACHE.push(data);
 
-        while (CACHE.length >= 500) {
+        while (CACHE.length > 500) {
             CACHE.shift();
         }
 
@@ -101,13 +101,8 @@ class Logger {
         if ((data.level !== LogLevel.DEBUG && data.level !== LogLevel.WARN) || Instance.debug) {
             const prefixes = [];
 
-            if (typeof message !== "string" && data.instance && data.instance !== "" && data.instance !== "api") {
-                prefixes.push(data.instance);
-            }
-
-            if (data.prefix && data.prefix !== "") {
-                prefixes.push(data.prefix);
-            }
+            if (typeof message !== "string" && data.instance && data.instance !== "" && data.instance !== "api") prefixes.push(data.instance);
+            if (data.prefix && data.prefix !== "") prefixes.push(data.prefix);
 
             const formatted = prefixes.length > 0 ? `[${prefixes.join(" - ")}] ${data.message}` : data.message;
 
@@ -118,10 +113,7 @@ class Logger {
                     break;
 
                 default:
-                    if (Instance.debug) {
-                        CONSOLE_LOG(formatted);
-                    }
-
+                    if (Instance.debug) CONSOLE_LOG(formatted);
                     break;
             }
         }
@@ -131,14 +123,12 @@ class Logger {
         CACHE.push(...data);
 
         CACHE.sort((a, b) => {
-            if (a.timestamp > b.timestamp) {
-                return 1;
-            }
+            if (a.timestamp > b.timestamp) return 1;
 
             return -1;
         });
 
-        while (CACHE.length >= 500) {
+        while (CACHE.length > 500) {
             CACHE.shift();
         }
 
@@ -155,10 +145,7 @@ class Logger {
                         break;
 
                     default:
-                        if (Instance.debug) {
-                            CONSOLE_LOG(formatted);
-                        }
-
+                        if (Instance.debug) CONSOLE_LOG(formatted);
                         break;
                 }
             }
@@ -215,15 +202,11 @@ console.debug = function debug(message: string, ...parameters: any[]) {
 };
 
 console.log = function log(message: string, ...parameters: any[]) {
-    if (Instance.debug) {
-        system.info(message, ...parameters);
-    }
+    if (Instance.debug) system.info(message, ...parameters);
 };
 
 console.warn = function warn(message: string, ...parameters: any[]) {
-    if (Instance.debug) {
-        system.warn(message, ...parameters);
-    }
+    if (Instance.debug) system.warn(message, ...parameters);
 };
 
 console.error = function error(message: string, ...parameters: any[]) {
@@ -231,9 +214,7 @@ console.error = function error(message: string, ...parameters: any[]) {
 };
 
 export function Print(...parameters: any[]) {
-    if (Instance.verbose) {
-        CONSOLE_LOG(...parameters);
-    }
+    if (Instance.verbose) CONSOLE_LOG(...parameters);
 }
 
 export const Console: Logger = system;

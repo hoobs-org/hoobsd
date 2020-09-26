@@ -34,13 +34,15 @@ export default class BridgeController {
         const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
-            const status = await Socket.fetch(Instance.instances[i].id, "status:get");
+            if (Instance.instances[i].type === "bridge") {
+                const status = await Socket.fetch(Instance.instances[i].id, "status:get");
 
-            if (status) {
-                results.push({
-                    instance: Instance.instances[i].id,
-                    status,
-                });
+                if (status) {
+                    results.push({
+                        instance: Instance.instances[i].id,
+                        status,
+                    });
+                }
             }
         }
 

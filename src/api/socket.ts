@@ -139,9 +139,7 @@ export default class Socket extends EventEmitter {
     stop() {
         this.pipe.server.stop();
 
-        if (existsSync(join(Paths.storagePath(), "api.sock"))) {
-            unlinkSync(join(Paths.storagePath(), "api.sock"));
-        }
+        if (existsSync(join(Paths.storagePath(), "api.sock"))) unlinkSync(join(Paths.storagePath(), "api.sock"));
     }
 
     static fetch(instance: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {

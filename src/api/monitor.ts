@@ -25,21 +25,23 @@ export default async function Monitor() {
     const results: { [key: string]: any } = {};
 
     for (let i = 0; i < Instance.instances.length; i += 1) {
-        const status = await Socket.fetch(Instance.instances[i].id, "status:get");
+        if (Instance.instances[i].type === "bridge") {
+            const status = await Socket.fetch(Instance.instances[i].id, "status:get");
 
-        if (status) {
-            results[Instance.instances[i].id] = {
-                version: status.version,
-                running: status.running,
-                status: status.status,
-                uptime: status.uptime,
-            };
-        } else {
-            results[Instance.instances[i].id] = {
-                running: false,
-                status: "unavailable",
-                uptime: 0,
-            };
+            if (status) {
+                results[Instance.instances[i].id] = {
+                    version: status.version,
+                    running: status.running,
+                    status: status.status,
+                    uptime: status.uptime,
+                };
+            } else {
+                results[Instance.instances[i].id] = {
+                    running: false,
+                    status: "unavailable",
+                    uptime: 0,
+                };
+            }
         }
     }
 

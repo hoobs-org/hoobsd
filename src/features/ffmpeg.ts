@@ -138,9 +138,7 @@ export default class FFMPEG {
             tryUnlink("/usr/local/include/fdk-aac/machine_type.h");
             tryUnlink("/usr/local/include/fdk-aac/syslib_channelMapDescr.h");
 
-            if (isDirectoryEmpty("/usr/local/include/fdk-aac")) {
-                removeSync("/usr/local/include/fdk-aac");
-            }
+            if (isDirectoryEmpty("/usr/local/include/fdk-aac")) removeSync("/usr/local/include/fdk-aac");
 
             console.log("removing libavcodec includes");
 
@@ -163,18 +161,14 @@ export default class FFMPEG {
             tryUnlink("/usr/local/include/libavcodec/vorbis_parser.h");
             tryUnlink("/usr/local/include/libavcodec/xvmc.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libavcodec")) {
-                removeSync("/usr/local/include/libavcodec");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libavcodec")) removeSync("/usr/local/include/libavcodec");
 
             console.log("removing libavdevice includes");
 
             tryUnlink("/usr/local/include/libavdevice/avdevice.h");
             tryUnlink("/usr/local/include/libavdevice/version.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libavdevice")) {
-                removeSync("/usr/local/include/libavdevice");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libavdevice")) removeSync("/usr/local/include/libavdevice");
 
             console.log("removing libavfilter includes");
 
@@ -183,9 +177,7 @@ export default class FFMPEG {
             tryUnlink("/usr/local/include/libavfilter/buffersrc.h");
             tryUnlink("/usr/local/include/libavfilter/version.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libavfilter")) {
-                removeSync("/usr/local/include/libavfilter");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libavfilter")) removeSync("/usr/local/include/libavfilter");
 
             console.log("removing libavformat includes");
 
@@ -193,9 +185,7 @@ export default class FFMPEG {
             tryUnlink("/usr/local/include/libavformat/avio.h");
             tryUnlink("/usr/local/include/libavformat/version.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libavformat")) {
-                removeSync("/usr/local/include/libavformat");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libavformat")) removeSync("/usr/local/include/libavformat");
 
             console.log("removing libavutil includes");
 
@@ -283,36 +273,28 @@ export default class FFMPEG {
             tryUnlink("/usr/local/include/libavutil/version.h");
             tryUnlink("/usr/local/include/libavutil/xtea.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libavutil")) {
-                removeSync("/usr/local/include/libavutil");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libavutil")) removeSync("/usr/local/include/libavutil");
 
             console.log("removing libpostproc includes");
 
             tryUnlink("/usr/local/include/libpostproc/postprocess.h");
             tryUnlink("/usr/local/include/libpostproc/version.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libpostproc")) {
-                removeSync("/usr/local/include/libpostproc");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libpostproc")) removeSync("/usr/local/include/libpostproc");
 
             console.log("removing libswresample includes");
 
             tryUnlink("/usr/local/include/libswresample/swresample.h");
             tryUnlink("/usr/local/include/libswresample/version.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libswresample")) {
-                removeSync("/usr/local/include/libswresample");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libswresample")) removeSync("/usr/local/include/libswresample");
 
             console.log("removing libswscale includes");
 
             tryUnlink("/usr/local/include/libswscale/swscale.h");
             tryUnlink("/usr/local/include/libswscale/version.h");
 
-            if (isDirectoryEmpty("/usr/local/include/libswscale")) {
-                removeSync("/usr/local/include/libswscale");
-            }
+            if (isDirectoryEmpty("/usr/local/include/libswscale")) removeSync("/usr/local/include/libswscale");
 
             console.log("removing ffmpeg codecs");
 
@@ -370,9 +352,7 @@ export default class FFMPEG {
             tryUnlink("/usr/local/share/ffmpeg/examples/vaapi_encode.c");
             tryUnlink("/usr/local/share/ffmpeg/examples/vaapi_transcode.c");
 
-            if (isDirectoryEmpty("/usr/local/share/ffmpeg/examples")) {
-                removeSync("/usr/local/share/ffmpeg/examples");
-            }
+            if (isDirectoryEmpty("/usr/local/share/ffmpeg/examples")) removeSync("/usr/local/share/ffmpeg/examples");
 
             console.log("removing ffmpeg shared");
 
@@ -383,9 +363,7 @@ export default class FFMPEG {
             tryUnlink("/usr/local/share/ffmpeg/libvpx-720p.ffpreset");
             tryUnlink("/usr/local/share/ffmpeg/libvpx-720p50_60.ffpreset");
 
-            if (isDirectoryEmpty("/usr/local/share/ffmpeg")) {
-                removeSync("/usr/local/share/ffmpeg");
-            }
+            if (isDirectoryEmpty("/usr/local/share/ffmpeg")) removeSync("/usr/local/share/ffmpeg");
 
             console.log("removing ffmpeg man pages");
 

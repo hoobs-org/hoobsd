@@ -111,9 +111,7 @@ export default class Server extends EventEmitter {
 
         Logger.setTimestampEnabled(false);
 
-        if (Instance.debug) {
-            Logger.setDebugEnabled(true);
-        }
+        if (Instance.debug) Logger.setDebugEnabled(true);
 
         User.setStoragePath(Paths.configPath());
 
@@ -157,13 +155,8 @@ export default class Server extends EventEmitter {
         this.loadCachedPlatformAccessoriesFromDisk();
         this.pluginManager.initializeInstalledPlugins();
 
-        if (this.config.platforms.length > 0) {
-            promises.push(...this.loadPlatforms());
-        }
-
-        if (this.config.accessories.length > 0) {
-            this.loadAccessories();
-        }
+        if (this.config.platforms.length > 0) promises.push(...this.loadPlatforms());
+        if (this.config.accessories.length > 0) this.loadAccessories();
 
         this.restoreCachedPlatformAccessories();
         this.api.signalFinished();
@@ -227,9 +220,7 @@ export default class Server extends EventEmitter {
             mdns: this.config.mdns,
         };
 
-        if (this.settings.setupID && this.settings.setupID.length === 4) {
-            publishInfo.setupID = this.settings.setupID;
-        }
+        if (this.settings.setupID && this.settings.setupID.length === 4) publishInfo.setupID = this.settings.setupID;
 
         this.bridge.publish(publishInfo, this.allowInsecureAccess);
         this.emit("publishSetupUri", this.setupURI());
@@ -252,9 +243,7 @@ export default class Server extends EventEmitter {
                 try {
                     plugin = this.pluginManager.getPluginByActiveDynamicPlatform(accessory._associatedPlatform!);
 
-                    if (plugin) {
-                        accessory._associatedPlugin = plugin.getPluginIdentifier();
-                    }
+                    if (plugin) accessory._associatedPlugin = plugin.getPluginIdentifier();
                 } catch (error) {
                     Console.info(`Could not find the associated plugin for the accessory '${accessory.displayName}'.`);
                 }
@@ -265,9 +254,7 @@ export default class Server extends EventEmitter {
             if (!platformPlugins) {
                 Console.info(`Failed to find plugin to handle accessory ${accessory._associatedHAPAccessory.displayName}`);
 
-                if (!this.keepOrphanedCachedAccessories) {
-                    return false;
-                }
+                if (!this.keepOrphanedCachedAccessories) return false;
             } else {
                 accessory.getService(Service.AccessoryInformation)!.setCharacteristic(Characteristic.FirmwareRevision, plugin!.version);
 
@@ -298,16 +285,12 @@ export default class Server extends EventEmitter {
         Console.info(`Loading ${this.config.accessories.length} accessories...`);
 
         this.config.accessories.forEach((accessoryConfig) => {
-            if (!accessoryConfig.accessory) {
-                return;
-            }
+            if (!accessoryConfig.accessory) return;
 
             const accessoryIdentifier: AccessoryName | AccessoryIdentifier = accessoryConfig.accessory;
             const displayName = accessoryConfig.name;
 
-            if (!displayName) {
-                return;
-            }
+            if (!displayName) return;
 
             let plugin: Plugin;
             let constructor: AccessoryPluginConstructor;
@@ -338,9 +321,7 @@ export default class Server extends EventEmitter {
         const promises: Promise<void>[] = [];
 
         this.config.platforms.forEach((platformConfig) => {
-            if (!platformConfig.platform) {
-                return;
-            }
+            if (!platformConfig.platform) return;
 
             const platformIdentifier: PlatformName | PlatformIdentifier = platformConfig.platform;
             const displayName = platformConfig.name || platformIdentifier;
@@ -397,9 +378,7 @@ export default class Server extends EventEmitter {
         const services = (accessoryInstance.getServices() || []).filter((service) => !!service);
         const controllers = (accessoryInstance.getControllers ? accessoryInstance.getControllers() || [] : []).filter((controller) => !!controller);
 
-        if (services.length === 0 && controllers.length === 0) {
-            return undefined;
-        }
+        if (services.length === 0 && controllers.length === 0) return undefined;
 
         if (!(services[0] instanceof Service)) {
             return AccessoryLoader.parseAccessoryJSON({
@@ -476,8 +455,10 @@ export default class Server extends EventEmitter {
             this.cachedPlatformAccessories.push(accessory);
 
             const plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
+
             if (plugin) {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
+
                 if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
                     informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
                 }
@@ -506,9 +487,8 @@ export default class Server extends EventEmitter {
     private handleUnregisterPlatformAccessories(accessories: PlatformAccessory[]): void {
         const hapAccessories = accessories.map((accessory) => {
             const index = this.cachedPlatformAccessories.indexOf(accessory);
-            if (index >= 0) {
-                this.cachedPlatformAccessories.splice(index, 1);
-            }
+
+            if (index >= 0) this.cachedPlatformAccessories.splice(index, 1);
 
             return accessory._associatedHAPAccessory;
         });
@@ -524,9 +504,7 @@ export default class Server extends EventEmitter {
             let accessoryPort = 0;
 
             if (this.externalPorts) {
-                if (this.nextExternalPort === undefined) {
-                    this.nextExternalPort = this.externalPorts.start;
-                }
+                if (this.nextExternalPort === undefined) this.nextExternalPort = this.externalPorts.start;
 
                 if (this.nextExternalPort <= this.externalPorts.end) {
                     this.nextExternalPort += 1;
@@ -551,10 +529,8 @@ export default class Server extends EventEmitter {
             if (plugin) {
                 const informationService = hapAccessory.getService(Service.AccessoryInformation)!;
 
-                if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
-                    informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
-                }
-            } else if (PluginManager.isQualifiedPluginIdentifier(accessory._associatedPlugin!)) { // we did already complain in api.ts if it wasn't a qualified name
+                if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
+            } else if (PluginManager.isQualifiedPluginIdentifier(accessory._associatedPlugin!)) {
                 Console.warn("A platform configured a external accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
             }
 

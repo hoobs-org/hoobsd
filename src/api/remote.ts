@@ -52,9 +52,7 @@ export default class RemoteController {
     }
 
     disconnect(_request: Request, response: Response): Response {
-        if (this.client) {
-            this.client.disconnect();
-        }
+        if (this.client) this.client.disconnect();
 
         return response.send({
             success: true,

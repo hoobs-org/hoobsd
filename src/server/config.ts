@@ -33,9 +33,7 @@ export default class ConfigController {
     async save(request: SocketRequest, response: SocketResponse): Promise<void> {
         Paths.saveConfig(request.body);
 
-        if (Instance.bridge) {
-            await Instance.bridge.restart();
-        }
+        if (Instance.bridge) await Instance.bridge.restart();
 
         response.send({
             success: true,

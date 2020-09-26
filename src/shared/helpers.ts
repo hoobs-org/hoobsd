@@ -42,21 +42,10 @@ export function sanitize(value: string, prevent?: string): string {
 export function ordinal(value: number | string): string {
     const parsed = parseInt(`${value}`, 10);
 
-    if (Number.isNaN(parsed) || parsed <= 0) {
-        return `${value}`;
-    }
-
-    if (parsed % 10 === 1 && parsed % 100 !== 11) {
-        return `${parsed}st`;
-    }
-
-    if (parsed % 10 === 2 && parsed % 100 !== 12) {
-        return `${parsed}nd`;
-    }
-
-    if (parsed % 10 === 3 && parsed % 100 !== 13) {
-        return `${parsed}rd`;
-    }
+    if (Number.isNaN(parsed) || parsed <= 0) return `${value}`;
+    if (parsed % 10 === 1 && parsed % 100 !== 11) return `${parsed}st`;
+    if (parsed % 10 === 2 && parsed % 100 !== 12) return `${parsed}nd`;
+    if (parsed % 10 === 3 && parsed % 100 !== 13) return `${parsed}rd`;
 
     return `${parsed}th`;
 }
@@ -64,9 +53,7 @@ export function ordinal(value: number | string): string {
 export function format(value: number | string): string | undefined {
     const parsed = parseFloat(`${value}`);
 
-    if (Number.isNaN(parsed) || parsed <= 0) {
-        return undefined;
-    }
+    if (Number.isNaN(parsed) || parsed <= 0) return undefined;
 
     return parsed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
@@ -86,9 +73,7 @@ export function loadJson<T>(file: string, replacement: T): T {
 }
 
 export function jsonEquals(source: any, value: any): boolean {
-    if (JSON.stringify(source) === JSON.stringify(value)) {
-        return true;
-    }
+    if (JSON.stringify(source) === JSON.stringify(value)) return true;
 
     return false;
 }
@@ -133,9 +118,7 @@ export function findCommand(command: string): boolean {
     const paths = (process.env.PATH || "").split(":");
 
     for (let i = 0; i < paths.length; i += 1) {
-        if (existsSync(join(paths[i], command))) {
-            return true;
-        }
+        if (existsSync(join(paths[i], command))) return true;
     }
 
     return false;
@@ -144,9 +127,7 @@ export function findCommand(command: string): boolean {
 export function verifyModule(path: string, name: string): string | undefined {
     if (existsSync(path) && existsSync(join(path, "package.json"))) {
         try {
-            if (JSON.parse(readFileSync(join(path, "package.json")).toString())?.name === name) {
-                return path;
-            }
+            if (JSON.parse(readFileSync(join(path, "package.json")).toString())?.name === name) return path;
         } catch (_error) {
             return undefined;
         }
@@ -168,9 +149,7 @@ export function findModule(name: string): string | undefined {
             prefix = undefined;
         }
 
-        if (prefix && prefix !== "") {
-            path = verifyModule(join(join(prefix, "lib", "node_modules"), name), name);
-        }
+        if (prefix && prefix !== "") path = verifyModule(join(join(prefix, "lib", "node_modules"), name), name);
 
         if (!path) {
             prefix = undefined;
@@ -181,9 +160,7 @@ export function findModule(name: string): string | undefined {
                 prefix = undefined;
             }
 
-            if (prefix && prefix !== "") {
-                path = verifyModule(join(join(prefix, "node_modules"), name), name);
-            }
+            if (prefix && prefix !== "") path = verifyModule(join(join(prefix, "node_modules"), name), name);
         }
 
         if (path) {
@@ -236,9 +213,7 @@ export function generateUsername(): string {
     let value = "";
 
     for (let i = 0; i < 6; i += 1) {
-        if (value !== "") {
-            value += ":";
-        }
+        if (value !== "") value += ":";
 
         const hex = `00${Math.floor(Math.random() * 255).toString(16).toUpperCase()}`;
 
@@ -254,13 +229,8 @@ export function network(): string[] {
 
     Object.keys(ifaces).forEach((ifname: string) => {
         ifaces[ifname]!.forEach((iface: Os.NetworkInterfaceInfo) => {
-            if (iface.family !== "IPv4" || iface.internal !== false) {
-                return;
-            }
-
-            if (results.indexOf(iface.address) === -1) {
-                results.push(`${iface.address}`);
-            }
+            if (iface.family !== "IPv4" || iface.internal !== false) return;
+            if (results.indexOf(iface.address) === -1) results.push(`${iface.address}`);
         });
     });
 

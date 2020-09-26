@@ -36,13 +36,15 @@ export default class PluginsController {
         const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
-            const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
+            if (Instance.instances[i].type === "bridge") {
+                const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
 
-            if (plugins) {
-                results.push({
-                    instance: Instance.instances[i].id,
-                    plugins,
-                });
+                if (plugins) {
+                    results.push({
+                        instance: Instance.instances[i].id,
+                        plugins,
+                    });
+                }
             }
         }
 

@@ -16,51 +16,45 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import System from "systeminformation";
+import { Request, Response } from "express-serve-static-core";
 import Instance from "../shared/instance";
-import Paths from "../shared/paths";
-import { SocketRequest, SocketResponse } from "./socket";
+import Socket from "./socket";
 
-export default class BridgeController {
+export default class StatusController {
     constructor() {
-        Instance.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
-        Instance.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
-        Instance.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
-        Instance.socket?.route("bridge:clean", (request: SocketRequest, response: SocketResponse) => this.clean(request, response));
+        Instance.app?.get("/api/status", (request, response) => this.status(request, response));
     }
 
-    async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (!Instance.bridge?.running) await Instance.bridge?.start();
+    async status(_request: Request, response: Response): Promise<Response> {
+        const results: { [key: string]: any } = {};
 
-        response.send({
-            success: true,
-        });
-    }
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            if (Instance.instances[i].type === "bridge") {
+                const status = await Socket.fetch(Instance.instances[i].id, "status:get");
 
-    async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (Instance.bridge?.running) await Instance.bridge.stop();
+                if (status) {
+                    results[Instance.instances[i].id] = {
+                        version: status.version,
+                        running: status.running,
+                        status: status.status,
+                        uptime: status.uptime,
+                    };
+                } else {
+                    results[Instance.instances[i].id] = {
+                        running: false,
+                        status: "unavailable",
+                        uptime: 0,
+                    };
+                }
+            }
+        }
 
-        response.send({
-            success: true,
-        });
-    }
-
-    async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (Instance.bridge?.running) await Instance.bridge.restart();
-
-        response.send({
-            success: true,
-        });
-    }
-
-    async clean(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (Instance.bridge?.running) await Instance.bridge.stop();
-
-        Paths.clean();
-
-        await Instance.bridge?.start();
-
-        response.send({
-            success: true,
+        return response.send({
+            instances: results,
+            cpu: await System.currentLoad(),
+            memory: await System.mem(),
+            temp: await System.cpuTemperature(),
         });
     }
 }

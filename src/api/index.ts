@@ -35,6 +35,7 @@ import { Console } from "../shared/logger";
 import { findModule } from "../shared/helpers";
 
 import AuthController from "./auth";
+import StatusController from "./status";
 import AccessoriesController from "./accessories";
 import BridgeController from "./bridge";
 import CacheController from "./cache";
@@ -78,9 +79,7 @@ export default class API extends EventEmitter {
             PATH: `${join(dirname(realpathSync(join(__filename, "../../"))), "cmd")}:${process.env.PATH}:${paths.join(":")}`,
         };
 
-        if (existsSync("/etc/ssl/certs/cacert.pem")) {
-            this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
-        }
+        if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
 
         Instance.io?.on("connection", (socket: IO.Socket): void => {
             socket.on("shell:connect", () => {
@@ -170,6 +169,7 @@ export default class API extends EventEmitter {
         Instance.app?.get("/api", (_request, response) => response.send({ version: Instance.version }));
 
         new AuthController();
+        new StatusController();
         new AccessoriesController();
         new BridgeController();
         new CacheController();
@@ -182,15 +182,11 @@ export default class API extends EventEmitter {
 
         let gui: string | undefined = findModule("@hoobs/gui");
 
-        if (gui && existsSync(join(gui, "lib"))) {
-            gui = join(gui, "lib");
-        }
+        if (gui && existsSync(join(gui, "lib"))) gui = join(gui, "lib");
 
         let touch: string | undefined = findModule("@hoobs/touch");
 
-        if (touch && existsSync(join(touch, "lib"))) {
-            touch = join(touch, "lib");
-        }
+        if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
 
         Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(dirname(realpathSync(__filename)), "../../var")));
         Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(dirname(realpathSync(__filename)), "../../var")));
@@ -211,9 +207,7 @@ export default class API extends EventEmitter {
         this.socket.start();
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                Console.import((await Socket.fetch(Instance.instances[i].id, "cache:log")) || []);
-            }
+            if (Instance.instances[i].type === "bridge") Console.import((await Socket.fetch(Instance.instances[i].id, "cache:log")) || []);
         }
 
         Instance.listner?.listen(this.port, () => {

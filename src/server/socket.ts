@@ -129,9 +129,7 @@ export default class Socket {
     stop() {
         this.pipe.server.stop();
 
-        if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) {
-            unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
-        }
+        if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
     }
 
     static fetch(event: string, body: any): Promise<any> {

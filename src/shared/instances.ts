@@ -28,6 +28,7 @@ import {
 
 import { execSync } from "child_process";
 import { join } from "path";
+import Instance from "./instance";
 import Paths from "./paths";
 
 import {
@@ -53,20 +54,15 @@ export default class Instances {
         const paths = (process.env.PATH || "").split(":");
 
         for (let i = 0; i < paths.length; i += 1) {
-            if (existsSync(join(paths[i], "hoobsd"))) {
-                return paths[i];
-            }
+            if (existsSync(join(paths[i], "hoobsd"))) return paths[i];
         }
 
         return "";
     }
 
     static initSystem() {
-        if (existsSync("/etc/systemd/system")) {
-            return "systemd";
-        } if (existsSync("/Library/LaunchDaemons/")) {
-            return "launchd";
-        }
+        if (existsSync("/etc/systemd/system")) return "systemd";
+        if (existsSync("/Library/LaunchDaemons/")) return "launchd";
 
         return null;
     }
@@ -77,31 +73,23 @@ export default class Instances {
 
         let instances: InstanceRecord[] = [];
 
-        if (existsSync(Paths.instancesPath())) {
-            instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-        }
+        if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
         for (let i = 0; i < instances.length; i += 1) {
             instances[i].host = host;
             instances[i].ssl = false;
             instances[i].service = undefined;
 
-            if (existsSync(join(Paths.storagePath(instances[i].id), "package.json"))) {
-                instances[i].plugins = join(Paths.storagePath(instances[i].id), "node_modules");
-            }
+            if (existsSync(join(Paths.storagePath(instances[i].id), "package.json"))) instances[i].plugins = join(Paths.storagePath(instances[i].id), "node_modules");
 
             switch (type) {
                 case "systemd":
-                    if (existsSync(`/etc/systemd/system/${instances[i].id}.hoobsd.service`)) {
-                        instances[i].service = `${instances[i].id}.hoobsd.service`;
-                    }
+                    if (existsSync(`/etc/systemd/system/${instances[i].id}.hoobsd.service`)) instances[i].service = `${instances[i].id}.hoobsd.service`;
 
                     break;
 
                 case "launchd":
-                    if (existsSync(`/Library/LaunchDaemons/org.hoobsd.${instances[i].id}.plist`)) {
-                        instances[i].service = `org.hoobsd.${instances[i].id}.plist`;
-                    }
+                    if (existsSync(`/Library/LaunchDaemons/org.hoobsd.${instances[i].id}.plist`)) instances[i].service = `org.hoobsd.${instances[i].id}.plist`;
 
                     break;
 
@@ -117,9 +105,7 @@ export default class Instances {
         return new Promise((resolve) => {
             const type = Instances.initSystem();
 
-            if (!name || !type) {
-                return resolve(false);
-            }
+            if (!name || !type) return resolve(false);
 
             const id = sanitize(name);
 
@@ -210,28 +196,19 @@ export default class Instances {
 
     static renameInstance(name: string, display: string) {
         return new Promise((resolve) => {
-            if (!name) {
-                return resolve(false);
-            }
+            if (!name) return resolve(false);
 
             const id = sanitize(name);
-
-            let instances: InstanceRecord[] = [];
-
-            if (existsSync(Paths.instancesPath())) {
-                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-            }
-
-            const index = instances.findIndex((n) => n.id === id);
+            const index = Instance.instances.findIndex((n) => n.id === id);
 
             if (index >= 0) {
-                instances[index].display = display;
+                Instance.instances[index].display = display;
 
                 if (existsSync(Paths.instancesPath())) {
                     unlinkSync(Paths.instancesPath());
                 }
 
-                appendFileSync(Paths.instancesPath(), formatJson(instances));
+                appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
 
                 return resolve(true);
             }
@@ -280,32 +257,21 @@ export default class Instances {
         return new Promise((resolve) => {
             const type = Instances.initSystem();
 
-            if (!name || !type) {
-                return resolve(false);
-            }
+            if (!name || !type) return resolve(false);
 
             const id = sanitize(name);
-
-            let instances: InstanceRecord[] = [];
-
-            if (existsSync(Paths.instancesPath())) {
-                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-            }
-
-            const index = instances.findIndex((n: InstanceRecord) => n.id === id);
+            const index = Instance.instances.findIndex((n: InstanceRecord) => n.id === id);
 
             if (index >= 0) {
                 switch (type) {
                     case "systemd":
                         Instances.removeSystemd(id).then((success) => {
                             if (success) {
-                                instances.splice(index, 1);
+                                Instance.instances.splice(index, 1);
 
-                                if (existsSync(Paths.instancesPath())) {
-                                    unlinkSync(Paths.instancesPath());
-                                }
+                                if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
 
-                                appendFileSync(Paths.instancesPath(), formatJson(instances));
+                                appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
                             }
 
                             return resolve(success);
@@ -316,13 +282,11 @@ export default class Instances {
                     case "launchd":
                         Instances.removeLaunchd(id).then((success) => {
                             if (success) {
-                                instances.splice(index, 1);
+                                Instance.instances.splice(index, 1);
 
-                                if (existsSync(Paths.instancesPath())) {
-                                    unlinkSync(Paths.instancesPath());
-                                }
+                                if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
 
-                                appendFileSync(Paths.instancesPath(), formatJson(instances));
+                                appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
                             }
 
                             return resolve(success);
@@ -330,13 +294,11 @@ export default class Instances {
 
                         break;
                     default:
-                        instances.splice(index, 1);
+                        Instance.instances.splice(index, 1);
 
-                        if (existsSync(Paths.instancesPath())) {
-                            unlinkSync(Paths.instancesPath());
-                        }
+                        if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
 
-                        appendFileSync(Paths.instancesPath(), formatJson(instances));
+                        appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
 
                         return resolve(true);
                 }
@@ -348,12 +310,6 @@ export default class Instances {
 
     static createSystemd(name: string, port: number) {
         return new Promise((resolve) => {
-            let instances: InstanceRecord[] = [];
-
-            if (existsSync(Paths.instancesPath())) {
-                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-            }
-
             const id = sanitize(name);
             const display = name;
 
@@ -362,11 +318,11 @@ export default class Instances {
                 && id !== "static"
                 && id !== "backups"
                 && id !== "interface"
-                && instances.findIndex((n) => n.id === id) === -1
-                && instances.findIndex((n) => n.port === port) === -1
+                && Instance.instances.findIndex((n) => n.id === id) === -1
+                && Instance.instances.findIndex((n) => n.port === port) === -1
             ) {
                 try {
-                    if (!existsSync("/etc/systemd/system/api.hoobsd.service")) {
+                    if (id === "api") {
                         execSync("touch /etc/systemd/system/api.hoobsd.service");
                         execSync("truncate -s 0 /etc/systemd/system/api.hoobsd.service");
 
@@ -377,7 +333,7 @@ export default class Instances {
                         execSync("echo \"[Service]\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"Type=simple\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"User=root\" >> /etc/systemd/system/api.hoobsd.service");
-                        execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api --port 80" >> /etc/systemd/system/api.hoobsd.service`);
+                        execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api" >> /etc/systemd/system/api.hoobsd.service`);
                         execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"RestartSec=3\" >> /etc/systemd/system/api.hoobsd.service");
                         execSync("echo \"KillMode=process\" >> /etc/systemd/system/api.hoobsd.service");
@@ -389,43 +345,30 @@ export default class Instances {
                         execSync("systemctl daemon-reload");
                         execSync("systemctl enable api.hoobsd.service");
                         execSync("systemctl start api.hoobsd.service");
+                    } else {
+                        execSync(`touch /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`truncate -s 0 /etc/systemd/system/${id}.hoobsd.service`);
+
+                        execSync(`echo "[Unit]" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "Description=HOOBS ${display}" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "After=network-online.target" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "[Service]" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "Type=simple" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "User=root" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} start --instance '${id}'" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "Restart=on-failure" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "RestartSec=3" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "KillMode=process" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "[Install]" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "WantedBy=multi-user.target" >> /etc/systemd/system/${id}.hoobsd.service`);
+                        execSync(`echo "" >> /etc/systemd/system/${id}.hoobsd.service`);
+
+                        execSync("systemctl daemon-reload");
+                        execSync(`systemctl enable ${id}.hoobsd.service`);
+                        execSync(`systemctl start ${id}.hoobsd.service`);
                     }
-
-                    execSync(`touch /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`truncate -s 0 /etc/systemd/system/${id}.hoobsd.service`);
-
-                    execSync(`echo "[Unit]" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "Description=HOOBS ${display}" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "After=network-online.target" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "[Service]" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "Type=simple" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "User=root" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} start --instance '${id}' --port ${port}" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "Restart=on-failure" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "RestartSec=3" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "KillMode=process" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "[Install]" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "WantedBy=multi-user.target" >> /etc/systemd/system/${id}.hoobsd.service`);
-                    execSync(`echo "" >> /etc/systemd/system/${id}.hoobsd.service`);
-
-                    execSync("systemctl daemon-reload");
-                    execSync(`systemctl enable ${id}.hoobsd.service`);
-                    execSync(`systemctl start ${id}.hoobsd.service`);
-
-                    instances.push({
-                        id,
-                        type: "bridge",
-                        display,
-                        port,
-                    });
-
-                    if (existsSync(Paths.instancesPath())) {
-                        unlinkSync(Paths.instancesPath());
-                    }
-
-                    appendFileSync(Paths.instancesPath(), formatJson(instances));
 
                     resolve(true);
                 } catch (_error) {
@@ -445,22 +388,16 @@ export default class Instances {
 
     static createLaunchd(name: string, port: number) {
         return new Promise((resolve) => {
-            let instances: InstanceRecord[] = [];
-
-            if (existsSync(Paths.instancesPath())) {
-                instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-            }
-
             const id = sanitize(name);
             const display = name;
 
             if (
                 !Number.isNaN(port)
-                && instances.findIndex((n) => n.id === id) === -1
-                && instances.findIndex((n) => n.port === port) === -1
+                && Instance.instances.findIndex((n) => n.id === id) === -1
+                && Instance.instances.findIndex((n) => n.port === port) === -1
             ) {
                 try {
-                    if (!existsSync("/Library/LaunchDaemons/org.hoobsd.api.plist")) {
+                    if (id === "api") {
                         execSync("touch /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("truncate -s 0 /Library/LaunchDaemons/org.hoobsd.api.plist");
 
@@ -483,8 +420,6 @@ export default class Instances {
                         execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.api.plist`);
                         execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
-                        execSync("echo \"            <string>--port</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
-                        execSync("echo \"            <string>80</string>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
@@ -496,58 +431,43 @@ export default class Instances {
                         execSync("echo \"</plist>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
 
                         execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.api.plist");
+                    } else {
+                        execSync(`touch /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`truncate -s 0 /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+
+                        execSync(`echo "<?xml version="1.0" encoding="UTF-8"?>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "<plist version="1.0">" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "    <dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>Label</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <string>org.hoobsd.${id}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>EnvironmentVariables</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <key>PATH</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <string><![CDATA[/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin]]></string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <key>HOME</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <string>/var/root</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        </dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>Program</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>ProgramArguments</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <array>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <string>start</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <string>--instance</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "            <string>${id}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        </array>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>RunAtLoad</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <true/>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>KeepAlive</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <true/>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <key>SessionCreate</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "        <true/>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "    </dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+                        execSync(`echo "</plist>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
+
+                        execSync(`launchctl load -w /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
                     }
-
-                    execSync(`touch /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`truncate -s 0 /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-
-                    execSync(`echo "<?xml version="1.0" encoding="UTF-8"?>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "<plist version="1.0">" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "    <dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>Label</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <string>org.hoobsd.${id}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>EnvironmentVariables</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <key>PATH</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string><![CDATA[/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin]]></string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <key>HOME</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>/var/root</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        </dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>Program</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>ProgramArguments</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <array>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>start</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>--instance</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>${id}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>--port</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "            <string>${port}</string>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        </array>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>RunAtLoad</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <true/>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>KeepAlive</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <true/>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <key>SessionCreate</key>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "        <true/>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "    </dict>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                    execSync(`echo "</plist>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-
-                    execSync(`launchctl load -w /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-
-                    instances.push({
-                        id,
-                        type: "bridge",
-                        display,
-                        port,
-                    });
-
-                    if (existsSync(Paths.instancesPath())) {
-                        unlinkSync(Paths.instancesPath());
-                    }
-
-                    appendFileSync(Paths.instancesPath(), formatJson(instances));
 
                     resolve(true);
                 } catch (_error) {
@@ -565,127 +485,154 @@ export default class Instances {
         });
     }
 
-    static createService(name: string, port: number) {
-        return new Promise((resolve) => {
-            const type = Instances.initSystem();
+    static appendInstance(id: string, display: string, type: string, port: number) {
+        const instances: InstanceRecord[] = [];
 
-            if (!type) {
-                resolve(false);
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            const { ...instance } = Instance.instances[i];
+
+            if (instance.id === "api") {
+                instances.unshift({
+                    id: instance.id,
+                    type: instance.type,
+                    display: instance.display,
+                    port: instance.port,
+                });
             } else {
-                if (!existsSync(Paths.instancesPath())) {
-                    appendFileSync(Paths.instancesPath(), "[]");
+                instances.push({
+                    id: instance.id,
+                    type: instance.type,
+                    display: instance.display,
+                    port: instance.port,
+                });
+            }
+        }
+
+        if (id === "api") {
+            instances.unshift({
+                id,
+                type,
+                display,
+                port,
+            });
+        } else {
+            instances.push({
+                id,
+                type,
+                display,
+                port,
+            });
+        }
+
+        if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
+
+        appendFileSync(Paths.instancesPath(), formatJson(instances));
+    }
+
+    static createService(name: string, port: number, skip?: boolean) {
+        return new Promise((resolve) => {
+            let type = "";
+
+            if (!skip) {
+                type = Instances.initSystem() || "";
+            }
+
+            if (!existsSync(Paths.instancesPath())) {
+                appendFileSync(Paths.instancesPath(), "[]");
+            }
+
+            if (name && port) {
+                switch (type) {
+                    case "systemd":
+                        Instances.createSystemd(name, port).then((success) => {
+                            if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                            resolve(success);
+                        });
+
+                        break;
+
+                    case "launchd":
+                        Instances.createLaunchd(name, port).then((success) => {
+                            if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                            resolve(success);
+                        });
+
+                        break;
+
+                    default:
+                        Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                        resolve(true);
+                        break;
                 }
+            } else {
+                port = port || 51826;
 
-                if (name && port) {
-                    switch (type) {
-                        case "systemd":
-                            Instances.createSystemd(name, port).then((success) => {
-                                resolve(success);
-                            });
+                while (Instance.instances.findIndex((n) => n.port === port) >= 0) port += 1000;
 
-                            break;
+                const questions: Prompt.PromptObject<string>[] = [
+                    {
+                        type: "text",
+                        name: "name",
+                        message: "enter a name for this instance",
+                        validate: (value: string | undefined) => {
+                            if (!value || value === "") return "a name is required";
+                            if (Instance.instances.findIndex((n) => n.id === sanitize(value)) >= 0) return "instance name must be uniqie";
 
-                        case "launchd":
-                            Instances.createLaunchd(name, port).then((success) => {
-                                resolve(success);
-                            });
-
-                            break;
-
-                        default:
-                            resolve(false);
-                            break;
-                    }
-                } else {
-                    let instances: InstanceRecord[] = [];
-
-                    if (existsSync(Paths.instancesPath())) {
-                        instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-                    }
-
-                    port = port || 51826;
-
-                    while (instances.findIndex((n) => n.port === port) >= 0) {
-                        port += 1000;
-                    }
-
-                    const questions: Prompt.PromptObject<string>[] = [
-                        {
-                            type: "text",
-                            name: "name",
-                            message: "enter a name for this instance",
-                            validate: (value: string | undefined) => {
-                                if (!value || value === "") {
-                                    return "a name is required";
-                                }
-
-                                if (sanitize(value) === "api") {
-                                    return "api is a reserved instance name";
-                                }
-
-                                if (instances.findIndex(
-                                    (n) => n.id === sanitize(value),
-                                ) >= 0) {
-                                    return "instance name must be uniqie";
-                                }
-
-                                return true;
-                            },
+                            return true;
                         },
-                        {
-                            type: "text",
-                            name: "bridge",
-                            initial: `${port}`,
-                            message: "enter the port for the bridge",
-                            format: (value: string | undefined) => parseInt(value || "0", 10),
-                            validate: (value: string | undefined) => {
-                                const parsed: number = parseInt(`${value || port || "0"}`, 10);
+                    },
+                    {
+                        type: "text",
+                        name: "port",
+                        initial: `${port}`,
+                        message: "enter the port for the instance",
+                        format: (value: string | undefined) => parseInt(value || "0", 10),
+                        validate: (value: string | undefined) => {
+                            const parsed: number = parseInt(`${value || port || "0"}`, 10);
 
-                                if (Number.isNaN(parsed)) {
-                                    return "invalid port number";
-                                }
+                            if (Number.isNaN(parsed)) return "invalid port number";
+                            if (parsed < 1 || parsed > 65535) return "select a port between 1 and 65535";
+                            if (Instance.instances.findIndex((n) => n.port === parsed) >= 0) return "port is already in use";
 
-                                if (parsed < 1 || parsed > 65535) {
-                                    return "select a port between 1 and 65535";
-                                }
-
-                                if (instances.findIndex(
-                                    (n) => n.port === parsed,
-                                ) >= 0) {
-                                    return "port is already in use";
-                                }
-
-                                return true;
-                            },
+                            return true;
                         },
-                    ];
+                    },
+                ];
 
-                    Prompt(questions).then((result) => {
-                        if (result && result.name && result.server && result.bridge) {
-                            switch (type) {
-                                case "systemd":
-                                    Instances.createSystemd(result.name, result.port).then((success) => {
-                                        resolve(success);
-                                    });
+                Prompt(questions).then((result) => {
+                    if (result && result.name && result.port) {
+                        const id = sanitize(result.name);
 
-                                    break;
+                        switch (type) {
+                            case "systemd":
+                                Instances.createSystemd(result.name, result.port).then((success) => {
+                                    if (success) Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
 
-                                case "launchd":
-                                    Instances.createLaunchd(result.name, result.port).then((success) => {
-                                        resolve(success);
-                                    });
+                                    resolve(success);
+                                });
 
-                                    break;
+                                break;
 
-                                default:
-                                    resolve(false);
-                                    break;
-                            }
-                        } else {
-                            resolve(false);
+                            case "launchd":
+                                Instances.createLaunchd(result.name, result.port).then((success) => {
+                                    if (success) Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+
+                                    resolve(success);
+                                });
+
+                                break;
+
+                            default:
+                                Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
+                                resolve(true);
+                                break;
                         }
-                    });
-                }
+                    } else {
+                        resolve(false);
+                    }
+                });
             }
         });
     }

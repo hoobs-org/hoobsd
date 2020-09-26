@@ -31,9 +31,9 @@
     },
     "preferGlobal": true,
     "scripts": {
-        "api": "bin/hoobsd api -d -p 50826",
+        "api": "bin/hoobsd api -d",
         "build": "bin/build",
-        "instance": "bin/hoobsd start -d -i default -p 51826"
+        "instance": "bin/hoobsd start -d -i default"
     },
     "dependencies": {
         "archiver": "^5.0.2",

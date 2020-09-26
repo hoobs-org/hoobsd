@@ -36,9 +36,7 @@ export default class ConfigController {
     async saveConsole(request: Request, response: Response): Promise<void> {
         Paths.saveConfig(request.body);
 
-        if (Instance.bridge) {
-            await Instance.bridge.restart();
-        }
+        if (Instance.bridge) await Instance.bridge.restart();
 
         response.send({
             success: true,

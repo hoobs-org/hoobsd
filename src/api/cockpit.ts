@@ -66,15 +66,11 @@ export default class Cockpit {
     disconnect(): void {
         this.socket.close();
 
-        if (this.shell) {
-            this.shell.write("exit\r");
-        }
+        if (this.shell) this.shell.write("exit\r");
 
         this.shell = undefined;
 
-        if (this.standalone) {
-            process.exit(1);
-        }
+        if (this.standalone) process.exit(1);
     }
 
     start(standalone: boolean): Promise<string> {
@@ -96,9 +92,7 @@ export default class Cockpit {
                     PATH: `${process.env.PATH}:${paths.join(":")}`,
                 };
 
-                if (existsSync("/etc/ssl/certs/cacert.pem")) {
-                    this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
-                }
+                if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
 
                 this.shell = PTY.spawn(process.env.SHELL || "sh", [], {
                     name: "xterm-color",

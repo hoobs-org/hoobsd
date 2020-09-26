@@ -54,9 +54,7 @@ export default class AccessoriesController {
         this.getService(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((service) => {
             let { value } = request.body;
 
-            if (typeof request.body.value === "boolean") {
-                value = request.body.value ? 1 : 0;
-            }
+            if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
 
             Console.debug(`Update - ${request.params?.service}: ${value} (${typeof value})`);
 
@@ -86,9 +84,7 @@ export default class AccessoriesController {
         for (let i = 0; i < results.length; i += 1) {
             const { aid } = results[i];
 
-            if (lookup[aid]) {
-                results[i].aid = parseFloat(`${aid}.${lookup[aid]}`);
-            }
+            if (lookup[aid]) results[i].aid = parseFloat(`${aid}.${lookup[aid]}`);
 
             if (!lookup[aid]) {
                 lookup[aid] = 1;
@@ -107,13 +103,8 @@ export default class AccessoriesController {
             Instance.bridge?.client.accessories().then((results: any) => {
                 services = results;
             }).finally(() => {
-                if (!services) {
-                    resolve([]);
-                }
-
-                if (!Array.isArray(services)) {
-                    services = [services];
-                }
+                if (!services) resolve([]);
+                if (!Array.isArray(services)) services = [services];
 
                 const queue: boolean[] = [];
 
@@ -125,15 +116,11 @@ export default class AccessoriesController {
                     }).finally(() => {
                         queue.pop();
 
-                        if (queue.length === 0) {
-                            resolve(this.uniqieId(services));
-                        }
+                        if (queue.length === 0) resolve(this.uniqieId(services));
                     });
                 }
 
-                if (queue.length === 0) {
-                    resolve(this.uniqieId(services));
-                }
+                if (queue.length === 0) resolve(this.uniqieId(services));
             }).catch((error: Error) => reject(error));
         });
     }

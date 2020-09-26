@@ -58,9 +58,7 @@ export default class Plugins {
                         const name: PluginName = PluginManager.extractPluginName(identifier);
                         const scope = PluginManager.extractPluginScope(identifier);
 
-                        if (existsSync(directory) && pjson) {
-                            results.push(new Plugin(name, directory, pjson, scope));
-                        }
+                        if (existsSync(directory) && pjson) results.push(new Plugin(name, directory, pjson, scope));
                     }
                 }
             }
@@ -176,9 +174,7 @@ export default class Plugins {
                     const config = Paths.configuration();
                     let index = config.plugins?.indexOf(name);
 
-                    if (index! > -1) {
-                        config.plugins?.splice(index!, 1);
-                    }
+                    if (index! > -1) config.plugins?.splice(index!, 1);
 
                     index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
 
@@ -227,9 +223,7 @@ export default class Plugins {
                 flags.push("update");
             }
 
-            if (name) {
-                flags.push(`${name}@${tag}`);
-            }
+            if (name) flags.push(`${name}@${tag}`);
 
             const proc = spawn(Instance.manager || "npm", flags, {
                 cwd: Paths.storagePath(Instance.id),
@@ -265,29 +259,17 @@ export default class Plugins {
 
             let type = "platform";
 
-            if (schema.pluginType === "accessory") {
-                type = "accessory";
-            }
+            if (schema.pluginType === "accessory") type = "accessory";
 
             const idx = registered.findIndex((p) => p.alias === alias && p.type === type);
 
-            if (idx === -1) {
-                registered.push({ name, alias, type });
-            }
+            if (idx === -1) registered.push({ name, alias, type });
         } else {
             let main = ((pjson || {}).main || "") !== "" ? join(name, pjson.main) : name;
 
-            if (main.toLowerCase() === "index.js") {
-                main = name;
-            }
-
-            if (main.toLowerCase().endsWith("/index.js")) {
-                main = main.replace(/\/index.js/gi, "");
-            }
-
-            if (main.toLowerCase().endsWith(".js")) {
-                main = main.replace(/.js/gi, "");
-            }
+            if (main.toLowerCase() === "index.js") main = name;
+            if (main.toLowerCase().endsWith("/index.js")) main = main.replace(/\/index.js/gi, "");
+            if (main.toLowerCase().endsWith(".js")) main = main.replace(/.js/gi, "");
 
             try {
                 const plugin = await import(join(Plugins.directory, main));
@@ -308,17 +290,13 @@ export default class Plugins {
                     registerPlatform: (_p: string, a: string) => {
                         const idx = registered.findIndex((p) => p.alias === a && p.type === "platform");
 
-                        if (idx === -1) {
-                            registered.push({ name, alias: a, type: "platform" });
-                        }
+                        if (idx === -1) registered.push({ name, alias: a, type: "platform" });
                     },
 
                     registerAccessory: (_p: string, a: string) => {
                         const idx = registered.findIndex((p) => p.alias === a && p.type === "accessory");
 
-                        if (idx === -1) {
-                            registered.push({ name, alias: a, type: "accessory" });
-                        }
+                        if (idx === -1) registered.push({ name, alias: a, type: "accessory" });
                     },
 
                     user: {
@@ -345,9 +323,7 @@ export default class Plugins {
             delete require.cache[require.resolve(join(Plugins.directory, main))];
         }
 
-        if (registered.length > 0) {
-            Instance.plugins[name] = registered;
-        }
+        if (registered.length > 0) Instance.plugins[name] = registered;
 
         return registered;
     }
@@ -355,13 +331,8 @@ export default class Plugins {
     static getPluginPackage(path: string): PackageJSON {
         const pjson: PackageJSON = loadPackage(path);
 
-        if (!pjson) {
-            throw new Error(`Plugin ${path} does not contain a proper package.json.`);
-        }
-
-        if (!pjson.name || !PluginManager.isQualifiedPluginIdentifier(pjson.name)) {
-            throw new Error(`Plugin ${path} does not have a package name that begins with 'hoobs-' or '@scope/hoobs-.`);
-        }
+        if (!pjson) throw new Error(`Plugin ${path} does not contain a proper package.json.`);
+        if (!pjson.name || !PluginManager.isQualifiedPluginIdentifier(pjson.name)) throw new Error(`Plugin ${path} does not have a package name that begins with 'hoobs-' or '@scope/hoobs-.`);
 
         return pjson;
     }

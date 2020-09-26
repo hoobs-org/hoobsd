@@ -37,13 +37,7 @@ export = function Command(): void {
         .description("manage plugins for a given instance")
         .option("-i, --instance <name>", "set the instance name")
         .action((action, name, command) => {
-            const options = command;
-
-            if (options.instance === "api") {
-                options.instance = null;
-            }
-
-            Instance.id = sanitize(options.instance || "default");
+            Instance.id = sanitize(command.instance);
             Instance.debug = true;
             Instance.instances = Instances.list();
 
@@ -54,7 +48,7 @@ export = function Command(): void {
 
             switch (action) {
                 case "add":
-                    if (plugin) {
+                    if (command.instance && command.instance !== "" && Instance.id !== "api" && plugin) {
                         if (plugin.startsWith("@")) {
                             plugin = plugin.substring(1);
                             scope = plugin.split("/").shift();
@@ -77,12 +71,14 @@ export = function Command(): void {
                                 })));
                             }
                         });
+                    } else {
+                        console.log("please define a valid instance");
                     }
 
                     break;
 
                 case "remove":
-                    if (plugin) {
+                    if (command.instance && command.instance !== "" && Instance.id !== "api" && plugin) {
                         if (plugin.startsWith("@")) {
                             plugin = plugin.substring(1);
                             scope = plugin.split("/").shift();
@@ -104,12 +100,14 @@ export = function Command(): void {
                                 })));
                             }
                         });
+                    } else {
+                        console.log("please define a valid instance");
                     }
 
                     break;
 
                 case "upgrade":
-                    if (plugin) {
+                    if (command.instance && command.instance !== "" && Instance.id !== "api" && plugin) {
                         if (plugin.startsWith("@")) {
                             plugin = plugin.substring(1);
                             scope = plugin.split("/").shift();
@@ -132,7 +130,7 @@ export = function Command(): void {
                                 })));
                             }
                         });
-                    } else {
+                    } else if (command.instance && command.instance !== "" && Instance.id !== "api") {
                         Plugins.upgrade().finally(() => {
                             plugins = Plugins.installed();
 
@@ -144,21 +142,27 @@ export = function Command(): void {
                                 })));
                             }
                         });
+                    } else {
+                        console.log("please define a valid instance");
                     }
 
                     break;
 
                 case "list":
-                    plugins = Plugins.installed();
+                    if (command.instance && command.instance !== "" && Instance.id !== "api") {
+                        plugins = Plugins.installed();
 
-                    if (plugins.length > 0) {
-                        console.table(plugins.map((item) => ({
-                            name: item.getPluginIdentifier(),
-                            version: item.version,
-                            path: item.getPluginPath(),
-                        })));
+                        if (plugins.length > 0) {
+                            console.table(plugins.map((item) => ({
+                                name: item.getPluginIdentifier(),
+                                version: item.version,
+                                path: item.getPluginPath(),
+                            })));
+                        } else {
+                            console.log("no plugins installed");
+                        }
                     } else {
-                        console.log("no plugins installed");
+                        console.log("please define a valid instance");
                     }
 
                     break;
@@ -188,6 +192,7 @@ export = function Command(): void {
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
+        .option("-s, --skip", "skip init system intergration")
         .action((action, command) => {
             Instance.debug = true;
             Instance.instances = Instances.list();
@@ -196,10 +201,7 @@ export = function Command(): void {
 
             switch (action) {
                 case "create":
-                    Instances.createService(
-                        command.instance,
-                        parseInt(command.port, 10),
-                    ).then((success) => {
+                    Instances.createService(command.instance, parseInt(command.port, 10), command.skip).then((success) => {
                         if (success) {
                             instances = Instances.list();
 
@@ -255,9 +257,7 @@ export = function Command(): void {
                     break;
             }
 
-            if (results.error) {
-                console.log(results.error);
-            }
+            if (results.error) console.log(results.error);
 
             console.table([{
                 feature: "ffmpeg",
@@ -284,9 +284,7 @@ export = function Command(): void {
                     break;
             }
 
-            if (results.error) {
-                console.log(results.error);
-            }
+            if (results.error) console.log(results.error);
 
             console.table([{
                 feature: "ffmpeg",
@@ -297,13 +295,8 @@ export = function Command(): void {
 
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
-        .option("-i, --instance <name>", "set the instance name")
-        .action((action, file, command) => {
-            const options = command;
-
-            if (options.instance === "api") options.instance = undefined;
-
-            Instance.id = sanitize(options.instance || "default");
+        .action((action, file) => {
+            Instance.id = "api";
             Instance.debug = true;
             Instance.instances = Instances.list();
 
@@ -328,9 +321,7 @@ export = function Command(): void {
 
                 case "restore":
                     if (file && existsSync(file)) {
-                        Paths.restore(file).finally(() => {
-                            console.log("restore complete");
-                        });
+                        Paths.restore(file).finally(() => console.log("restore complete"));
                     } else {
                         console.log("invalid restore file");
                     }
@@ -372,7 +363,7 @@ export = function Command(): void {
         .description("start a remote support session")
         .action(() => {
             Instance.debug = true;
-            Instance.id = sanitize("api");
+            Instance.id = "api";
             Instance.instances = Instances.list();
 
             const client = new Cockpit();

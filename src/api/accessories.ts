@@ -32,13 +32,15 @@ export default class AccessoriesController {
         const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
-            const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
+            if (Instance.instances[i].type === "bridge") {
+                const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
 
-            if (accessories) {
-                results.push({
-                    instance: Instance.instances[i].id,
-                    accessories,
-                });
+                if (accessories) {
+                    results.push({
+                        instance: Instance.instances[i].id,
+                        accessories,
+                    });
+                }
             }
         }
 

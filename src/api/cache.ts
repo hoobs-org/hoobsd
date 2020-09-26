@@ -32,15 +32,17 @@ export default class CacheController {
         const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
-            const parings = await Socket.fetch(Instance.instances[i].id, "cache:parings");
-            const accessories = await Socket.fetch(Instance.instances[i].id, "cache:accessories");
+            if (Instance.instances[i].type === "bridge") {
+                const parings = await Socket.fetch(Instance.instances[i].id, "cache:parings");
+                const accessories = await Socket.fetch(Instance.instances[i].id, "cache:accessories");
 
-            if (parings || accessories) {
-                results.push({
-                    instance: Instance.instances[i].id,
-                    parings,
-                    accessories,
-                });
+                if (parings || accessories) {
+                    results.push({
+                        instance: Instance.instances[i].id,
+                        parings,
+                        accessories,
+                    });
+                }
             }
         }
 

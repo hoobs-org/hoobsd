@@ -40,9 +40,7 @@ export interface UserRecord {
 
 export default class Users {
     static list() {
-        if (!existsSync(join(Paths.storagePath(), "access.json"))) {
-            appendFileSync(join(Paths.storagePath(), "access.json"), "[]");
-        }
+        if (!existsSync(join(Paths.storagePath(), "access.json"))) appendFileSync(join(Paths.storagePath(), "access.json"), "[]");
 
         return loadJson<UserRecord[]>(join(Paths.storagePath(), "access.json"), []);
     }
@@ -99,18 +97,14 @@ export default class Users {
     }
 
     static decodeToken(token: string): { [key: string]: any } | boolean {
-        if (!token || token === "") {
-            return {};
-        }
+        if (!token || token === "") return {};
 
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
         if (data) {
             const user: UserRecord = Instance.users.filter((u) => u.id === data.id)[0];
 
-            if (!user) {
-                return {};
-            }
+            if (!user) return {};
 
             return user;
         }
@@ -119,24 +113,18 @@ export default class Users {
     }
 
     static async validateToken(token: string | undefined): Promise<boolean> {
-        if (!token || token === "") {
-            return false;
-        }
+        if (!token || token === "") return false;
 
         const server = Instance.cache?.get(token);
 
-        if (!server) {
-            return false;
-        }
+        if (!server) return false;
 
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
         if (data) {
             const user = Instance.users.filter((u) => u.id === data.id)[0];
 
-            if (!user) {
-                return false;
-            }
+            if (!user) return false;
 
             const challenge = await this.hashValue(user.password, data.key);
 
@@ -167,15 +155,11 @@ export default class Users {
         user.admin = admin;
         user.password = await this.hashValue(user.password, user.salt);
 
-        if (Instance.users.length > 0) {
-            user.id = Instance.users[Instance.users.length - 1].id + 1;
-        }
+        if (Instance.users.length > 0) user.id = Instance.users[Instance.users.length - 1].id + 1;
 
         Instance.users.push(user);
 
-        if (existsSync(join(Paths.storagePath(), "access.json"))) {
-            unlinkSync(join(Paths.storagePath(), "access.json"));
-        }
+        if (existsSync(join(Paths.storagePath(), "access.json"))) unlinkSync(join(Paths.storagePath(), "access.json"));
 
         appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
 
@@ -190,13 +174,8 @@ export default class Users {
             Instance.users[index].username = username;
             Instance.users[index].admin = admin!;
 
-            if (password) {
-                Instance.users[index].password = await this.hashValue(password, Instance.users[index].salt);
-            }
-
-            if (existsSync(join(Paths.storagePath(), "access.json"))) {
-                unlinkSync(join(Paths.storagePath(), "access.json"));
-            }
+            if (password) Instance.users[index].password = await this.hashValue(password, Instance.users[index].salt);
+            if (existsSync(join(Paths.storagePath(), "access.json"))) unlinkSync(join(Paths.storagePath(), "access.json"));
 
             appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
 
@@ -212,9 +191,7 @@ export default class Users {
         if (index >= 0) {
             Instance.users.splice(index, 1);
 
-            if (existsSync(join(Paths.storagePath(), "access.json"))) {
-                unlinkSync(join(Paths.storagePath(), "access.json"));
-            }
+            if (existsSync(join(Paths.storagePath(), "access.json"))) unlinkSync(join(Paths.storagePath(), "access.json"));
 
             appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
 

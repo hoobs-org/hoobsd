@@ -55,37 +55,43 @@ export = function Daemon(): void {
             Instance.instances = Instances.list();
             Instance.users = Users.list();
 
-            Instance.server = new Server(command.port);
+            const instance = Instance.instances.find((n) => n.id === Instance.id);
 
-            Instance.server.on("request", (method, url) => {
-                Console.debug(`"${method}" ${url}`);
-            });
+            if (instance) {
+                Instance.server = new Server(command.port || instance.port);
 
-            Instance.bridge?.on("publishSetupUri", (uri) => {
-                Console.debug(`Setup URI "${uri}"`);
-            });
-
-            Instance.bridge?.on("listening", () => {
-                Console.message("bridge_start", Instance.id, {
-                    time: new Date().getTime(),
+                Instance.server.on("request", (method, url) => {
+                    Console.debug(`"${method}" ${url}`);
                 });
-            });
 
-            Instance.bridge?.on("shutdown", () => {
-                Console.message("bridge_stop", Instance.id, {
-                    time: new Date().getTime(),
+                Instance.bridge?.on("publishSetupUri", (uri) => {
+                    Console.debug(`Setup URI "${uri}"`);
                 });
-            });
 
-            Watcher.watch(Paths.instancesPath()).on("change", () => {
-                Instance.instances = Instances.list();
-            });
+                Instance.bridge?.on("listening", () => {
+                    Console.message("bridge_start", Instance.id, {
+                        time: new Date().getTime(),
+                    });
+                });
 
-            Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
-                Instance.users = Users.list();
-            });
+                Instance.bridge?.on("shutdown", () => {
+                    Console.message("bridge_stop", Instance.id, {
+                        time: new Date().getTime(),
+                    });
+                });
 
-            Instance.server.start();
+                Watcher.watch(Paths.instancesPath()).on("change", () => {
+                    Instance.instances = Instances.list();
+                });
+
+                Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
+                    Instance.users = Users.list();
+                });
+
+                Instance.server.start();
+            } else {
+                Console.error(`${Instance.id} is not created, please run 'hoobs instance create' to create`);
+            }
         });
 
     Program.command("api")
@@ -104,35 +110,41 @@ export = function Daemon(): void {
             Instance.instances = Instances.list();
             Instance.users = Users.list();
 
-            Instance.app = Express();
-            Instance.listner = HTTP.createServer(Instance.app);
-            Instance.io = IO(Instance.listner);
+            const instance = Instance.instances.find((n) => n.id === Instance.id);
 
-            Instance.io.on("connection", (socket: IO.Socket) => {
-                socket.on("log_history", () => {
-                    socket.emit("log_cache", Console.cache());
+            if (instance) {
+                Instance.app = Express();
+                Instance.listner = HTTP.createServer(Instance.app);
+                Instance.io = IO(Instance.listner);
+
+                Instance.io.on("connection", (socket: IO.Socket) => {
+                    socket.on("log_history", () => {
+                        socket.emit("log_cache", Console.cache());
+                    });
                 });
-            });
 
-            Instance.api = new API(command.port);
+                Instance.api = new API(command.port || instance.port);
 
-            Instance.api.on("listening", (port) => {
-                Console.info(`API is running on port ${port}`);
-            });
+                Instance.api.on("listening", (port) => {
+                    Console.info(`API is running on port ${port}`);
+                });
 
-            Instance.api.on("request", (method, url) => {
-                Console.debug(`"${method}" ${url}`);
-            });
+                Instance.api.on("request", (method, url) => {
+                    Console.debug(`"${method}" ${url}`);
+                });
 
-            Watcher.watch(Paths.instancesPath()).on("change", () => {
-                Instance.instances = Instances.list();
-            });
+                Watcher.watch(Paths.instancesPath()).on("change", () => {
+                    Instance.instances = Instances.list();
+                });
 
-            Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
-                Instance.users = Users.list();
-            });
+                Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
+                    Instance.users = Users.list();
+                });
 
-            Instance.api.start();
+                Instance.api.start();
+            } else {
+                Console.error(`${Instance.id} is not created, please run 'hoobs instance create' to create`);
+            }
         });
 
     Program.command("service <action>")

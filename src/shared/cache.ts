@@ -28,9 +28,7 @@ export default class Cache {
     get(key: string): unknown {
         const value = this.client.get(key);
 
-        if (value === undefined) {
-            return null;
-        }
+        if (value === undefined) return null;
 
         return value;
     }
