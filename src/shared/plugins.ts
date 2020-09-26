@@ -231,6 +231,8 @@ export default class Plugins {
             });
 
             proc.on("close", () => {
+                Paths.touchConfig();
+
                 Console.message("plugin_upgrade", Instance.id, {
                     name,
                     tag,

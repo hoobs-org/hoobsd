@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import HTTP from "http";
 import IO from "socket.io";
 import { join } from "path";
 import { existsSync } from "fs-extra";
@@ -33,7 +32,6 @@ import { loadJson } from "./helpers";
 
 export interface Application {
     app: Express | undefined,
-    listner: HTTP.Server | undefined,
     io: IO.Server | undefined,
     socket: Socket | undefined,
     cache: Cache | undefined,
@@ -61,7 +59,6 @@ export interface Application {
 
 const instance: Application = {
     app: undefined,
-    listner: undefined,
     io: undefined,
     socket: undefined,
     cache: undefined,

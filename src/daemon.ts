@@ -18,10 +18,7 @@
 
 import "source-map-support/register";
 
-import HTTP from "http";
-import Express from "express";
 import Program from "commander";
-import IO from "socket.io";
 import Watcher from "chokidar";
 import { join } from "path";
 import Instance from "./shared/instance";
@@ -60,32 +57,18 @@ export = function Daemon(): void {
             if (instance) {
                 Instance.server = new Server(command.port || instance.port);
 
-                Instance.server.on("request", (method, url) => {
-                    Console.debug(`"${method}" ${url}`);
-                });
-
-                Instance.bridge?.on("publishSetupUri", (uri) => {
-                    Console.debug(`Setup URI "${uri}"`);
-                });
-
-                Instance.bridge?.on("listening", () => {
-                    Console.message("bridge_start", Instance.id, {
-                        time: new Date().getTime(),
-                    });
-                });
-
-                Instance.bridge?.on("shutdown", () => {
-                    Console.message("bridge_stop", Instance.id, {
-                        time: new Date().getTime(),
-                    });
-                });
-
                 Watcher.watch(Paths.instancesPath()).on("change", () => {
                     Instance.instances = Instances.list();
                 });
 
                 Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
                     Instance.users = Users.list();
+                });
+
+                Watcher.watch(Paths.configPath()).on("change", async () => {
+                    await Instance.server?.stop();
+
+                    Instance.server?.start();
                 });
 
                 Instance.server.start();
@@ -113,25 +96,7 @@ export = function Daemon(): void {
             const instance = Instance.instances.find((n) => n.id === Instance.id);
 
             if (instance) {
-                Instance.app = Express();
-                Instance.listner = HTTP.createServer(Instance.app);
-                Instance.io = IO(Instance.listner);
-
-                Instance.io.on("connection", (socket: IO.Socket) => {
-                    socket.on("log_history", () => {
-                        socket.emit("log_cache", Console.cache());
-                    });
-                });
-
-                Instance.api = new API(command.port || instance.port);
-
-                Instance.api.on("listening", (port) => {
-                    Console.info(`API is running on port ${port}`);
-                });
-
-                Instance.api.on("request", (method, url) => {
-                    Console.debug(`"${method}" ${url}`);
-                });
+                Instance.api = API.createServer(command.port || instance.port);
 
                 Watcher.watch(Paths.instancesPath()).on("change", () => {
                     Instance.instances = Instances.list();
@@ -139,6 +104,13 @@ export = function Daemon(): void {
 
                 Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
                     Instance.users = Users.list();
+                });
+
+                Watcher.watch(Paths.configPath()).on("change", async () => {
+                    await Instance.api?.stop();
+
+                    Instance.api = API.createServer(command.port || instance.port);
+                    Instance.api.start();
                 });
 
                 Instance.api.start();
@@ -193,7 +165,7 @@ export = function Daemon(): void {
             Instance.terminating = true;
 
             if (Instance.server) await Instance.server.stop();
-            if (Instance.api) Instance.api.stop();
+            if (Instance.api) await Instance.api.stop();
 
             process.exit(128 + signals[signal]);
         });

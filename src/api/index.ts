@@ -17,11 +17,13 @@
  **************************************************************************************************/
 
 import _ from "lodash";
+import HTTP from "http";
 import Express from "express";
 import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
 import PTY from "node-pty";
+import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
 import { dirname, join } from "path";
@@ -59,6 +61,10 @@ export default class API extends EventEmitter {
 
     declare private socket: Socket;
 
+    declare private listner: HTTP.Server;
+
+    declare private terminator: HttpTerminator;
+
     constructor(port: number | undefined) {
         super();
 
@@ -66,6 +72,22 @@ export default class API extends EventEmitter {
         this.config = Paths.configuration();
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
+
+        Instance.app = Express();
+
+        this.listner = HTTP.createServer(Instance.app);
+
+        this.terminator = createHttpTerminator({
+            server: this.listner,
+        });
+
+        Instance.io = IO(this.listner);
+
+        Instance.io.on("connection", (socket: IO.Socket) => {
+            socket.on("log_history", () => {
+                socket.emit("log_cache", Console.cache());
+            });
+        });
 
         const paths = [];
 
@@ -193,7 +215,21 @@ export default class API extends EventEmitter {
         Instance.app?.use("/backups", Express.static(Paths.backupPath()));
     }
 
-    async start() {
+    static createServer(port: number): API {
+        const api = new API(port);
+
+        api.on("listening", () => {
+            Console.info(`API is running on port ${port}`);
+        });
+
+        api.on("request", (method, url) => {
+            Console.debug(`"${method}" ${url}`);
+        });
+
+        return api;
+    }
+
+    async start(): Promise<void> {
         this.socket = new Socket();
 
         this.socket.on("log", (data: any) => Console.log(LogLevel.INFO, data));
@@ -210,7 +246,7 @@ export default class API extends EventEmitter {
             if (Instance.instances[i].type === "bridge") Console.import((await Socket.fetch(Instance.instances[i].id, "cache:log")) || []);
         }
 
-        Instance.listner?.listen(this.port, () => {
+        this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();
             this.emit("listening", this.port);
         });
@@ -218,7 +254,11 @@ export default class API extends EventEmitter {
         Monitor();
     }
 
-    stop() {
+    async stop(): Promise<void> {
+        Console.info("Shutting down API");
+
+        await this.terminator.terminate();
+
         this.socket.stop();
     }
 }

@@ -52,7 +52,6 @@ export default class Server extends EventEmitter {
         this.settings = (this.config || {}).server || {};
 
         Instance.socket = new Socket(Instance.id);
-        Instance.bridge = new Bridge(this.port || undefined);
         Instance.cache = new Cache();
 
         new CacheController();
@@ -64,6 +63,24 @@ export default class Server extends EventEmitter {
     }
 
     start(): void {
+        Instance.bridge = new Bridge(this.port || undefined);
+
+        Instance.bridge?.on("publishSetupUri", (uri) => {
+            Console.debug(`Setup URI "${uri}"`);
+        });
+
+        Instance.bridge?.on("listening", () => {
+            Console.message("bridge_start", Instance.id, {
+                time: new Date().getTime(),
+            });
+        });
+
+        Instance.bridge?.on("shutdown", () => {
+            Console.message("bridge_stop", Instance.id, {
+                time: new Date().getTime(),
+            });
+        });
+
         if ((this.config.server.autostart || 0) >= 0) {
             setTimeout(() => {
                 Instance.bridge?.start();
@@ -82,5 +99,7 @@ export default class Server extends EventEmitter {
         Console.debug("Stopped");
 
         if (Instance.socket) Instance.socket.stop();
+
+        Instance.bridge = undefined;
     }
 }

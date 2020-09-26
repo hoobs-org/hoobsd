@@ -143,6 +143,15 @@ export default class Paths {
         }
     }
 
+    static touchConfig(): void {
+        let config: any = {};
+
+        if (existsSync(Paths.configPath())) config = loadJson<any>(Paths.configPath(), {});
+        if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
+
+        appendFileSync(Paths.configPath(), formatJson(config));
+    }
+
     static filterConfig(value: any): void {
         if (value) {
             const keys = _.keys(value);
