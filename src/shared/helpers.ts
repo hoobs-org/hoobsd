@@ -240,7 +240,7 @@ export function network(): string[] {
 export function colorize(value: string): string {
     let hash = 0;
 
-    const sample = (`${value.replace(/ /gi, "-")}__________`).substring(0, 10);
+    const sample = (`${value.replace(/ /gi, "_")}________________`).substring(0, 16);
 
     for (let i = 0; i < sample.length; i += 1) {
         hash = sample.charCodeAt(i) + ((hash << 5) - hash); // eslint-disable-line no-bitwise
@@ -250,4 +250,15 @@ export function colorize(value: string): string {
     const color = `#${"000000".substring(0, 6 - hex.length) + hex}`;
 
     return color;
+}
+
+export function contrast(hex: string): string {
+    if (hex.indexOf("#") === 0) {
+        hex = hex.slice(1);
+    }
+
+    if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    if (hex.length !== 6) return "#FFFFFF";
+
+    return (parseInt(hex.slice(0, 2), 16) * 0.299 + parseInt(hex.slice(2, 4), 16) * 0.587 + parseInt(hex.slice(4, 6), 16) * 0.114) > 186 ? "#000000" : "#FFFFFF";
 }

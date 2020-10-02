@@ -21,7 +21,7 @@ import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import Instance from "./instance";
 import Socket from "../server/socket";
-import { colorize } from "./helpers";
+import { colorize, contrast } from "./helpers";
 
 export interface Message {
     level: LogLevel,
@@ -113,8 +113,18 @@ class Logger {
                 prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
             }
 
-            if (data.instance && data.instance !== "" && data.instance !== Instance.id) prefixes.push(Chalk.hex(colorize(data.instance))(data.instance));
-            if (data.prefix && data.prefix !== "") prefixes.push(Chalk.hex(colorize(data.prefix))(data.prefix));
+            if (data.instance && data.instance !== "" && data.instance !== Instance.id) {
+                const foreground = colorize(data.instance);
+
+                prefixes.push(Chalk.hex(foreground)(data.display || data.instance));
+            }
+
+            if (data.prefix && data.prefix !== "") {
+                const background = colorize(data.prefix);
+                const foreground = contrast(background);
+
+                prefixes.push(Chalk.bgHex(background).hex(foreground)(` ${data.prefix} `));
+            }
 
             let colored = data.message;
 
@@ -178,10 +188,17 @@ class Logger {
                 }
 
                 if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
-                    prefixes.push(Chalk.hex(colorize(data[i].instance!))(data[i].display || data[i].instance));
+                    const foreground = colorize(data[i].instance!);
+
+                    prefixes.push(Chalk.hex(foreground)(data[i].display || data[i].instance));
                 }
 
-                if (data[i].prefix && data[i].prefix !== "") prefixes.push(Chalk.hex(colorize(data[i].prefix!))(data[i].prefix));
+                if (data[i].prefix && data[i].prefix !== "") {
+                    const background = colorize(data[i].prefix!);
+                    const foreground = contrast(background);
+
+                    prefixes.push(Chalk.bgHex(background).hex(foreground)(` ${data[i].prefix} `));
+                }
 
                 let colored = data[i].message;
 
