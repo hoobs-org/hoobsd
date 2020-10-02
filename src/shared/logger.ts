@@ -114,7 +114,7 @@ class Logger {
             }
 
             if (data.instance && data.instance !== "" && data.instance !== Instance.id) prefixes.push(Chalk.hex(colorize(data.instance))(data.instance));
-            if (data.prefix && data.prefix !== "") prefixes.push(Chalk.blue(data.prefix));
+            if (data.prefix && data.prefix !== "") prefixes.push(Chalk.hex(colorize(data.prefix))(data.prefix));
 
             let colored = data.message;
 
@@ -181,7 +181,7 @@ class Logger {
                     prefixes.push(Chalk.hex(colorize(data[i].instance!))(data[i].display || data[i].instance));
                 }
 
-                if (data[i].prefix && data[i].prefix !== "") prefixes.push(Chalk.blue(data[i].prefix));
+                if (data[i].prefix && data[i].prefix !== "") prefixes.push(Chalk.hex(colorize(data[i].prefix!))(data[i].prefix));
 
                 let colored = data[i].message;
 
