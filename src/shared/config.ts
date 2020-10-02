@@ -49,7 +49,7 @@ export default class Config {
                 Paths.saveConfig(this.config);
             },
 
-            accessories: (): number[] => {
+            list: (): number[] => {
                 const indexes: number[] = [];
 
                 for (let i = 0; (this.config.accessories || []).length; i += 1) {
