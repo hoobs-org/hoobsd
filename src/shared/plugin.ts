@@ -42,12 +42,16 @@ export default class Plugin {
     }
 
     registerRoute(action: string, controller: (request: SocketRequest, response: SocketResponse) => any) {
-        Instance.socket?.route(`plugin:${this.name}:${action}`, (request: SocketRequest, response: SocketResponse) => {
-            try {
-                controller(request, response);
-            } catch (error) {
-                this.logger.error(error?.message || "Error running route");
-            }
-        });
+        if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
+            Instance.socket?.route(`plugin:${this.name}:${action}`, (request: SocketRequest, response: SocketResponse) => {
+                try {
+                    controller(request, response);
+                } catch (error) {
+                    this.logger.error(error?.message || "Error running route");
+                }
+            });
+        } else {
+            this.logger.error(`Unable to register route '${action}', action is not formatted correctly.`);
+        }
     }
 }
