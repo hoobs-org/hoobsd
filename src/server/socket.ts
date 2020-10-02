@@ -63,14 +63,18 @@ export default class Socket {
                 });
 
                 this.pipe.server.on("request", (payload: any, socket: any) => {
-                    this.routes[payload.path]({
-                        params: payload.params,
-                        body: payload.body,
-                    }, {
-                        send: (body: any) => {
-                            this.pipe.server.emit(socket, payload.session, body);
-                        },
-                    });
+                    if (this.routes[payload.path]) {
+                        this.routes[payload.path]({
+                            params: payload.params,
+                            body: payload.body,
+                        }, {
+                            send: (body: any) => {
+                                this.pipe.server.emit(socket, payload.session, body);
+                            },
+                        });
+                    } else {
+                        this.pipe.server.emit(socket, payload.session);
+                    }
                 });
             }
 

@@ -69,11 +69,7 @@ const accessoryStorage: LocalStorage = storage.create();
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\w-]*)\/)?((homebridge|hoobs)-[\w-]*)$/;
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-PluginManager.loadPackageJSON = Plugins.getPluginPackage;
+PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
 
 export default class Server extends EventEmitter {
     public running: boolean;
@@ -153,7 +149,60 @@ export default class Server extends EventEmitter {
         const promises: Promise<void>[] = [];
 
         this.loadCachedPlatformAccessoriesFromDisk();
-        this.pluginManager.initializeInstalledPlugins();
+
+        Plugins.load((identifier, name, scope, directory, pjson) => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            if (!this.pluginManager.plugins.get(identifier)) {
+                const plugin = new Plugin(name, directory, pjson, scope);
+
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                this.pluginManager.plugins.set(identifier, plugin);
+
+                try {
+                    plugin.load();
+                } catch (error) {
+                    Console.error(`Error loading plugin "${identifier}"`);
+                    Console.error(error.stack);
+
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    this.pluginManager.plugins.delete(identifier);
+                }
+
+                Console.info(`Loaded plugin '${identifier}'`);
+
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                if (this.pluginManager.plugins.get(identifier)) {
+                    try {
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-ignore
+                        this.pluginManager.currentInitializingPlugin = plugin;
+
+                        plugin.initialize(this.api);
+                    } catch (error) {
+                        Console.error(`Error initializing plugin '${identifier}'`);
+                        Console.error(error.stack);
+
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-ignore
+                        this.pluginManager.plugins.delete(identifier);
+                    }
+                }
+            }
+        });
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        this.pluginManager.currentInitializingPlugin = undefined;
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (this.pluginManager.plugins.size === 0) {
+            Console.warn("No plugins installed.");
+        }
 
         if (this.config.platforms.length > 0) promises.push(...this.loadPlatforms());
         if (this.config.accessories.length > 0) this.loadAccessories();

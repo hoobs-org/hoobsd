@@ -16,74 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import IO from "socket.io";
-import { join } from "path";
-import { existsSync } from "fs-extra";
-import { Express } from "express-serve-static-core";
-import Cache from "./cache";
-import Socket from "../server/socket";
-import Server from "../server";
-import Bridge from "../bridge";
-import API from "../api";
-import { Loggers } from "./logger";
-import { InstanceRecord } from "./instances";
-import { UserRecord } from "./users";
-import { loadJson } from "./helpers";
+import { Request, Response } from "express-serve-static-core";
+import Instance from "../shared/instance";
+import Socket from "./socket";
 
-export interface Application {
-    app: Express | undefined,
-    io: IO.Server | undefined,
-    socket: Socket | undefined,
-    cache: Cache | undefined,
-    server: Server | undefined,
-    bridge: Bridge | undefined,
-    api: API | undefined,
+export default class PluginController {
+    constructor() {
+        Instance.app?.post("/api/plugin/:instance/:plugin/:action", (request, response) => this.execute(request, response));
+    }
 
-    id: string,
-    display: string,
-
-    debug: boolean,
-    verbose: boolean,
-    timestamps: boolean,
-    orphans: boolean,
-    container: boolean,
-    terminating: boolean,
-
-    version: string,
-    manager: string,
-    instances: InstanceRecord[],
-    users: UserRecord[],
-    loggers: Loggers,
-
-    plugins: { [key: string]: any },
+    async execute(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, `plugin:${request.params.plugin}:${request.params.action}`, request.params, request.body));
+    }
 }
-
-const instance: Application = {
-    app: undefined,
-    io: undefined,
-    socket: undefined,
-    cache: undefined,
-    server: undefined,
-    bridge: undefined,
-    api: undefined,
-
-    id: "default",
-    display: "Default",
-
-    debug: false,
-    verbose: false,
-    timestamps: true,
-    orphans: true,
-    container: false,
-    terminating: false,
-
-    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
-    manager: existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm",
-    instances: [],
-    users: [],
-    loggers: {},
-
-    plugins: {},
-};
-
-export default instance;

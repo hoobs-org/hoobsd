@@ -236,3 +236,18 @@ export function network(): string[] {
 
     return results;
 }
+
+export function colorize(value: string): string {
+    let hash = 0;
+
+    const sample = (`${value.replace(/ /gi, "-")}__________`).substring(0, 10);
+
+    for (let i = 0; i < sample.length; i += 1) {
+        hash = sample.charCodeAt(i) + ((hash << 5) - hash); // eslint-disable-line no-bitwise
+    }
+
+    const hex = (hash & 0x00FFFFFF).toString(16).toLowerCase(); // eslint-disable-line no-bitwise
+    const color = `#${"000000".substring(0, 6 - hex.length) + hex}`;
+
+    return color;
+}

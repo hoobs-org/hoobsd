@@ -18,12 +18,17 @@
 
 import { EventEmitter } from "events";
 import { HAPStorage } from "hap-nodejs";
+import { existsSync } from "fs-extra";
+import { join } from "path";
 import Instance from "../shared/instance";
 import Paths from "../shared/paths";
 import Cache from "../shared/cache";
 import Socket from "./socket";
 import Bridge from "../bridge";
-import { Console } from "../shared/logger";
+import Config from "../shared/config";
+import Plugin from "../shared/plugin";
+import Plugins from "../shared/plugins";
+import { Console, Prefixed } from "../shared/logger";
 
 import CacheController from "./cache";
 import StatusController from "./status";
@@ -60,13 +65,39 @@ export default class Server extends EventEmitter {
         new BridgeController();
         new PluginsController();
         new AccessoriesController();
+
+        Plugins.load((identifier, name, _scope, directory, _pjson, library) => {
+            if (existsSync(join(directory, library, "hoobs"))) {
+                const plugin = require(join(directory, library, "hoobs")); // eslint-disable-line @typescript-eslint/no-var-requires, import/no-dynamic-require, global-require
+
+                let initializer;
+
+                if (typeof plugin === "function") {
+                    initializer = plugin;
+                } else if (plugin && typeof plugin.default === "function") {
+                    initializer = plugin.default;
+                }
+
+                if (initializer) {
+                    try {
+                        const api = new Plugin(identifier, name);
+                        const logger = Prefixed(identifier, api.display);
+                        const config = new Config(name);
+
+                        initializer(logger, config, api);
+                    } catch (_error) {
+                        Console.error(`Error loading plugin ${identifier}`);
+                    }
+                }
+            }
+        });
     }
 
     start(): void {
         Instance.bridge = new Bridge(this.port || undefined);
 
         Instance.bridge?.on("publishSetupUri", (uri) => {
-            Console.debug(`Setup URI "${uri}"`);
+            Console.debug(`Setup URI '${uri}'`);
         });
 
         Instance.bridge?.on("listening", () => {

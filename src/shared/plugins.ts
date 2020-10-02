@@ -18,7 +18,7 @@
 
 import { existsSync } from "fs-extra";
 import { spawn } from "child_process";
-import { join } from "path";
+import { join, dirname } from "path";
 
 import {
     uuid,
@@ -31,7 +31,6 @@ import {
 
 import { Plugin } from "homebridge/lib/plugin";
 import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
-import { PluginIdentifier, PluginName } from "homebridge/lib/api";
 import Instance from "./instance";
 import Paths from "./paths";
 import { Console } from "./logger";
@@ -45,26 +44,31 @@ export default class Plugins {
     static installed(): Plugin[] {
         const results: Plugin[] = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].plugins && existsSync(join(Paths.storagePath(Instance.instances[i].id), "package.json"))) {
-                const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(Instance.instances[i].id), "package.json"), {}).dependencies || {});
+        Plugins.load((_identifier, name, scope, directory, pjson) => {
+            results.push(new Plugin(name, directory, pjson, scope));
+        });
 
-                for (let j = 0; j < plugins.length; j += 1) {
-                    const directory = join(Plugins.directory, plugins[j]);
-                    const pjson = loadPackage(directory);
+        return results;
+    }
 
-                    if (pjson) {
-                        const identifier: PluginIdentifier = pjson.name;
-                        const name: PluginName = PluginManager.extractPluginName(identifier);
-                        const scope = PluginManager.extractPluginScope(identifier);
+    static load(callback: (identifier: string, name: string, scope: string, directory: string, pjson: PackageJSON, library: string) => void): void {
+        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
+            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}).dependencies || {});
 
-                        if (existsSync(directory) && pjson) results.push(new Plugin(name, directory, pjson, scope));
-                    }
+            for (let i = 0; i < plugins.length; i += 1) {
+                const directory = join(Plugins.directory, plugins[i]);
+                const pjson = loadPackage(directory);
+
+                if (existsSync(directory) && pjson) {
+                    const identifier: string = pjson.name;
+                    const name: string = PluginManager.extractPluginName(identifier);
+                    const scope: string = PluginManager.extractPluginScope(identifier);
+                    const library: string = dirname(pjson.main || "./index.js");
+
+                    callback(identifier, name, scope, directory, pjson, library);
                 }
             }
         }
-
-        return results;
     }
 
     static install(name: string, version?: string): Promise<void> {
@@ -334,7 +338,6 @@ export default class Plugins {
         const pjson: PackageJSON = loadPackage(path);
 
         if (!pjson) throw new Error(`Plugin ${path} does not contain a proper package.json.`);
-        if (!pjson.name || !PluginManager.isQualifiedPluginIdentifier(pjson.name)) throw new Error(`Plugin ${path} does not have a package name that begins with 'hoobs-' or '@scope/hoobs-.`);
 
         return pjson;
     }

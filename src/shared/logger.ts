@@ -17,9 +17,11 @@
  **************************************************************************************************/
 
 import Utility from "util";
+import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import Instance from "./instance";
 import Socket from "../server/socket";
+import { colorize } from "./helpers";
 
 export interface Message {
     level: LogLevel,
@@ -64,6 +66,8 @@ class Logger {
     declare prefix: string;
 
     constructor(plugin?: string, prefix?: string) {
+        Chalk.level = 1;
+
         this.plugin = plugin;
         this.prefix = prefix || "";
     }
@@ -89,6 +93,10 @@ class Logger {
             data = message;
         }
 
+        if (data.message === "" && data.instance !== Instance.id) {
+            return;
+        }
+
         CACHE.push(data);
 
         while (CACHE.length > 500) {
@@ -98,29 +106,56 @@ class Logger {
         if (Instance.api) Instance.io?.sockets.emit("log", data);
         if (Instance.server) Socket.fetch("log", data);
 
-        if ((data.level !== LogLevel.DEBUG && data.level !== LogLevel.WARN) || Instance.debug) {
+        if (Instance.id === "api" || Instance.debug) {
             const prefixes = [];
 
-            if (typeof message !== "string" && data.instance && data.instance !== "" && data.instance !== "api") prefixes.push(data.instance);
-            if (data.prefix && data.prefix !== "") prefixes.push(data.prefix);
+            if (Instance.timestamps && data.message && data.message !== "") {
+                prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+            }
 
-            const formatted = prefixes.length > 0 ? `[${prefixes.join(" - ")}] ${data.message}` : data.message;
+            if (data.instance && data.instance !== "" && data.instance !== Instance.id) prefixes.push(Chalk.hex(colorize(data.instance))(data.instance));
+            if (data.prefix && data.prefix !== "") prefixes.push(Chalk.blue(data.prefix));
+
+            let colored = data.message;
 
             switch (data.level) {
                 case LogLevel.WARN:
+                    colored = Chalk.yellow(data.message);
+                    break;
+
+                case LogLevel.ERROR:
+                    colored = Chalk.red(data.message);
+                    break;
+
+                case LogLevel.DEBUG:
+                    colored = Chalk.gray(data.message);
+                    break;
+            }
+
+            const formatted = prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored;
+
+            switch (data.level) {
+                case LogLevel.WARN:
+                    CONSOLE_LOG(formatted);
+                    break;
+
                 case LogLevel.ERROR:
                     CONSOLE_ERROR(formatted);
                     break;
 
-                default:
+                case LogLevel.DEBUG:
                     if (Instance.debug) CONSOLE_LOG(formatted);
+                    break;
+
+                default:
+                    if (Instance.id === "api" || Instance.debug) CONSOLE_LOG(formatted);
                     break;
             }
         }
     }
 
     import(data: Message[]) {
-        CACHE.push(...data);
+        CACHE.push(...(data.filter((m) => (m.message !== ""))));
 
         CACHE.sort((a, b) => {
             if (a.timestamp > b.timestamp) return 1;
@@ -135,17 +170,52 @@ class Logger {
         for (let i = 0; i < data.length; i += 1) {
             Instance.io?.sockets.emit("log", data[i]);
 
-            if ((data[i].level !== LogLevel.DEBUG && data[i].level !== LogLevel.WARN) || Instance.debug) {
-                const formatted = data[i].prefix ? `[${data[i].instance} - ${data[i].prefix}] ${data[i].message}` : `[${data[i].instance}] ${data[i].message}`;
+            if (Instance.id === "api" || Instance.debug) {
+                const prefixes = [];
+
+                if (Instance.timestamps && data[i].message && data[i].message !== "") {
+                    prefixes.push(Chalk.gray.dim(new Date(data[i].timestamp).toLocaleString()));
+                }
+
+                if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
+                    prefixes.push(Chalk.hex(colorize(data[i].instance!))(data[i].display || data[i].instance));
+                }
+
+                if (data[i].prefix && data[i].prefix !== "") prefixes.push(Chalk.blue(data[i].prefix));
+
+                let colored = data[i].message;
 
                 switch (data[i].level) {
                     case LogLevel.WARN:
+                        colored = Chalk.yellow(data[i].message);
+                        break;
+
+                    case LogLevel.ERROR:
+                        colored = Chalk.red(data[i].message);
+                        break;
+
+                    case LogLevel.DEBUG:
+                        colored = Chalk.gray(data[i].message);
+                        break;
+                }
+
+                const formatted = prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored;
+
+                switch (data[i].level) {
+                    case LogLevel.WARN:
+                        CONSOLE_LOG(formatted);
+                        break;
+
                     case LogLevel.ERROR:
                         CONSOLE_ERROR(formatted);
                         break;
 
-                    default:
+                    case LogLevel.DEBUG:
                         if (Instance.debug) CONSOLE_LOG(formatted);
+                        break;
+
+                    default:
+                        if (Instance.id === "api" || Instance.debug) CONSOLE_LOG(formatted);
                         break;
                 }
             }

@@ -16,74 +16,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import IO from "socket.io";
-import { join } from "path";
-import { existsSync } from "fs-extra";
-import { Express } from "express-serve-static-core";
-import Cache from "./cache";
-import Socket from "../server/socket";
-import Server from "../server";
-import Bridge from "../bridge";
-import API from "../api";
-import { Loggers } from "./logger";
-import { InstanceRecord } from "./instances";
-import { UserRecord } from "./users";
-import { loadJson } from "./helpers";
+import Instance from "./instance";
+import Paths from "./paths";
+import { Prefixed, PluginLogger } from "./logger";
+import { SocketRequest, SocketResponse } from "../server/socket";
 
-export interface Application {
-    app: Express | undefined,
-    io: IO.Server | undefined,
-    socket: Socket | undefined,
-    cache: Cache | undefined,
-    server: Server | undefined,
-    bridge: Bridge | undefined,
-    api: API | undefined,
+export default class Plugin {
+    declare readonly identifier: string;
 
-    id: string,
-    display: string,
+    declare readonly name: string;
 
-    debug: boolean,
-    verbose: boolean,
-    timestamps: boolean,
-    orphans: boolean,
-    container: boolean,
-    terminating: boolean,
+    declare readonly display: string;
 
-    version: string,
-    manager: string,
-    instances: InstanceRecord[],
-    users: UserRecord[],
-    loggers: Loggers,
+    declare readonly logger: PluginLogger;
 
-    plugins: { [key: string]: any },
+    constructor(identifier: string, name: string) {
+        const config = Paths.configuration();
+        const platform = config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
+        const accessory = config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
+
+        this.identifier = identifier;
+        this.name = name;
+        this.display = platform?.name || accessory?.name || name;
+        this.logger = Prefixed(identifier, this.display);
+    }
+
+    registerRoute(action: string, controller: (request: SocketRequest, response: SocketResponse) => any) {
+        Instance.socket?.route(`plugin:${this.name}:${action}`, (request: SocketRequest, response: SocketResponse) => {
+            try {
+                controller(request, response);
+            } catch (error) {
+                this.logger.error(error?.message || "Error running route");
+            }
+        });
+    }
 }
-
-const instance: Application = {
-    app: undefined,
-    io: undefined,
-    socket: undefined,
-    cache: undefined,
-    server: undefined,
-    bridge: undefined,
-    api: undefined,
-
-    id: "default",
-    display: "Default",
-
-    debug: false,
-    verbose: false,
-    timestamps: true,
-    orphans: true,
-    container: false,
-    terminating: false,
-
-    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
-    manager: existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm",
-    instances: [],
-    users: [],
-    loggers: {},
-
-    plugins: {},
-};
-
-export default instance;

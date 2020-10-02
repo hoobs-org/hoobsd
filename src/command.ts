@@ -39,6 +39,7 @@ export = function Command(): void {
         .action((action, name, command) => {
             Instance.id = sanitize(command.instance);
             Instance.debug = true;
+            Instance.timestamps = false;
             Instance.instances = Instances.list();
 
             let plugin = name;
@@ -72,7 +73,7 @@ export = function Command(): void {
                             }
                         });
                     } else {
-                        console.log("please define a valid instance");
+                        console.warn("please define a valid instance");
                     }
 
                     break;
@@ -101,7 +102,7 @@ export = function Command(): void {
                             }
                         });
                     } else {
-                        console.log("please define a valid instance");
+                        console.warn("please define a valid instance");
                     }
 
                     break;
@@ -143,7 +144,7 @@ export = function Command(): void {
                             }
                         });
                     } else {
-                        console.log("please define a valid instance");
+                        console.warn("please define a valid instance");
                     }
 
                     break;
@@ -159,10 +160,10 @@ export = function Command(): void {
                                 path: item.getPluginPath(),
                             })));
                         } else {
-                            console.log("no plugins installed");
+                            console.warn("no plugins installed");
                         }
                     } else {
-                        console.log("please define a valid instance");
+                        console.warn("please define a valid instance");
                     }
 
                     break;
@@ -179,6 +180,7 @@ export = function Command(): void {
         .action((command) => {
             Instance.id = sanitize(command.instance || "api");
             Instance.debug = true;
+            Instance.timestamps = false;
 
             spawn("nano", [Paths.configPath()], {
                 stdio: "inherit",
@@ -195,6 +197,7 @@ export = function Command(): void {
         .option("-s, --skip", "skip init system intergration")
         .action((action, command) => {
             Instance.debug = true;
+            Instance.timestamps = false;
             Instance.instances = Instances.list();
 
             let instances = [];
@@ -228,7 +231,7 @@ export = function Command(): void {
                     if (instances.length > 0) {
                         console.table(instances);
                     } else {
-                        console.log("no instances");
+                        console.warn("no instances");
                     }
 
                     break;
@@ -243,6 +246,7 @@ export = function Command(): void {
         .description("enable additional server features")
         .action((feature) => {
             Instance.debug = true;
+            Instance.timestamps = false;
             Instance.instances = Instances.list();
 
             let results: { [key: string]: any } = {};
@@ -270,6 +274,7 @@ export = function Command(): void {
         .description("disables additional server features")
         .action((feature) => {
             Instance.debug = true;
+            Instance.timestamps = false;
             Instance.instances = Instances.list();
 
             let results: { [key: string]: any } = {};
@@ -298,6 +303,7 @@ export = function Command(): void {
         .action((action, file) => {
             Instance.id = "api";
             Instance.debug = true;
+            Instance.timestamps = false;
             Instance.instances = Instances.list();
 
             switch (action) {
@@ -314,7 +320,7 @@ export = function Command(): void {
 
                         console.log("backup complete");
                     }).catch((error) => {
-                        console.log(error.message || "unable to create backup");
+                        console.warn(error.message || "unable to create backup");
                     });
 
                     break;
@@ -323,7 +329,7 @@ export = function Command(): void {
                     if (file && existsSync(file)) {
                         Paths.restore(file).finally(() => console.log("restore complete"));
                     } else {
-                        console.log("invalid restore file");
+                        console.warn("invalid restore file");
                     }
 
                     break;
@@ -348,7 +354,7 @@ export = function Command(): void {
                             stdio: "inherit",
                         });
                     } catch (_error) {
-                        console.log("no sockets started");
+                        console.warn("no sockets started");
                     }
 
                     break;
@@ -363,6 +369,7 @@ export = function Command(): void {
         .description("start a remote support session")
         .action(() => {
             Instance.debug = true;
+            Instance.timestamps = false;
             Instance.id = "api";
             Instance.instances = Instances.list();
 
@@ -371,7 +378,7 @@ export = function Command(): void {
             client.start(true).then((registration) => {
                 console.log(`access code ${registration}`);
             }).catch(() => {
-                console.log("unable to connect");
+                console.warn("unable to connect");
             });
         });
 

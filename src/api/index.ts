@@ -33,6 +33,7 @@ import Instance from "../shared/instance";
 import Users from "../shared/users";
 import Socket from "./socket";
 import Monitor from "./monitor";
+import Plugins from "../shared/plugins";
 import { Console } from "../shared/logger";
 import { findModule } from "../shared/helpers";
 
@@ -213,6 +214,12 @@ export default class API extends EventEmitter {
         Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(dirname(realpathSync(__filename)), "../../var")));
         Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(dirname(realpathSync(__filename)), "../../var")));
         Instance.app?.use("/backups", Express.static(Paths.backupPath()));
+
+        Plugins.load((_identifier, name, _scope, directory, _pjson, library) => {
+            if (existsSync(join(directory, library, "static"))) {
+                Instance.app?.use(`/plugin/${name}`, Express.static(join(directory, library, "static")));
+            }
+        });
     }
 
     static createServer(port: number): API {
@@ -255,7 +262,8 @@ export default class API extends EventEmitter {
     }
 
     async stop(): Promise<void> {
-        Console.info("Shutting down API");
+        Console.debug("");
+        Console.debug("Shutting down");
 
         await this.terminator.terminate();
 
