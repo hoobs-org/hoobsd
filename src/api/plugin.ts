@@ -17,15 +17,33 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
+import { existsSync } from "fs-extra";
+import { join } from "path";
 import Instance from "../shared/instance";
 import Socket from "./socket";
+import Plugins from "../shared/plugins";
+import { InstanceRecord } from "../shared/instances";
 
 export default class PluginController {
     constructor() {
-        Instance.app?.post("/api/plugin/:instance/:plugin/:action", (request, response) => this.execute(request, response));
+        const defined: string[] = [];
+
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            if (Instance.instances[i].type === "bridge") {
+                Plugins.load(Instance.instances[i].id, (_identifier, name, _scope, directory, _pjson, library) => {
+                    const route = `/plugin/${name}`;
+
+                    if (defined.indexOf(route) === -1 && existsSync(join(directory, library, "hoobs.js"))) {
+                        Instance.app?.post(`/api/plugin/${name}/:action`, (request, response) => this.execute(Instance.instances[i], name, request, response));
+
+                        defined.push(route);
+                    }
+                });
+            }
+        }
     }
 
-    async execute(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, `plugin:${request.params.plugin}:${request.params.action}`, request.params, request.body));
+    async execute(instance: InstanceRecord, name: string, request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(instance.id, `plugin:${name}:${request.params.action}`, request.params, request.body));
     }
 }

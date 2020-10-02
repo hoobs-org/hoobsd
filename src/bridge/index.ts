@@ -22,6 +22,7 @@
 import { join } from "path";
 import { EventEmitter } from "events";
 import storage, { LocalStorage } from "node-persist";
+import { existsSync } from "fs-extra";
 
 import {
     Accessory,
@@ -150,45 +151,47 @@ export default class Server extends EventEmitter {
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
-        Plugins.load((identifier, name, scope, directory, pjson) => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            if (!this.pluginManager.plugins.get(identifier)) {
-                const plugin = new Plugin(name, directory, pjson, scope);
-
+        Plugins.load(Instance.id, (identifier, name, scope, directory, pjson, library) => {
+            if (existsSync(join(directory, library, "index.js"))) {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                this.pluginManager.plugins.set(identifier, plugin);
-
-                try {
-                    plugin.load();
-                } catch (error) {
-                    Console.error(`Error loading plugin "${identifier}"`);
-                    Console.error(error.stack);
+                if (!this.pluginManager.plugins.get(identifier)) {
+                    const plugin = new Plugin(name, directory, pjson, scope);
 
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
-                    this.pluginManager.plugins.delete(identifier);
-                }
+                    this.pluginManager.plugins.set(identifier, plugin);
 
-                Console.info(`Loaded plugin '${identifier}'`);
-
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                if (this.pluginManager.plugins.get(identifier)) {
                     try {
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-ignore
-                        this.pluginManager.currentInitializingPlugin = plugin;
-
-                        plugin.initialize(this.api);
+                        plugin.load();
                     } catch (error) {
-                        Console.error(`Error initializing plugin '${identifier}'`);
+                        Console.error(`Error loading plugin "${identifier}"`);
                         Console.error(error.stack);
 
                         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                         // @ts-ignore
                         this.pluginManager.plugins.delete(identifier);
+                    }
+
+                    Console.info(`Loaded plugin '${identifier}'`);
+
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore
+                    if (this.pluginManager.plugins.get(identifier)) {
+                        try {
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-ignore
+                            this.pluginManager.currentInitializingPlugin = plugin;
+
+                            plugin.initialize(this.api);
+                        } catch (error) {
+                            Console.error(`Error initializing plugin '${identifier}'`);
+                            Console.error(error.stack);
+
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-ignore
+                            this.pluginManager.plugins.delete(identifier);
+                        }
                     }
                 }
             }

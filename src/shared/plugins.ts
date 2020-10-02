@@ -41,19 +41,19 @@ export default class Plugins {
         return join(Paths.storagePath(Instance.id), "node_modules");
     }
 
-    static installed(): Plugin[] {
+    static installed(instance?: string): Plugin[] {
         const results: Plugin[] = [];
 
-        Plugins.load((_identifier, name, scope, directory, pjson) => {
+        Plugins.load(instance || Instance.id, (_identifier, name, scope, directory, pjson) => {
             results.push(new Plugin(name, directory, pjson, scope));
         });
 
         return results;
     }
 
-    static load(callback: (identifier: string, name: string, scope: string, directory: string, pjson: PackageJSON, library: string) => void): void {
-        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}).dependencies || {});
+    static load(instance: string, callback: (identifier: string, name: string, scope: string, directory: string, pjson: PackageJSON, library: string) => void): void {
+        if (existsSync(join(Paths.storagePath(instance), "package.json"))) {
+            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(instance), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 const directory = join(Plugins.directory, plugins[i]);
