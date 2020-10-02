@@ -33,7 +33,7 @@
     "scripts": {
         "api": "bin/hoobsd api -d",
         "build": "bin/build",
-        "instance": "bin/hoobsd start -d -i default"
+        "instance": "bin/hoobsd start -d -i"
     },
     "dependencies": {
         "archiver": "^5.0.2",
