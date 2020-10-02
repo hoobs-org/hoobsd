@@ -43,7 +43,7 @@ export default class Plugin {
 
     registerRoute(action: string, controller: (request: SocketRequest, response: SocketResponse) => any) {
         if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            Instance.socket?.route(`plugin:${this.name}:${action}`, (request: SocketRequest, response: SocketResponse) => {
+            Instance.socket?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: SocketRequest, response: SocketResponse) => {
                 try {
                     controller(request, response);
                 } catch (error) {
