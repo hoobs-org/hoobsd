@@ -53,7 +53,7 @@ export default class Server extends EventEmitter {
 
         this.time = 0;
         this.port = port || 51826;
-        this.config = Paths.configuration();
+        this.config = Config.configuration();
         this.settings = (this.config || {}).server || {};
 
         Instance.socket = new Socket(Instance.id);

@@ -26,7 +26,7 @@ import Instances from "./services/instances";
 import Cockpit from "./api/cockpit";
 import Plugins from "./services/plugins";
 import Ffmpeg from "./features/ffmpeg";
-import { sanitize, findCommand } from "./services/formatters";
+import { sanitize } from "./services/formatters";
 
 export = function Command(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
@@ -265,7 +265,7 @@ export = function Command(): void {
             console.table([{
                 feature: "ffmpeg",
                 description: "enables ffmpeg camera support",
-                enabled: findCommand("ffmpeg"),
+                enabled: Paths.tryCommand("ffmpeg"),
             }]);
         });
 
@@ -293,7 +293,7 @@ export = function Command(): void {
             console.table([{
                 feature: "ffmpeg",
                 description: "enables ffmpeg camera support",
-                enabled: findCommand("ffmpeg"),
+                enabled: Paths.tryCommand("ffmpeg"),
             }]);
         });
 
@@ -311,7 +311,7 @@ export = function Command(): void {
                     break;
 
                 case "backup":
-                    Paths.backup().then((filename) => {
+                    Instances.backup().then((filename) => {
                         copyFileSync(
                             join(Paths.backupPath(), filename),
                             join(process.cwd(), filename),
@@ -326,7 +326,7 @@ export = function Command(): void {
 
                 case "restore":
                     if (file && existsSync(file)) {
-                        Paths.restore(file).finally(() => console.log("restore complete"));
+                        Instances.restore(file).finally(() => console.log("restore complete"));
                     } else {
                         console.warn("invalid restore file");
                     }
@@ -334,14 +334,14 @@ export = function Command(): void {
                     break;
 
                 case "clean":
-                    Paths.clean();
+                    Instances.clean();
 
                     console.log("bridge caches cleaned");
 
                     break;
 
                 case "reset":
-                    Paths.reset();
+                    Instances.reset();
 
                     console.log("configuration and plugins removed");
 

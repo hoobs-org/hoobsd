@@ -19,7 +19,7 @@
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../services/instance";
 import FFMPEG from "../features/ffmpeg";
-import { findCommand } from "../services/formatters";
+import Paths from "../services/paths";
 
 export default class FeaturesController {
     constructor() {
@@ -32,7 +32,7 @@ export default class FeaturesController {
         return response.send([{
             feature: "ffmpeg",
             description: "enables ffmpeg camera support",
-            enabled: findCommand("ffmpeg"),
+            enabled: Paths.tryCommand("ffmpeg"),
         }]);
     }
 

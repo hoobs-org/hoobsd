@@ -16,7 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import _ from "lodash";
+import { HomebridgeConfig } from "homebridge/lib/server";
+import { join } from "path";
+import { existsSync, unlinkSync, appendFileSync } from "fs-extra";
+import Instance from "./instance";
+import { InstanceRecord } from "./instances";
 import Paths from "./paths";
+
+import {
+    loadJson,
+    formatJson,
+    jsonEquals,
+} from "./formatters";
 
 export default class Config {
     declare readonly name: string;
@@ -26,13 +38,152 @@ export default class Config {
     declare private config: any;
 
     constructor(name: string) {
-        this.config = Paths.configuration();
+        this.config = Config.configuration();
 
         const platform = this.config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
         const accessory = this.config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
 
         this.name = name;
         this.display = platform?.name || accessory?.name || name;
+    }
+
+    static generateUsername(): string {
+        let value = "";
+
+        for (let i = 0; i < 6; i += 1) {
+            if (value !== "") value += ":";
+
+            const hex = `00${Math.floor(Math.random() * 255).toString(16).toUpperCase()}`;
+
+            value += hex.substring(hex.length - 2, hex.length);
+        }
+
+        return value;
+    }
+
+    static configuration(): HomebridgeConfig {
+        let pjson = {
+            name: "plugins",
+            description: "HOOBS Plugins",
+            dependencies: {},
+        };
+
+        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}));
+
+        Config.savePackage(pjson);
+
+        let config: any = {};
+
+        if (Instance.id === "api") {
+            config = {
+                api: {
+                    origin: "*",
+                },
+                description: "",
+            };
+        } else {
+            config = {
+                server: {
+                    origin: "*",
+                },
+                bridge: {
+                    name: "HOOBS",
+                    pin: "031-45-154",
+                },
+                description: "",
+                ports: {},
+                plugins: [],
+                accessories: [],
+                platforms: [],
+            };
+        }
+
+        if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}));
+
+        if (Instance.id !== "api" && config?.ports !== undefined) {
+            if (config?.ports?.start > config?.ports?.end) delete config?.ports;
+        }
+
+        if (Instance.id !== "api" && (!config?.bridge?.username || !(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/).test(config?.bridge?.username))) {
+            config.bridge.username = Config.generateUsername();
+        }
+
+        if (Instance.id !== "api") {
+            let instances: any = [];
+
+            if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
+
+            const index = instances.findIndex((n: any) => n.id === Instance.id);
+
+            if (index >= 0) Instance.display = instances[index].display;
+        }
+
+        Config.saveConfig(config);
+
+        return config;
+    }
+
+    static saveConfig(config: any): void {
+        let current: any = {};
+
+        if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {});
+
+        if (Instance.id !== "api") {
+            config.accessories = config?.accessories || [];
+            config.platforms = config?.platforms || [];
+
+            Config.filterConfig(config?.accessories);
+            Config.filterConfig(config?.platforms);
+        }
+
+        if (!jsonEquals(current, config)) {
+            if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
+
+            appendFileSync(Paths.configPath(), formatJson(config));
+        }
+    }
+
+    static touchConfig(): void {
+        let config: any = {};
+
+        if (existsSync(Paths.configPath())) config = loadJson<any>(Paths.configPath(), {});
+        if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
+
+        appendFileSync(Paths.configPath(), formatJson(config));
+    }
+
+    static filterConfig(value: any): void {
+        if (value) {
+            const keys = _.keys(value);
+
+            for (let i = 0; i < keys.length; i += 1) {
+                if (value[keys[i]] === null || value[keys[i]] === "") {
+                    delete value[keys[i]];
+                } else if (Object.prototype.toString.call(value[keys[i]]) === "[object Object]" && Object.entries(value[keys[i]]).length === 0) {
+                    delete value[keys[i]];
+                } else if (Object.prototype.toString.call(value[keys[i]]) === "[object Object]") {
+                    Config.filterConfig(value[keys[i]]);
+                } else if (Array.isArray(value[keys[i]]) && value[keys[i]].length === 0) {
+                    delete value[keys[i]];
+                } else if (Array.isArray(value[keys[i]])) {
+                    Config.filterConfig(value[keys[i]]);
+                }
+            }
+        }
+    }
+
+    static savePackage(pjson: any): void {
+        let current: any = {};
+
+        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
+            current = loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {});
+        }
+
+        if (!jsonEquals(current, pjson)) {
+            if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) unlinkSync(join(Paths.storagePath(Instance.id), "package.json"));
+
+            appendFileSync(join(Paths.storagePath(Instance.id), "package.json"), formatJson(pjson));
+        }
     }
 
     accessories(): any {
@@ -46,7 +197,7 @@ export default class Config {
 
                 this.config.accessories.push(data);
 
-                Paths.saveConfig(this.config);
+                Config.saveConfig(this.config);
             },
 
             list: (): number[] => {
@@ -78,7 +229,7 @@ export default class Config {
                     plugin_name: this.name,
                 };
 
-                Paths.saveConfig(this.config);
+                Config.saveConfig(this.config);
             },
         };
     }
@@ -103,7 +254,7 @@ export default class Config {
                 plugin_name: this.name,
             };
 
-            Paths.saveConfig(this.config);
+            Config.saveConfig(this.config);
         }
     }
 }

@@ -19,7 +19,6 @@
 import { PluginManager } from "homebridge/lib/pluginManager";
 import Instance from "../services/instance";
 import Plugins from "../services/plugins";
-import { loadPackage, loadSchema } from "../services/formatters";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class PluginsController {
@@ -38,8 +37,8 @@ export default class PluginsController {
             const plugin = plugins[i];
             const identifier = plugin.getPluginIdentifier();
             const directory = plugin.getPluginPath();
-            const pjson = loadPackage(directory) || {};
-            const schema = loadSchema(directory) || {};
+            const pjson = Plugins.loadPackage(directory) || {};
+            const schema = Plugins.loadSchema(directory) || {};
             const details: any[] = (await Plugins.getPluginType(identifier, directory, pjson)) || [];
 
             const name = PluginManager.extractPluginName(identifier);

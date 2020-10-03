@@ -16,160 +16,54 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import _ from "lodash";
-import Unzip from "unzipper";
-import Archiver from "archiver";
-
 import {
-    existsSync,
-    createWriteStream,
-    createReadStream,
-    readdirSync,
-    lstatSync,
-    renameSync,
-    copyFileSync,
-    unlinkSync,
     ensureDirSync,
-    appendFileSync,
+    existsSync,
+    unlinkSync,
     removeSync,
+    readdirSync,
 } from "fs-extra";
 
-import { HomebridgeConfig } from "homebridge/lib/server";
 import { join } from "path";
 import Instance from "./instance";
-import { InstanceRecord } from "./instances";
-
-import {
-    generateUsername,
-    formatJson,
-    loadJson,
-    jsonEquals,
-} from "./formatters";
 
 export default class Paths {
-    static configuration(): HomebridgeConfig {
-        let pjson = {
-            name: "plugins",
-            description: "HOOBS Plugins",
-            dependencies: {},
-        };
+    static tryCommand(command: string): boolean {
+        const paths = (process.env.PATH || "").split(":");
 
-        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}));
-
-        Paths.savePackage(pjson);
-
-        let config: any = {};
-
-        if (Instance.id === "api") {
-            config = {
-                api: {
-                    origin: "*",
-                },
-                description: "",
-            };
-        } else {
-            config = {
-                server: {
-                    origin: "*",
-                },
-                bridge: {
-                    name: "HOOBS",
-                    pin: "031-45-154",
-                },
-                description: "",
-                ports: {},
-                plugins: [],
-                accessories: [],
-                platforms: [],
-            };
+        for (let i = 0; i < paths.length; i += 1) {
+            if (existsSync(join(paths[i], command))) return true;
         }
 
-        if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}));
-
-        if (Instance.id !== "api" && config?.ports !== undefined) {
-            if (config?.ports?.start > config?.ports?.end) delete config?.ports;
-        }
-
-        if (Instance.id !== "api" && (!config?.bridge?.username || !(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/).test(config?.bridge?.username))) {
-            config.bridge.username = generateUsername();
-        }
-
-        if (Instance.id !== "api") {
-            let instances: any = [];
-
-            if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
-
-            const index = instances.findIndex((n: any) => n.id === Instance.id);
-
-            if (index >= 0) Instance.display = instances[index].display;
-        }
-
-        Paths.saveConfig(config);
-
-        return config;
+        return false;
     }
 
-    static savePackage(pjson: any): void {
-        let current: any = {};
-
-        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-            current = loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {});
-        }
-
-        if (!jsonEquals(current, pjson)) {
-            if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) unlinkSync(join(Paths.storagePath(Instance.id), "package.json"));
-
-            appendFileSync(join(Paths.storagePath(Instance.id), "package.json"), formatJson(pjson));
-        }
-    }
-
-    static saveConfig(config: any): void {
-        let current: any = {};
-
-        if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {});
-
-        if (Instance.id !== "api") {
-            config.accessories = config?.accessories || [];
-            config.platforms = config?.platforms || [];
-
-            Paths.filterConfig(config?.accessories);
-            Paths.filterConfig(config?.platforms);
-        }
-
-        if (!jsonEquals(current, config)) {
-            if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
-
-            appendFileSync(Paths.configPath(), formatJson(config));
-        }
-    }
-
-    static touchConfig(): void {
-        let config: any = {};
-
-        if (existsSync(Paths.configPath())) config = loadJson<any>(Paths.configPath(), {});
-        if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
-
-        appendFileSync(Paths.configPath(), formatJson(config));
-    }
-
-    static filterConfig(value: any): void {
-        if (value) {
-            const keys = _.keys(value);
-
-            for (let i = 0; i < keys.length; i += 1) {
-                if (value[keys[i]] === null || value[keys[i]] === "") {
-                    delete value[keys[i]];
-                } else if (Object.prototype.toString.call(value[keys[i]]) === "[object Object]" && Object.entries(value[keys[i]]).length === 0) {
-                    delete value[keys[i]];
-                } else if (Object.prototype.toString.call(value[keys[i]]) === "[object Object]") {
-                    Paths.filterConfig(value[keys[i]]);
-                } else if (Array.isArray(value[keys[i]]) && value[keys[i]].length === 0) {
-                    delete value[keys[i]];
-                } else if (Array.isArray(value[keys[i]])) {
-                    Paths.filterConfig(value[keys[i]]);
+    static tryUnlink(filename: string): boolean {
+        if (existsSync(filename)) {
+            try {
+                unlinkSync(filename);
+            } catch (_fail) {
+                try {
+                    removeSync(filename);
+                } catch (_error) {
+                    return false;
                 }
             }
         }
+
+        return true;
+    }
+
+    static isEmpty(path: string): boolean {
+        if (existsSync(path)) {
+            try {
+                return (!(readdirSync(path)).length);
+            } catch (_error) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     static storagePath(instance?: string): string {
@@ -222,97 +116,5 @@ export default class Paths {
         ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
 
         return join(Paths.storagePath(), `${Instance.id}.accessories`);
-    }
-
-    static clean(): void {
-        if (existsSync(join(Paths.storagePath(), `${Instance.id}.persist`))) removeSync(join(Paths.storagePath(), `${Instance.id}.persist`));
-
-        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
-
-        if (existsSync(join(Paths.storagePath(), `${Instance.id}.accessories`))) removeSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
-
-        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
-    }
-
-    static reset(): void {
-        const entries = readdirSync(Paths.storagePath());
-
-        for (let i = 0; i < entries.length; i += 1) {
-            const path = join(Paths.storagePath(), entries[i]);
-
-            if (path !== Paths.backupPath()) {
-                if (lstatSync(path).isDirectory()) {
-                    removeSync(path);
-                } else {
-                    unlinkSync(path);
-                }
-            }
-        }
-    }
-
-    static backup(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const filename = `backup-${new Date().getTime()}`;
-            const entries = readdirSync(Paths.storagePath());
-            const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
-            const archive = Archiver("zip");
-
-            output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbf`));
-                resolve(`${filename}.hbf`);
-            });
-
-            archive.on("error", (error) => {
-                reject(error);
-            });
-
-            archive.pipe(output);
-
-            for (let i = 0; i < entries.length; i += 1) {
-                const path = join(Paths.storagePath(), entries[i]);
-
-                if (path !== Paths.backupPath()) {
-                    if (lstatSync(path).isDirectory()) {
-                        archive.directory(path, entries[i]);
-                    } else {
-                        archive.file(path, { name: entries[i] });
-                    }
-                }
-            }
-
-            archive.finalize();
-        });
-    }
-
-    static restore(file: string, remove?: boolean): Promise<void> {
-        return new Promise((resolve) => {
-            const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
-            const entries = readdirSync(Paths.storagePath());
-
-            for (let i = 0; i < entries.length; i += 1) {
-                const path = join(Paths.storagePath(), entries[i]);
-
-                if (path !== Paths.backupPath()) {
-                    if (lstatSync(path).isDirectory()) {
-                        removeSync(path);
-                    } else {
-                        unlinkSync(path);
-                    }
-                }
-            }
-
-            if (remove) {
-                renameSync(file, filename);
-            } else {
-                copyFileSync(file, filename);
-            }
-
-            createReadStream(filename).pipe(Unzip.Extract({
-                path: Paths.storagePath(),
-            })).on("finish", () => {
-                unlinkSync(filename);
-                resolve();
-            });
-        });
     }
 }

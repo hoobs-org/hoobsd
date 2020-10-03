@@ -63,6 +63,7 @@ import { Plugin } from "homebridge/lib/plugin";
 import Paths from "../services/paths";
 import Instance from "../services/instance";
 import Plugins from "../services/plugins";
+import Config from "../services/config";
 import Client from "./client";
 import { Console, Prefixed } from "../services/logger";
 
@@ -123,7 +124,7 @@ export default class Server extends EventEmitter {
         })();
 
         this.running = false;
-        this.config = Paths.configuration();
+        this.config = Config.configuration();
         this.settings = this.config.bridge;
         this.port = port || 51826;
         this.keepOrphanedCachedAccessories = false;

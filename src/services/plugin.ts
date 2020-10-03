@@ -18,6 +18,7 @@
 
 import Instance from "./instance";
 import Paths from "./paths";
+import Config from "./config";
 import { Prefixed, PluginLogger } from "./logger";
 import { SocketRequest, SocketResponse } from "../server/socket";
 
@@ -31,7 +32,7 @@ export default class Plugin {
     declare readonly logger: PluginLogger;
 
     constructor(identifier: string, name: string) {
-        const config = Paths.configuration();
+        const config = Config.configuration();
         const platform = config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
         const accessory = config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
 

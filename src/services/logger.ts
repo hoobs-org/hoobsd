@@ -107,7 +107,7 @@ class Logger {
 
         CACHE.push(data);
 
-        while (CACHE.length > 500) {
+        while (CACHE.length > 1000) {
             CACHE.shift();
         }
 
@@ -181,7 +181,7 @@ class Logger {
             return -1;
         });
 
-        while (CACHE.length > 500) {
+        while (CACHE.length > 1000) {
             CACHE.shift();
         }
 

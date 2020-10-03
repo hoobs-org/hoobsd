@@ -29,13 +29,13 @@ import { realpathSync, existsSync } from "fs-extra";
 import { dirname, join } from "path";
 import { LogLevel } from "homebridge/lib/logger";
 import Paths from "../services/paths";
+import Config from "../services/config";
 import Instance from "../services/instance";
 import Users from "../services/users";
 import Socket from "./socket";
 import Monitor from "./monitor";
 import Plugins from "../services/plugins";
 import { Console } from "../services/logger";
-import { findModule } from "../services/formatters";
 
 import AuthController from "./auth";
 import StatusController from "./status";
@@ -70,7 +70,7 @@ export default class API extends EventEmitter {
         super();
 
         this.time = 0;
-        this.config = Paths.configuration();
+        this.config = Config.configuration();
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
 
@@ -203,11 +203,11 @@ export default class API extends EventEmitter {
         new RemoteController();
         new SystemController();
 
-        let gui: string | undefined = findModule("@hoobs/gui");
+        let gui: string | undefined = Plugins.findModule("@hoobs/gui");
 
         if (gui && existsSync(join(gui, "lib"))) gui = join(gui, "lib");
 
-        let touch: string | undefined = findModule("@hoobs/touch");
+        let touch: string | undefined = Plugins.findModule("@hoobs/touch");
 
         if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
 

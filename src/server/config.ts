@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import Instance from "../services/instance";
-import Paths from "../services/paths";
+import Config from "../services/config";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class ConfigController {
@@ -31,7 +31,7 @@ export default class ConfigController {
     }
 
     async save(request: SocketRequest, response: SocketResponse): Promise<void> {
-        Paths.saveConfig(request.body);
+        Config.saveConfig(request.body);
 
         if (Instance.bridge) await Instance.bridge.restart();
 

@@ -23,7 +23,7 @@ import { exec, execSync } from "child_process";
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../services/instance";
 import Paths from "../services/paths";
-import { findCommand, network } from "../services/formatters";
+import Instances from "../services/instances";
 
 export default class SystemController {
     constructor() {
@@ -44,7 +44,7 @@ export default class SystemController {
     async info(_request: Request, response: Response): Promise<Response> {
         const data = {
             mac: await this.mac(),
-            ffmpeg_enabled: findCommand("ffmpeg"),
+            ffmpeg_enabled: Paths.tryCommand("ffmpeg"),
             system: await System.system(),
             operating_system: await System.osInfo(),
         };
@@ -91,7 +91,7 @@ export default class SystemController {
     }
 
     network(_request: Request, response: Response): Response {
-        return response.send(network());
+        return response.send(Instances.network());
     }
 
     async activity(_request: Request, response: Response): Promise<Response> {
@@ -103,7 +103,7 @@ export default class SystemController {
     }
 
     backup(_request: Request, response: Response): void {
-        Paths.backup().then((filename) => response.send({
+        Instances.backup().then((filename) => response.send({
             success: true,
             filename: `/backups/${filename}`,
         })).catch((error) => response.send({
@@ -117,7 +117,7 @@ export default class SystemController {
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
-            Paths.restore(
+            Instances.restore(
                 files.file.path,
                 true,
             ).finally(() => this.reboot(request, response));
@@ -145,7 +145,7 @@ export default class SystemController {
             });
         }
 
-        Paths.reset();
+        Instances.reset();
 
         return this.reboot(request, response);
     }

@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import Instance from "../services/instance";
-import Paths from "../services/paths";
+import Instances from "../services/instances";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class BridgeController {
@@ -55,7 +55,7 @@ export default class BridgeController {
     async clean(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (Instance.bridge?.running) await Instance.bridge.stop();
 
-        Paths.clean();
+        Instances.clean();
 
         await Instance.bridge?.start();
 

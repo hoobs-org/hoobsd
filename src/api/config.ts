@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../services/instance";
-import Paths from "../services/paths";
+import Config from "../services/config";
 import Socket from "./socket";
 
 export default class ConfigController {
@@ -34,7 +34,7 @@ export default class ConfigController {
     }
 
     async saveConsole(request: Request, response: Response): Promise<void> {
-        Paths.saveConfig(request.body);
+        Config.saveConfig(request.body);
 
         if (Instance.bridge) await Instance.bridge.restart();
 

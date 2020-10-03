@@ -18,12 +18,23 @@
 
 /* eslint-disable no-param-reassign */
 
+import Os from "os";
+import Unzip from "unzipper";
+import Archiver from "archiver";
 import Prompt from "prompts";
 
 import {
     existsSync,
     appendFileSync,
     unlinkSync,
+    ensureDirSync,
+    removeSync,
+    readdirSync,
+    lstatSync,
+    createReadStream,
+    createWriteStream,
+    renameSync,
+    copyFileSync,
 } from "fs-extra";
 
 import { execSync } from "child_process";
@@ -32,7 +43,6 @@ import Instance from "./instance";
 import Paths from "./paths";
 
 import {
-    network,
     loadJson,
     formatJson,
     sanitize,
@@ -60,6 +70,20 @@ export default class Instances {
         return "";
     }
 
+    static network(): string[] {
+        const ifaces: NodeJS.Dict<Os.NetworkInterfaceInfo[]> = Os.networkInterfaces();
+        const results: string[] = [];
+
+        Object.keys(ifaces).forEach((ifname: string) => {
+            ifaces[ifname]!.forEach((iface: Os.NetworkInterfaceInfo) => {
+                if (iface.family !== "IPv4" || iface.internal !== false) return;
+                if (results.indexOf(iface.address) === -1) results.push(`${iface.address}`);
+            });
+        });
+
+        return results;
+    }
+
     static initSystem() {
         if (existsSync("/etc/systemd/system")) return "systemd";
         if (existsSync("/Library/LaunchDaemons/")) return "launchd";
@@ -69,7 +93,7 @@ export default class Instances {
 
     static list(): InstanceRecord[] {
         const type = Instances.initSystem();
-        const host = network()[0];
+        const host = Instances.network()[0];
 
         let instances: InstanceRecord[] = [];
 
@@ -634,6 +658,98 @@ export default class Instances {
                     }
                 });
             }
+        });
+    }
+
+    static clean(): void {
+        if (existsSync(join(Paths.storagePath(), `${Instance.id}.persist`))) removeSync(join(Paths.storagePath(), `${Instance.id}.persist`));
+
+        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
+
+        if (existsSync(join(Paths.storagePath(), `${Instance.id}.accessories`))) removeSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+
+        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+    }
+
+    static reset(): void {
+        const entries = readdirSync(Paths.storagePath());
+
+        for (let i = 0; i < entries.length; i += 1) {
+            const path = join(Paths.storagePath(), entries[i]);
+
+            if (path !== Paths.backupPath()) {
+                if (lstatSync(path).isDirectory()) {
+                    removeSync(path);
+                } else {
+                    unlinkSync(path);
+                }
+            }
+        }
+    }
+
+    static backup(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const filename = `backup-${new Date().getTime()}`;
+            const entries = readdirSync(Paths.storagePath());
+            const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
+            const archive = Archiver("zip");
+
+            output.on("close", () => {
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbf`));
+                resolve(`${filename}.hbf`);
+            });
+
+            archive.on("error", (error) => {
+                reject(error);
+            });
+
+            archive.pipe(output);
+
+            for (let i = 0; i < entries.length; i += 1) {
+                const path = join(Paths.storagePath(), entries[i]);
+
+                if (path !== Paths.backupPath()) {
+                    if (lstatSync(path).isDirectory()) {
+                        archive.directory(path, entries[i]);
+                    } else {
+                        archive.file(path, { name: entries[i] });
+                    }
+                }
+            }
+
+            archive.finalize();
+        });
+    }
+
+    static restore(file: string, remove?: boolean): Promise<void> {
+        return new Promise((resolve) => {
+            const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
+            const entries = readdirSync(Paths.storagePath());
+
+            for (let i = 0; i < entries.length; i += 1) {
+                const path = join(Paths.storagePath(), entries[i]);
+
+                if (path !== Paths.backupPath()) {
+                    if (lstatSync(path).isDirectory()) {
+                        removeSync(path);
+                    } else {
+                        unlinkSync(path);
+                    }
+                }
+            }
+
+            if (remove) {
+                renameSync(file, filename);
+            } else {
+                copyFileSync(file, filename);
+            }
+
+            createReadStream(filename).pipe(Unzip.Extract({
+                path: Paths.storagePath(),
+            })).on("finish", () => {
+                unlinkSync(filename);
+                resolve();
+            });
         });
     }
 }

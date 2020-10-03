@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { existsSync } from "fs-extra";
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import { join, dirname } from "path";
+import { existsSync, readFileSync, realpathSync } from "fs-extra";
 
 import {
     uuid,
@@ -33,8 +33,9 @@ import { Plugin } from "homebridge/lib/plugin";
 import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
 import Instance from "./instance";
 import Paths from "./paths";
+import Config from "./config";
 import { Console, NotificationType } from "./logger";
-import { loadPackage, loadSchema, loadJson } from "./formatters";
+import { loadJson } from "./formatters";
 
 export default class Plugins {
     static get directory(): string {
@@ -57,7 +58,7 @@ export default class Plugins {
 
             for (let i = 0; i < plugins.length; i += 1) {
                 const directory = join(Plugins.directory, plugins[i]);
-                const pjson = loadPackage(directory);
+                const pjson = Plugins.loadPackage(directory);
 
                 if (existsSync(directory) && pjson) {
                     const identifier: string = pjson.name;
@@ -97,8 +98,8 @@ export default class Plugins {
                 const path = join(Plugins.directory, name);
 
                 if (existsSync(path) && existsSync(join(path, "package.json"))) {
-                    const pjson = loadPackage(path);
-                    const config = Paths.configuration();
+                    const pjson = Plugins.loadPackage(path);
+                    const config = Config.configuration();
 
                     config.plugins?.push(name);
                     config.plugins = [...new Set(config.plugins)];
@@ -135,7 +136,7 @@ export default class Plugins {
                         }
                     }
 
-                    Paths.saveConfig(config);
+                    Config.saveConfig(config);
 
                     Console.notify(
                         "plugin_install",
@@ -181,7 +182,7 @@ export default class Plugins {
 
             proc.on("close", () => {
                 if (!existsSync(join(Plugins.directory, name, "package.json"))) {
-                    const config = Paths.configuration();
+                    const config = Config.configuration();
                     let index = config.plugins?.indexOf(name);
 
                     if (index! > -1) config.plugins?.splice(index!, 1);
@@ -200,7 +201,7 @@ export default class Plugins {
                         index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
                     }
 
-                    Paths.saveConfig(config);
+                    Config.saveConfig(config);
 
                     Console.notify(
                         "plugin_uninstall",
@@ -248,7 +249,7 @@ export default class Plugins {
             });
 
             proc.on("close", () => {
-                Paths.touchConfig();
+                Config.touchConfig();
 
                 Console.notify(
                     "plugin_upgrade",
@@ -273,7 +274,7 @@ export default class Plugins {
         }
 
         const registered: any[] = [];
-        const schema = loadSchema(path);
+        const schema = Plugins.loadSchema(path);
 
         if (schema) {
             const alias = schema.plugin_alias || schema.pluginAlias || name;
@@ -350,10 +351,95 @@ export default class Plugins {
     }
 
     static getPluginPackage(path: string): PackageJSON {
-        const pjson: PackageJSON = loadPackage(path);
+        const pjson: PackageJSON = Plugins.loadPackage(path);
 
         if (!pjson) throw new Error(`Plugin ${path} does not contain a proper package.json.`);
 
         return pjson;
+    }
+
+    static verifyModule(path: string, name: string): string | undefined {
+        if (existsSync(path) && existsSync(join(path, "package.json"))) {
+            try {
+                if (JSON.parse(readFileSync(join(path, "package.json")).toString())?.name === name) return path;
+            } catch (_error) {
+                return undefined;
+            }
+        }
+
+        return undefined;
+    }
+
+    static findModule(name: string): string | undefined {
+        let path: string | undefined;
+        let prefix: string | undefined;
+
+        if (process.platform === "linux" || process.platform === "darwin") {
+            prefix = undefined;
+
+            try {
+                prefix = (`${execSync("npm config get prefix") || ""}`).trim();
+            } catch (error) {
+                prefix = undefined;
+            }
+
+            if (prefix && prefix !== "") path = Plugins.verifyModule(join(join(prefix, "lib", "node_modules"), name), name);
+
+            if (!path) {
+                prefix = undefined;
+
+                try {
+                    prefix = (`${execSync("yarn global dir")}`).trim();
+                } catch (error) {
+                    prefix = undefined;
+                }
+
+                if (prefix && prefix !== "") path = Plugins.verifyModule(join(join(prefix, "node_modules"), name), name);
+            }
+
+            if (path) {
+                try {
+                    path = realpathSync(path);
+                } catch (_error) {
+                    return undefined;
+                }
+            }
+        }
+
+        return path;
+    }
+
+    static loadPackage(directory: string): any {
+        const filename: string = join(directory, "package.json");
+
+        let results: any;
+
+        if (existsSync(filename)) {
+            try {
+                results = JSON.parse(readFileSync(filename).toString());
+            } catch (error) {
+                Console.error(`Plugin ${filename} contains an invalid package`);
+                Console.error(error.stack);
+            }
+        }
+
+        return results;
+    }
+
+    static loadSchema(directory: string): any {
+        const filename = join(directory, "config.schema.json");
+
+        let results: any;
+
+        if (existsSync(filename)) {
+            try {
+                results = JSON.parse(readFileSync(filename).toString());
+            } catch (error) {
+                Console.error(`Plugin ${filename} contains an invalid config schema`);
+                Console.error(error.stack);
+            }
+        }
+
+        return results;
     }
 }
