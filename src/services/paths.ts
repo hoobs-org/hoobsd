@@ -44,7 +44,7 @@ import {
     formatJson,
     loadJson,
     jsonEquals,
-} from "./helpers";
+} from "./formatters";
 
 export default class Paths {
     static configuration(): HomebridgeConfig {

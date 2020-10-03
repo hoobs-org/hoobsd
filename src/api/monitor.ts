@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import System from "systeminformation";
-import Instance from "../shared/instance";
-import { Console } from "../shared/logger";
+import Instance from "../services/instance";
+import { Console } from "../services/logger";
 import Socket from "./socket";
 
 export default async function Monitor() {

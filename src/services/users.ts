@@ -27,7 +27,7 @@ import {
 
 import Instance from "./instance";
 import Paths from "./paths";
-import { parseJson, formatJson, loadJson } from "./helpers";
+import { parseJson, formatJson, loadJson } from "./formatters";
 
 export interface UserRecord {
     id: number,

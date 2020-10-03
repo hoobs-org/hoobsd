@@ -19,10 +19,10 @@
 import { Request, Response } from "express-serve-static-core";
 import { existsSync } from "fs-extra";
 import { join } from "path";
-import Instance from "../shared/instance";
+import Instance from "../services/instance";
 import Socket from "./socket";
-import Plugins from "../shared/plugins";
-import { InstanceRecord } from "../shared/instances";
+import Plugins from "../services/plugins";
+import { InstanceRecord } from "../services/instances";
 
 export default class PluginController {
     constructor() {

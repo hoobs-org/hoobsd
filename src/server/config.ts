@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../shared/instance";
-import Paths from "../shared/paths";
+import Instance from "../services/instance";
+import Paths from "../services/paths";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class ConfigController {

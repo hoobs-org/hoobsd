@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../shared/instance";
-import Paths from "../shared/paths";
+import Instance from "../services/instance";
+import Paths from "../services/paths";
 import Socket from "./socket";
 
 export default class ConfigController {

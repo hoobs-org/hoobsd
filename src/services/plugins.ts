@@ -34,7 +34,7 @@ import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
 import Instance from "./instance";
 import Paths from "./paths";
 import { Console, NotificationType } from "./logger";
-import { loadPackage, loadSchema, loadJson } from "./helpers";
+import { loadPackage, loadSchema, loadJson } from "./formatters";
 
 export default class Plugins {
     static get directory(): string {

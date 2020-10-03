@@ -18,7 +18,7 @@
 
 import _ from "lodash";
 import Request from "axios";
-import Instance from "../shared/instance";
+import Instance from "../services/instance";
 import { Services, Characteristics } from "./types";
 
 export default class Client {

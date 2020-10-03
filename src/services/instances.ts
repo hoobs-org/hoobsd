@@ -36,7 +36,7 @@ import {
     loadJson,
     formatJson,
     sanitize,
-} from "./helpers";
+} from "./formatters";
 
 export interface InstanceRecord {
     id: string,

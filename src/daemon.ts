@@ -21,14 +21,14 @@ import "source-map-support/register";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
-import Instance from "./shared/instance";
-import Instances from "./shared/instances";
-import Users from "./shared/users";
+import Instance from "./services/instance";
+import Instances from "./services/instances";
+import Users from "./services/users";
 import Server from "./server";
-import Paths from "./shared/paths";
+import Paths from "./services/paths";
 import API from "./api";
-import { Console } from "./shared/logger";
-import { sanitize } from "./shared/helpers";
+import { Console } from "./services/logger";
+import { sanitize } from "./services/formatters";
 
 export = function Daemon(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");

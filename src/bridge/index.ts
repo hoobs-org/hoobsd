@@ -60,11 +60,11 @@ import * as mac from "homebridge/lib/util/mac";
 import { MacAddress } from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
-import Paths from "../shared/paths";
-import Instance from "../shared/instance";
-import Plugins from "../shared/plugins";
+import Paths from "../services/paths";
+import Instance from "../services/instance";
+import Plugins from "../services/plugins";
 import Client from "./client";
-import { Console, Prefixed } from "../shared/logger";
+import { Console, Prefixed } from "../services/logger";
 
 const accessoryStorage: LocalStorage = storage.create();
 

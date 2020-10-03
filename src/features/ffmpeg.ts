@@ -20,9 +20,9 @@ import { removeSync } from "fs-extra";
 import { execSync, ExecSyncOptions } from "child_process";
 import { join } from "path";
 import { uname, Utsname } from "node-uname";
-import Paths from "../shared/paths";
-import { Console, NotificationType } from "../shared/logger";
-import { findCommand, tryUnlink, isDirectoryEmpty } from "../shared/helpers";
+import Paths from "../services/paths";
+import { Console, NotificationType } from "../services/logger";
+import { findCommand, tryUnlink, isDirectoryEmpty } from "../services/formatters";
 
 export default class FFMPEG {
     static enable(): { success: boolean, error?: string | undefined } {

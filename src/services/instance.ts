@@ -28,7 +28,7 @@ import API from "../api";
 import { Loggers } from "./logger";
 import { InstanceRecord } from "./instances";
 import { UserRecord } from "./users";
-import { loadJson } from "./helpers";
+import { loadJson } from "./formatters";
 
 export interface Application {
     app: Express | undefined,

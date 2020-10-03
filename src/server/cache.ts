@@ -18,9 +18,9 @@
 
 import { existsSync, readdirSync, readJsonSync } from "fs-extra";
 import { join } from "path";
-import Instance from "../shared/instance";
-import Paths from "../shared/paths";
-import { Console } from "../shared/logger";
+import Instance from "../services/instance";
+import Paths from "../services/paths";
+import { Console } from "../services/logger";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class CacheController {

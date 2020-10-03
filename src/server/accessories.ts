@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../shared/instance";
-import { Console } from "../shared/logger";
+import Instance from "../services/instance";
+import { Console } from "../services/logger";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class AccessoriesController {

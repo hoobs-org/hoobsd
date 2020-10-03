@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../shared/instance";
-import Users, { UserRecord } from "../shared/users";
+import Instance from "../services/instance";
+import Users, { UserRecord } from "../services/users";
 
 export default class AuthController {
     constructor() {

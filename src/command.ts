@@ -20,14 +20,13 @@ import Program from "commander";
 import { existsSync, copyFileSync } from "fs-extra";
 import { join } from "path";
 import { execSync, spawn } from "child_process";
-import Paths from "./shared/paths";
-import Instance from "./shared/instance";
-import Instances from "./shared/instances";
+import Paths from "./services/paths";
+import Instance from "./services/instance";
+import Instances from "./services/instances";
 import Cockpit from "./api/cockpit";
-import Plugins from "./shared/plugins";
+import Plugins from "./services/plugins";
 import Ffmpeg from "./features/ffmpeg";
-
-import { sanitize, findCommand } from "./shared/helpers";
+import { sanitize, findCommand } from "./services/formatters";
 
 export = function Command(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");

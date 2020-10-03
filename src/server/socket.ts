@@ -19,8 +19,8 @@
 import RawIPC from "node-ipc";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
-import Paths from "../shared/paths";
-import { Print } from "../shared/logger";
+import Paths from "../services/paths";
+import { Print } from "../services/logger";
 
 const sockets: { [key: string]: any } = [];
 

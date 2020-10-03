@@ -21,9 +21,9 @@ import Forms from "formidable";
 import Mac from "macaddress";
 import { exec, execSync } from "child_process";
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../shared/instance";
-import Paths from "../shared/paths";
-import { findCommand, network } from "../shared/helpers";
+import Instance from "../services/instance";
+import Paths from "../services/paths";
+import { findCommand, network } from "../services/formatters";
 
 export default class SystemController {
     constructor() {

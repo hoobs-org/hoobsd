@@ -17,9 +17,9 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../shared/instance";
+import Instance from "../services/instance";
 import FFMPEG from "../features/ffmpeg";
-import { findCommand } from "../shared/helpers";
+import { findCommand } from "../services/formatters";
 
 export default class FeaturesController {
     constructor() {

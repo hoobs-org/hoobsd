@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../shared/instance";
-import Instances from "../shared/instances";
+import Instance from "../services/instance";
+import Instances from "../services/instances";
 
 export default class InstancesController {
     constructor() {

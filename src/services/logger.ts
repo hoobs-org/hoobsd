@@ -21,7 +21,7 @@ import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import Instance from "./instance";
 import Socket from "../server/socket";
-import { colorize, contrast } from "./helpers";
+import { colorize, contrast } from "./formatters";
 
 export interface Message {
     level: LogLevel,

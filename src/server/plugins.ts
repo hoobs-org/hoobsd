@@ -17,9 +17,9 @@
  **************************************************************************************************/
 
 import { PluginManager } from "homebridge/lib/pluginManager";
-import Instance from "../shared/instance";
-import Plugins from "../shared/plugins";
-import { loadPackage, loadSchema } from "../shared/helpers";
+import Instance from "../services/instance";
+import Plugins from "../services/plugins";
+import { loadPackage, loadSchema } from "../services/formatters";
 import { SocketRequest, SocketResponse } from "./socket";
 
 export default class PluginsController {
