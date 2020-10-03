@@ -28,7 +28,7 @@ import Bridge from "../bridge";
 import Config from "../shared/config";
 import Plugin from "../shared/plugin";
 import Plugins from "../shared/plugins";
-import { Console, Prefixed } from "../shared/logger";
+import { Console, Prefixed, NotificationType } from "../shared/logger";
 
 import CacheController from "./cache";
 import StatusController from "./status";
@@ -101,14 +101,31 @@ export default class Server extends EventEmitter {
         });
 
         Instance.bridge?.on("listening", () => {
-            Console.message("bridge_start", Instance.id, {
-                time: new Date().getTime(),
-            });
+            Console.notify(
+                "bridge_start",
+                Instance.id,
+                "Instance Started",
+                `${Instance.display || Instance.id} has been started.`,
+                NotificationType.SUCCESS,
+                "router",
+            );
         });
 
         Instance.bridge?.on("shutdown", () => {
-            Console.message("bridge_stop", Instance.id, {
-                time: new Date().getTime(),
+            Console.notify(
+                "bridge_stop",
+                Instance.id,
+                "Instance Stopped",
+                `${Instance.display || Instance.id} has been stopped.`,
+                NotificationType.WARN,
+                "router",
+            );
+        });
+
+        Instance.bridge?.on("accessory_change", (accessory, value) => {
+            Console.emit("accessory_change", Instance.id, {
+                accessory,
+                value,
             });
         });
 

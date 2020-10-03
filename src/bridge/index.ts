@@ -456,12 +456,7 @@ export default class Server extends EventEmitter {
                     service.refresh((results: any) => {
                         service.values = results.values;
                     }).finally(() => {
-                        this.emit("accessoryChange", service, data.newValue);
-
-                        Console.message("accessory_change", Instance.id, {
-                            accessory: service,
-                            value: data.newValue,
-                        });
+                        this.emit("accessory_change", service, data.newValue);
                     });
                 });
             }

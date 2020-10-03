@@ -41,6 +41,14 @@ export interface Loggers {
     [key: string]: PluginLogger;
 }
 
+export const enum NotificationType {
+    INFO = "info",
+    SUCCESS = "success",
+    WARN = "warn",
+    ERROR = "error",
+    DEBUG = "debug",
+}
+
 interface IntermediateLogger {
     prefix?: string;
     plugin?: string;
@@ -255,19 +263,58 @@ class Logger {
         this.log(LogLevel.ERROR, message, ...parameters);
     }
 
-    message(event: string, instance: string, data: any): void {
-        let name = event;
+    notify(event: string, instance: string, title: string, description: string, type: NotificationType, icon?: string): void {
+        if (!icon) {
+            switch (type) {
+                case NotificationType.ERROR:
+                    icon = "error";
+                    break;
 
-        if (Object.prototype.hasOwnProperty.call(data, "name")) {
-            name = `${data.name}`;
+                case NotificationType.WARN:
+                    icon = "warning";
+                    break;
 
-            delete data.name;
+                case NotificationType.DEBUG:
+                    icon = "bug_report";
+                    break;
+
+                default:
+                    icon = "notifications_active";
+                    break;
+            }
         }
 
         if (Instance.api) {
+            Instance.io?.sockets.emit("notification", {
+                instance,
+                event,
+                data: {
+                    title,
+                    description,
+                    type,
+                    icon,
+                },
+            });
+        }
+
+        if (Instance.server) {
+            Socket.fetch("notification", {
+                instance,
+                event,
+                data: {
+                    title,
+                    description,
+                    type,
+                    icon,
+                },
+            });
+        }
+    }
+
+    emit(event: string, instance: string, data: any): void {
+        if (Instance.api) {
             Instance.io?.sockets.emit(event, {
                 instance,
-                name,
                 data,
             });
         }
@@ -275,7 +322,6 @@ class Logger {
         if (Instance.server) {
             Socket.fetch(event, {
                 instance,
-                name,
                 data,
             });
         }

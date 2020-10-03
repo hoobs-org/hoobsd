@@ -29,17 +29,14 @@ export default class AccessoriesController {
     }
 
     async all(_request: Request, response: Response): Promise<void> {
-        const results = [];
+        let results: any[] = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
             if (Instance.instances[i].type === "bridge") {
                 const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
 
                 if (accessories) {
-                    results.push({
-                        instance: Instance.instances[i].id,
-                        accessories,
-                    });
+                    results = [...results, ...accessories];
                 }
             }
         }

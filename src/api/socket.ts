@@ -53,13 +53,8 @@ export default class Socket extends EventEmitter {
                     this.pipe.server.emit(socket, payload.socket, "complete");
                 });
 
-                this.pipe.server.on("bridge_start", (payload: any, socket: any) => {
-                    this.emit("bridge_start", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
-                });
-
-                this.pipe.server.on("bridge_stop", (payload: any, socket: any) => {
-                    this.emit("bridge_stop", payload.body);
+                this.pipe.server.on("notification", (payload: any, socket: any) => {
+                    this.emit("notification", payload.body);
                     this.pipe.server.emit(socket, payload.socket, "complete");
                 });
 
@@ -70,21 +65,6 @@ export default class Socket extends EventEmitter {
 
                 this.pipe.server.on("heartbeat", (payload: any, socket: any) => {
                     this.emit("heartbeat", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
-                });
-
-                this.pipe.server.on("plugin_install", (payload: any, socket: any) => {
-                    this.emit("plugin_install", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
-                });
-
-                this.pipe.server.on("plugin_uninstall", (payload: any, socket: any) => {
-                    this.emit("plugin_install", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
-                });
-
-                this.pipe.server.on("plugin_upgrade", (payload: any, socket: any) => {
-                    this.emit("plugin_uninstall", payload.body);
                     this.pipe.server.emit(socket, payload.socket, "complete");
                 });
             }

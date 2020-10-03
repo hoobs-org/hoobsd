@@ -21,7 +21,7 @@ import { execSync, ExecSyncOptions } from "child_process";
 import { join } from "path";
 import { uname, Utsname } from "node-uname";
 import Paths from "../shared/paths";
-import { Console } from "../shared/logger";
+import { Console, NotificationType } from "../shared/logger";
 import { findCommand, tryUnlink, isDirectoryEmpty } from "../shared/helpers";
 
 export default class FFMPEG {
@@ -68,10 +68,14 @@ export default class FFMPEG {
             execSync("ldconfig -n /usr/local/lib", options);
             execSync("ldconfig", options);
 
-            Console.message("enable_feature", "api", {
-                name: "ffmpeg",
-                success: true,
-            });
+            Console.notify(
+                "enable_feature",
+                "api",
+                "FFMPEG Installed",
+                "FFMPEG has been installed and is ready to use.",
+                NotificationType.SUCCESS,
+                "build",
+            );
 
             return {
                 success: true,
@@ -79,10 +83,13 @@ export default class FFMPEG {
         }
 
         if ((utsname.sysname || "").toLowerCase() !== "linux") {
-            Console.message("enable_feature", "api", {
-                name: "ffmpeg",
-                error: "this version of ffmpeg is only supported on linux",
-            });
+            Console.notify(
+                "enable_feature",
+                "api",
+                "FFMPEG Not Installed",
+                "This version of FFMPEG is only supported on linux.",
+                NotificationType.ERROR,
+            );
 
             return {
                 success: false,
@@ -91,10 +98,13 @@ export default class FFMPEG {
         }
 
         if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
-            Console.message("enable_feature", "api", {
-                name: "ffmpeg",
-                error: "this version of ffmpeg is only supported on arm processors",
-            });
+            Console.notify(
+                "enable_feature",
+                "api",
+                "FFMPEG Not Installed",
+                "This version of FFMPEG is only supported on ARM processors.",
+                NotificationType.ERROR,
+            );
 
             return {
                 success: false,
@@ -103,10 +113,13 @@ export default class FFMPEG {
         }
 
         if (!findCommand("apt-get")) {
-            Console.message("enable_feature", "api", {
-                name: "ffmpeg",
-                error: "this version of ffmpeg requires the apt package manager",
-            });
+            Console.notify(
+                "enable_feature",
+                "api",
+                "FFMPEG Not Installed",
+                "This version of FFMPEG requires the APT package manager.",
+                NotificationType.ERROR,
+            );
 
             return {
                 success: false,
@@ -389,20 +402,27 @@ export default class FFMPEG {
             tryUnlink("/usr/local/share/man/man3/libswresample.3");
             tryUnlink("/usr/local/share/man/man3/libswscale.3");
 
-            Console.message("disable_feature", "api", {
-                name: "ffmpeg",
-                success: true,
-            });
+            Console.notify(
+                "disable_feature",
+                "api",
+                "FFMPEG Removed",
+                "FFMPEG has been removed.",
+                NotificationType.WARN,
+                "build",
+            );
 
             return {
                 success: true,
             };
         }
 
-        Console.message("disable_feature", "api", {
-            name: "ffmpeg",
-            error: "this can only remove ffmpeg installed by hoobs",
-        });
+        Console.notify(
+            "disable_feature",
+            "api",
+            "FFMPEG Not Removed",
+            "This can only remove FFMPEG installed by HOOBS.",
+            NotificationType.ERROR,
+        );
 
         return {
             success: false,

@@ -45,7 +45,7 @@ export default async function Monitor() {
         }
     }
 
-    Console.message("monitor", "api", {
+    Console.emit("monitor", "api", {
         instances: results,
         cpu: await System.currentLoad(),
         memory: await System.mem(),

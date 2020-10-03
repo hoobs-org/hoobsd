@@ -33,7 +33,7 @@ import { Plugin } from "homebridge/lib/plugin";
 import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
 import Instance from "./instance";
 import Paths from "./paths";
-import { Console } from "./logger";
+import { Console, NotificationType } from "./logger";
 import { loadPackage, loadSchema, loadJson } from "./helpers";
 
 export default class Plugins {
@@ -137,19 +137,25 @@ export default class Plugins {
 
                     Paths.saveConfig(config);
 
-                    Console.message("plugin_install", Instance.id, {
-                        name,
-                        tag,
-                        success: true,
-                    });
+                    Console.notify(
+                        "plugin_install",
+                        Instance.id,
+                        "Plugin Installed",
+                        `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
+                        NotificationType.SUCCESS,
+                        "extension",
+                    );
 
                     return resolve();
                 }
-                Console.message("plugin_install", Instance.id, {
-                    name,
-                    tag,
-                    error: "unable to install plugin",
-                });
+
+                Console.notify(
+                    "plugin_install",
+                    Instance.id,
+                    "Plugin Not Installed",
+                    `Unable to install ${PluginManager.extractPluginName(name)}.`,
+                    NotificationType.ERROR,
+                );
 
                 return reject();
             });
@@ -196,18 +202,25 @@ export default class Plugins {
 
                     Paths.saveConfig(config);
 
-                    Console.message("plugin_uninstall", Instance.id, {
-                        name,
-                        success: true,
-                    });
+                    Console.notify(
+                        "plugin_uninstall",
+                        Instance.id,
+                        "Plugin Uninstalled",
+                        `${PluginManager.extractPluginName(name)} has been removed.`,
+                        NotificationType.WARN,
+                        "extension",
+                    );
 
                     return resolve();
                 }
 
-                Console.message("plugin_uninstall", Instance.id, {
-                    name,
-                    error: "unable to uninstall plugin",
-                });
+                Console.notify(
+                    "plugin_uninstall",
+                    Instance.id,
+                    "Plugin Not Uninstalled",
+                    `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
+                    NotificationType.ERROR,
+                );
 
                 return reject();
             });
@@ -237,11 +250,13 @@ export default class Plugins {
             proc.on("close", () => {
                 Paths.touchConfig();
 
-                Console.message("plugin_upgrade", Instance.id, {
-                    name,
-                    tag,
-                    success: true,
-                });
+                Console.notify(
+                    "plugin_upgrade",
+                    Instance.id, name ? "Plugin Upgraded" : "Plugins Upgraded",
+                    name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                    NotificationType.SUCCESS,
+                    "extension",
+                );
 
                 return resolve();
             });
