@@ -65,7 +65,7 @@ import Instance from "../services/instance";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
 import Client from "./client";
-import { Console, Prefixed } from "../services/logger";
+import { Console, Prefixed, Events } from "../services/logger";
 
 const accessoryStorage: LocalStorage = storage.create();
 
@@ -219,7 +219,7 @@ export default class Server extends EventEmitter {
         this.publishBridge();
         this.running = true;
 
-        this.emit("listening", this.port);
+        this.emit(Events.LISTENING, this.port);
     }
 
     public stop(): Promise<void> {
@@ -237,7 +237,7 @@ export default class Server extends EventEmitter {
             this.api.signalShutdown();
 
             setTimeout(() => {
-                this.emit("shutdown");
+                this.emit(Events.SHUTDOWN);
 
                 resolve();
             }, 3000);
@@ -276,7 +276,7 @@ export default class Server extends EventEmitter {
         if (this.settings.setupID && this.settings.setupID.length === 4) publishInfo.setupID = this.settings.setupID;
 
         this.bridge.publish(publishInfo, this.allowInsecureAccess);
-        this.emit("publishSetupUri", this.setupURI());
+        this.emit(Events.PUBLISH_SETUP_URI, this.setupURI());
     }
 
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
@@ -457,7 +457,7 @@ export default class Server extends EventEmitter {
                     service.refresh((results: any) => {
                         service.values = results.values;
                     }).finally(() => {
-                        this.emit("accessory_change", service, data.newValue);
+                        this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
                     });
                 });
             }

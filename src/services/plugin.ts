@@ -17,7 +17,6 @@
  **************************************************************************************************/
 
 import Instance from "./instance";
-import Paths from "./paths";
 import Config from "./config";
 import { Prefixed, PluginLogger } from "./logger";
 import { SocketRequest, SocketResponse } from "../server/socket";

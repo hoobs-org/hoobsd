@@ -35,7 +35,7 @@ import Users from "../services/users";
 import Socket from "./socket";
 import Monitor from "./monitor";
 import Plugins from "../services/plugins";
-import { Console } from "../services/logger";
+import { Console, Events } from "../services/logger";
 
 import AuthController from "./auth";
 import StatusController from "./status";
@@ -85,8 +85,8 @@ export default class API extends EventEmitter {
         Instance.io = IO(this.listner);
 
         Instance.io.on("connection", (socket: IO.Socket) => {
-            socket.on("log_history", () => {
-                socket.emit("log_cache", Console.cache());
+            socket.on(Events.LOG_HISTORY, () => {
+                socket.emit(Events.LOG_CACHE, Console.cache());
             });
         });
 
@@ -105,7 +105,7 @@ export default class API extends EventEmitter {
         if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
 
         Instance.io?.on("connection", (socket: IO.Socket): void => {
-            socket.on("shell:connect", () => {
+            socket.on(Events.SHELL_CONNECT, () => {
                 let shell: PTY.IPty | undefined;
 
                 try {
@@ -124,14 +124,14 @@ export default class API extends EventEmitter {
                 }
 
                 shell?.onData((data: any) => {
-                    socket.emit("shell:output", data);
+                    socket.emit(Events.SHELL_OUTPUT, data);
                 });
 
-                socket.on("shell:input", (data: any): void => {
+                socket.on(Events.SHELL_INPUT, (data: any): void => {
                     shell?.write(data);
                 });
 
-                socket.on("shell:resize", (data): void => {
+                socket.on(Events.SHELL_RESIZE, (data): void => {
                     const parts = data.split(":");
 
                     if (parts.length === 3 && !Number.isNaN(parseInt(parts[1], 10)) && !Number.isNaN(parseInt(parts[2], 10))) {
@@ -142,11 +142,11 @@ export default class API extends EventEmitter {
                     }
                 });
 
-                socket.on("shell:clear", (): void => {
+                socket.on(Events.SHELL_CLEAR, (): void => {
                     shell?.write("clear\r");
                 });
 
-                socket.on("shell:disconnect", (): void => {
+                socket.on(Events.SHELL_DISCONNECT, (): void => {
                     shell?.write("exit\r");
                     shell = undefined;
                 });
@@ -235,11 +235,11 @@ export default class API extends EventEmitter {
     static createServer(port: number): API {
         const api = new API(port);
 
-        api.on("listening", () => {
+        api.on(Events.LISTENING, () => {
             Console.info(`API is running on port ${port}`);
         });
 
-        api.on("request", (method, url) => {
+        api.on(Events.REQUEST, (method, url) => {
             Console.debug(`"${method}" ${url}`);
         });
 
@@ -249,9 +249,9 @@ export default class API extends EventEmitter {
     async start(): Promise<void> {
         this.socket = new Socket();
 
-        this.socket.on("log", (data: any) => Console.log(LogLevel.INFO, data));
-        this.socket.on("notification", (data: any) => Instance.io?.sockets.emit("notification", data));
-        this.socket.on("accessory_change", (data: any) => Instance.io?.sockets.emit("accessory_change", data));
+        this.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
+        this.socket.on(Events.NOTIFICATION, (data: any) => Instance.io?.sockets.emit(Events.NOTIFICATION, data));
+        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => Instance.io?.sockets.emit(Events.ACCESSORY_CHANGE, data));
 
         this.socket.start();
 
@@ -261,7 +261,7 @@ export default class API extends EventEmitter {
 
         this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();
-            this.emit("listening", this.port);
+            this.emit(Events.LISTENING, this.port);
         });
 
         Monitor();

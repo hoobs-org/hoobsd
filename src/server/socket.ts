@@ -20,7 +20,7 @@ import RawIPC from "node-ipc";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../services/paths";
-import { Print } from "../services/logger";
+import { Print, Events } from "../services/logger";
 
 const sockets: { [key: string]: any } = [];
 
@@ -58,11 +58,11 @@ export default class Socket {
 
         this.pipe.serve(() => {
             if (!this.defined) {
-                this.pipe.server.on("ping", (_payload: any, socket: any) => {
-                    this.pipe.server.emit(socket, "pong");
+                this.pipe.server.on(Events.PING, (_payload: any, socket: any) => {
+                    this.pipe.server.emit(socket, Events.PONG);
                 });
 
-                this.pipe.server.on("request", (payload: any, socket: any) => {
+                this.pipe.server.on(Events.REQUEST, (payload: any, socket: any) => {
                     if (this.routes[payload.path]) {
                         this.routes[payload.path]({
                             params: payload.params,
@@ -97,8 +97,8 @@ export default class Socket {
         }
 
         sockets[`${this.name}.sock`].connectTo(`${this.name}.sock`, () => {
-            sockets[`${this.name}.sock`].of[`${this.name}.sock`].on("pong", () => {
-                sockets[`${this.name}.sock`].of[`${this.name}.sock`].off("pong", "*");
+            sockets[`${this.name}.sock`].of[`${this.name}.sock`].on(Events.PONG, () => {
+                sockets[`${this.name}.sock`].of[`${this.name}.sock`].off(Events.PONG, "*");
                 sockets[`${this.name}.sock`].disconnect();
 
                 setTimeout(() => {
@@ -107,7 +107,7 @@ export default class Socket {
             });
 
             sockets[`${this.name}.sock`].of[`${this.name}.sock`].on("error", () => {
-                sockets[`${this.name}.sock`].of[`${this.name}.sock`].off("pong", "*");
+                sockets[`${this.name}.sock`].of[`${this.name}.sock`].off(Events.PONG, "*");
                 sockets[`${this.name}.sock`].disconnect();
 
                 Print("Restarting IPC Socket");
@@ -116,7 +116,7 @@ export default class Socket {
                 this.start();
             });
 
-            sockets[`${this.name}.sock`].of[`${this.name}.sock`].emit("ping");
+            sockets[`${this.name}.sock`].of[`${this.name}.sock`].emit(Events.PING);
         });
     }
 
@@ -136,7 +136,7 @@ export default class Socket {
         if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
     }
 
-    static fetch(event: string, body: any): Promise<any> {
+    static fetch(event: Events, body: any): Promise<any> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 

@@ -28,7 +28,13 @@ import Bridge from "../bridge";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
-import { Console, Prefixed, NotificationType } from "../services/logger";
+
+import {
+    Console,
+    Prefixed,
+    NotificationType,
+    Events,
+} from "../services/logger";
 
 import CacheController from "./cache";
 import StatusController from "./status";
@@ -96,13 +102,12 @@ export default class Server extends EventEmitter {
     start(): void {
         Instance.bridge = new Bridge(this.port || undefined);
 
-        Instance.bridge?.on("publishSetupUri", (uri) => {
+        Instance.bridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
             Console.debug(`Setup URI '${uri}'`);
         });
 
-        Instance.bridge?.on("listening", () => {
+        Instance.bridge?.on(Events.LISTENING, () => {
             Console.notify(
-                "bridge_start",
                 Instance.id,
                 "Instance Started",
                 `${Instance.display || Instance.id} has been started.`,
@@ -111,9 +116,8 @@ export default class Server extends EventEmitter {
             );
         });
 
-        Instance.bridge?.on("shutdown", () => {
+        Instance.bridge?.on(Events.SHUTDOWN, () => {
             Console.notify(
-                "bridge_stop",
                 Instance.id,
                 "Instance Stopped",
                 `${Instance.display || Instance.id} has been stopped.`,
@@ -122,8 +126,8 @@ export default class Server extends EventEmitter {
             );
         });
 
-        Instance.bridge?.on("accessory_change", (accessory, value) => {
-            Console.emit("accessory_change", Instance.id, {
+        Instance.bridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
+            Console.emit(Events.ACCESSORY_CHANGE, Instance.id, {
                 accessory,
                 value,
             });

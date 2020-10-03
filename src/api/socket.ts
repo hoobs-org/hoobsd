@@ -21,7 +21,7 @@ import { EventEmitter } from "events";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../services/paths";
-import { Print } from "../services/logger";
+import { Print, Events } from "../services/logger";
 
 const sockets: { [key: string]: any } = [];
 
@@ -44,28 +44,28 @@ export default class Socket extends EventEmitter {
 
         this.pipe.serve(() => {
             if (!this.defined) {
-                this.pipe.server.on("ping", (_payload: any, socket: any) => {
-                    this.pipe.server.emit(socket, "pong");
+                this.pipe.server.on(Events.PING, (_payload: any, socket: any) => {
+                    this.pipe.server.emit(socket, Events.PONG);
                 });
 
-                this.pipe.server.on("log", (payload: any, socket: any) => {
-                    this.emit("log", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
+                this.pipe.server.on(Events.LOG, (payload: any, socket: any) => {
+                    this.emit(Events.LOG, payload.body);
+                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
                 });
 
-                this.pipe.server.on("notification", (payload: any, socket: any) => {
-                    this.emit("notification", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
+                this.pipe.server.on(Events.NOTIFICATION, (payload: any, socket: any) => {
+                    this.emit(Events.NOTIFICATION, payload.body);
+                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
                 });
 
-                this.pipe.server.on("accessory_change", (payload: any, socket: any) => {
-                    this.emit("accessory_change", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
+                this.pipe.server.on(Events.ACCESSORY_CHANGE, (payload: any, socket: any) => {
+                    this.emit(Events.ACCESSORY_CHANGE, payload.body);
+                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
                 });
 
-                this.pipe.server.on("heartbeat", (payload: any, socket: any) => {
-                    this.emit("heartbeat", payload.body);
-                    this.pipe.server.emit(socket, payload.socket, "complete");
+                this.pipe.server.on(Events.HEARTBEAT, (payload: any, socket: any) => {
+                    this.emit(Events.HEARTBEAT, payload.body);
+                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
                 });
             }
 
@@ -87,8 +87,8 @@ export default class Socket extends EventEmitter {
         }
 
         sockets["api.sock"].connectTo("api.sock", () => {
-            sockets["api.sock"].of["api.sock"].on("pong", () => {
-                sockets["api.sock"].of["api.sock"].off("pong", "*");
+            sockets["api.sock"].of["api.sock"].on(Events.PONG, () => {
+                sockets["api.sock"].of["api.sock"].off(Events.PONG, "*");
                 sockets["api.sock"].disconnect();
 
                 setTimeout(() => {
@@ -97,7 +97,7 @@ export default class Socket extends EventEmitter {
             });
 
             sockets["api.sock"].of["api.sock"].on("error", () => {
-                sockets["api.sock"].of["api.sock"].off("pong", "*");
+                sockets["api.sock"].of["api.sock"].off(Events.PONG, "*");
                 sockets["api.sock"].disconnect();
 
                 Print("Restarting IPC Socket");
@@ -106,7 +106,7 @@ export default class Socket extends EventEmitter {
                 this.start();
             });
 
-            sockets["api.sock"].of["api.sock"].emit("ping");
+            sockets["api.sock"].of["api.sock"].emit(Events.PING);
         });
     }
 
@@ -158,7 +158,7 @@ export default class Socket extends EventEmitter {
                     resolve();
                 });
 
-                sockets[`${instance}.sock`].of[`${instance}.sock`].emit("request", {
+                sockets[`${instance}.sock`].of[`${instance}.sock`].emit(Events.REQUEST, {
                     path,
                     session,
                     params,

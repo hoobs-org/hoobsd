@@ -139,7 +139,6 @@ export default class Plugins {
                     Config.saveConfig(config);
 
                     Console.notify(
-                        "plugin_install",
                         Instance.id,
                         "Plugin Installed",
                         `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
@@ -151,7 +150,6 @@ export default class Plugins {
                 }
 
                 Console.notify(
-                    "plugin_install",
                     Instance.id,
                     "Plugin Not Installed",
                     `Unable to install ${PluginManager.extractPluginName(name)}.`,
@@ -204,7 +202,6 @@ export default class Plugins {
                     Config.saveConfig(config);
 
                     Console.notify(
-                        "plugin_uninstall",
                         Instance.id,
                         "Plugin Uninstalled",
                         `${PluginManager.extractPluginName(name)} has been removed.`,
@@ -216,7 +213,6 @@ export default class Plugins {
                 }
 
                 Console.notify(
-                    "plugin_uninstall",
                     Instance.id,
                     "Plugin Not Uninstalled",
                     `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
@@ -252,7 +248,6 @@ export default class Plugins {
                 Config.touchConfig();
 
                 Console.notify(
-                    "plugin_upgrade",
                     Instance.id, name ? "Plugin Upgraded" : "Plugins Upgraded",
                     name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
                     NotificationType.SUCCESS,

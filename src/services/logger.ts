@@ -49,6 +49,29 @@ export const enum NotificationType {
     DEBUG = "debug",
 }
 
+export const enum Events {
+    PING = "ping",
+    PONG = "pong",
+    LOG = "log",
+    LOG_HISTORY = "log_history",
+    LOG_CACHE = "log_cache",
+    LISTENING = "listening",
+    MONITOR = "monitor",
+    HEARTBEAT = "heartbeat",
+    NOTIFICATION = "",
+    ACCESSORY_CHANGE = "accessory_change",
+    PUBLISH_SETUP_URI = "publish_setup_uri",
+    REQUEST = "request",
+    COMPLETE = "complete",
+    SHELL_OUTPUT = "shell_output",
+    SHELL_INPUT = "shell_input",
+    SHELL_RESIZE = "shell_resize",
+    SHELL_CLEAR = "shell_clear",
+    SHELL_CONNECT = "shell_connect",
+    SHELL_DISCONNECT = "shell_disconnect",
+    SHUTDOWN = "shutdown",
+}
+
 interface IntermediateLogger {
     prefix?: string;
     plugin?: string;
@@ -111,8 +134,8 @@ class Logger {
             CACHE.shift();
         }
 
-        if (Instance.api) Instance.io?.sockets.emit("log", data);
-        if (Instance.server) Socket.fetch("log", data);
+        if (Instance.api) Instance.io?.sockets.emit(Events.LOG, data);
+        if (Instance.server) Socket.fetch(Events.LOG, data);
 
         if (Instance.id === "api" || Instance.debug) {
             const prefixes = [];
@@ -186,7 +209,7 @@ class Logger {
         }
 
         for (let i = 0; i < data.length; i += 1) {
-            Instance.io?.sockets.emit("log", data[i]);
+            Instance.io?.sockets.emit(Events.LOG, data[i]);
 
             if (Instance.id === "api" || Instance.debug) {
                 const prefixes = [];
@@ -263,7 +286,7 @@ class Logger {
         this.log(LogLevel.ERROR, message, ...parameters);
     }
 
-    notify(event: string, instance: string, title: string, description: string, type: NotificationType, icon?: string): void {
+    notify(instance: string, title: string, description: string, type: NotificationType, icon?: string): void {
         if (!icon) {
             switch (type) {
                 case NotificationType.ERROR:
@@ -285,9 +308,8 @@ class Logger {
         }
 
         if (Instance.api) {
-            Instance.io?.sockets.emit("notification", {
+            Instance.io?.sockets.emit(Events.NOTIFICATION, {
                 instance,
-                event,
                 data: {
                     title,
                     description,
@@ -298,9 +320,8 @@ class Logger {
         }
 
         if (Instance.server) {
-            Socket.fetch("notification", {
+            Socket.fetch(Events.NOTIFICATION, {
                 instance,
-                event,
                 data: {
                     title,
                     description,
@@ -311,7 +332,7 @@ class Logger {
         }
     }
 
-    emit(event: string, instance: string, data: any): void {
+    emit(event: Events, instance: string, data: any): void {
         if (Instance.api) {
             Instance.io?.sockets.emit(event, {
                 instance,

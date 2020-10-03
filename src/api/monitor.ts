@@ -18,7 +18,7 @@
 
 import System from "systeminformation";
 import Instance from "../services/instance";
-import { Console } from "../services/logger";
+import { Console, Events } from "../services/logger";
 import Socket from "./socket";
 
 export default async function Monitor() {
@@ -45,7 +45,7 @@ export default async function Monitor() {
         }
     }
 
-    Console.emit("monitor", "api", {
+    Console.emit(Events.MONITOR, "api", {
         instances: results,
         cpu: await System.currentLoad(),
         memory: await System.mem(),

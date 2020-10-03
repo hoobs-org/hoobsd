@@ -68,7 +68,6 @@ export default class FFMPEG {
             execSync("ldconfig", options);
 
             Console.notify(
-                "enable_feature",
                 "api",
                 "FFMPEG Installed",
                 "FFMPEG has been installed and is ready to use.",
@@ -83,7 +82,6 @@ export default class FFMPEG {
 
         if ((utsname.sysname || "").toLowerCase() !== "linux") {
             Console.notify(
-                "enable_feature",
                 "api",
                 "FFMPEG Not Installed",
                 "This version of FFMPEG is only supported on linux.",
@@ -98,7 +96,6 @@ export default class FFMPEG {
 
         if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
             Console.notify(
-                "enable_feature",
                 "api",
                 "FFMPEG Not Installed",
                 "This version of FFMPEG is only supported on ARM processors.",
@@ -113,7 +110,6 @@ export default class FFMPEG {
 
         if (!Paths.tryCommand("apt-get")) {
             Console.notify(
-                "enable_feature",
                 "api",
                 "FFMPEG Not Installed",
                 "This version of FFMPEG requires the APT package manager.",
@@ -402,7 +398,6 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/share/man/man3/libswscale.3");
 
             Console.notify(
-                "disable_feature",
                 "api",
                 "FFMPEG Removed",
                 "FFMPEG has been removed.",
@@ -416,7 +411,6 @@ export default class FFMPEG {
         }
 
         Console.notify(
-            "disable_feature",
             "api",
             "FFMPEG Not Removed",
             "This can only remove FFMPEG installed by HOOBS.",
