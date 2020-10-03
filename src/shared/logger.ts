@@ -138,11 +138,11 @@ class Logger {
 
             switch (data.level) {
                 case LogLevel.WARN:
-                    colored = Chalk.yellow(data.message);
+                    colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
                     break;
 
                 case LogLevel.ERROR:
-                    colored = Chalk.red(data.message);
+                    colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
                     break;
 
                 case LogLevel.DEBUG:
@@ -212,11 +212,11 @@ class Logger {
 
                 switch (data[i].level) {
                     case LogLevel.WARN:
-                        colored = Chalk.yellow(data[i].message);
+                        colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data[i].message)}`;
                         break;
 
                     case LogLevel.ERROR:
-                        colored = Chalk.red(data[i].message);
+                        colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data[i].message)}`;
                         break;
 
                     case LogLevel.DEBUG:
