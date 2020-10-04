@@ -195,6 +195,7 @@ export = function Command(): void {
             Instance.id = "api";
             Instance.debug = command.debug;
             Instance.container = command.container;
+            Instance.instances = Instances.list();
 
             Console.load();
 
