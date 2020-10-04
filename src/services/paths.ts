@@ -64,8 +64,8 @@ export default class Paths {
 
         if (Instance.container) {
             path = "/hoobs";
-        } else if (process.env.APPDATA) {
-            path = join(process.env.APPDATA, "HOOBS");
+        } else if (process.env.USER === "root") {
+            path = "/usr/share/hoobs";
         } else if (process.platform === "darwin") {
             path = join(process.env.HOME || "", "/Library/Preferences/HOOBS");
         } else {
