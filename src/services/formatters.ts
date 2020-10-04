@@ -89,7 +89,7 @@ export function formatJson(object: any, key?: string): string {
     return JSON.stringify(object, null, 4);
 }
 
-export function colorize(value: number | string): any {
+export function colorize(value: number | string, bright?: boolean): any {
     let index = 0;
 
     if (typeof value === "string") {
@@ -100,21 +100,21 @@ export function colorize(value: number | string): any {
 
     switch (index) {
         case 1:
-            return Chalk.cyan;
+            return bright ? Chalk.cyanBright : Chalk.cyan;
 
         case 2:
-            return Chalk.blue;
+            return bright ? Chalk.blueBright : Chalk.blue;
 
         case 3:
-            return Chalk.magenta;
+            return bright ? Chalk.magentaBright : Chalk.magenta;
 
         case 4:
-            return Chalk.green;
+            return bright ? Chalk.greenBright : Chalk.green;
 
         case 5:
-            return Chalk.yellow;
+            return bright ? Chalk.yellowBright : Chalk.yellow;
 
         default:
-            return Chalk.red;
+            return bright ? Chalk.redBright : Chalk.red;
     }
 }

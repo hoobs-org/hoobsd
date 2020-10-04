@@ -187,7 +187,7 @@ class Logger {
             }
 
             if (data.instance && data.instance !== "" && data.instance !== Instance.id) {
-                prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data.instance))(data.display || data.instance));
+                prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data.instance), true)(data.display || data.instance));
             }
 
             if (data.prefix && data.prefix !== "") {
@@ -259,7 +259,7 @@ class Logger {
                     }
 
                     if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
-                        prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data[i].instance))(data[i].display || data[i].instance));
+                        prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data[i].instance), true)(data[i].display || data[i].instance));
                     }
 
                     if (data[i].prefix && data[i].prefix !== "") {
