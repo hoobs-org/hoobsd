@@ -60,15 +60,11 @@ export default class Paths {
     }
 
     static storagePath(instance?: string): string {
-        let path = "";
+        let path = "/var/lib/hoobs";
 
         if (Instance.container) {
             path = "/hoobs";
-        } else if (process.env.USER === "root") {
-            path = "/var/hoobs";
-        } else if (process.platform === "darwin") {
-            path = join(process.env.HOME || "", "/Library/Preferences/HOOBS");
-        } else {
+        } else if (process.env.USER !== "root") {
             path = join(process.env.HOME || "", ".hoobs");
         }
 
