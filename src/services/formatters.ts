@@ -19,12 +19,13 @@
 import Sanitize from "sanitize-filename";
 import { existsSync, readFileSync } from "fs-extra";
 import { createCipheriv, createDecipheriv } from "crypto";
+import STC from "string-to-color";
 
 export function sanitize(value: string, prevent?: string): string {
     if (!value || value === "") return "default";
     if (prevent && prevent !== "" && prevent.toLowerCase() === value.toLowerCase()) return "default";
 
-    return Sanitize(value).toLowerCase().replace(/ /gi, ".");
+    return Sanitize(value).toLowerCase().replace(/ /gi, "-");
 }
 
 export function ordinal(value: number | string): string {
@@ -88,28 +89,37 @@ export function formatJson(object: any, key?: string): string {
     return JSON.stringify(object, null, 4);
 }
 
-export function colorize(value: string): string {
-    let hash = 0;
-
-    const sample = (`${value.replace(/ /gi, "_")}________________`).substring(0, 16);
-
-    for (let i = 0; i < sample.length; i += 1) {
-        hash = sample.charCodeAt(i) + ((hash << 5) - hash); // eslint-disable-line no-bitwise
-    }
-
-    const hex = (hash & 0x00FFFFFF).toString(16).toLowerCase(); // eslint-disable-line no-bitwise
-    const color = `#${"000000".substring(0, 6 - hex.length) + hex}`;
-
-    return color;
-}
-
 export function contrast(hex: string): string {
     if (hex.indexOf("#") === 0) {
         hex = hex.slice(1);
     }
 
     if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-    if (hex.length !== 6) return "#FFFFFF";
+    if (hex.length !== 6) return "#ffffff";
 
-    return (parseInt(hex.slice(0, 2), 16) * 0.299 + parseInt(hex.slice(2, 4), 16) * 0.587 + parseInt(hex.slice(4, 6), 16) * 0.114) > 186 ? "#000000" : "#FFFFFF";
+    return (parseInt(hex.slice(0, 2), 16) * 0.299 + parseInt(hex.slice(2, 4), 16) * 0.587 + parseInt(hex.slice(4, 6), 16) * 0.114) > 100 ? "#000000" : "#ffffff";
+}
+
+export function lighten(value: string): string {
+    if (value.indexOf("#") === 0) {
+        value = value.slice(1);
+    }
+
+    const hex = parseInt(value, 16);
+
+    return `#${(((hex & 0x0000FF) + 5) | ((((hex >> 8) & 0x00FF) + 5) << 8) | (((hex >> 16) + 5) << 16)).toString(16)}`; // eslint-disable-line no-bitwise
+}
+
+export function colorize(value: string): string {
+    let color = STC((`${value.replace(/instance/gi, "").replace(/hoobs/gi, "").replace(/homebridge/gi, "")}ABCDEFGHIJ`).substr(0, 10));
+
+    if (color.toLowerCase() === "#ffffff") {
+        color = "#ff7700";
+    }
+
+    while (contrast(color) === "#ffffff") {
+        color = lighten(color);
+    }
+
+    return color;
 }

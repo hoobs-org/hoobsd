@@ -413,7 +413,6 @@ export default class Instances {
                 try {
                     if (id === "api") {
                         execSync("touch /Library/LaunchDaemons/org.hoobsd.api.plist");
-                        execSync("truncate -s 0 /Library/LaunchDaemons/org.hoobsd.api.plist");
 
                         execSync("echo \"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
                         execSync("echo \"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\" >> /Library/LaunchDaemons/org.hoobsd.api.plist");
@@ -447,7 +446,6 @@ export default class Instances {
                         execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.api.plist");
                     } else {
                         execSync(`touch /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
-                        execSync(`truncate -s 0 /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
 
                         execSync(`echo "<?xml version="1.0" encoding="UTF-8"?>" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
                         execSync(`echo "<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">" >> /Library/LaunchDaemons/org.hoobsd.${id}.plist`);
@@ -579,7 +577,7 @@ export default class Instances {
                         break;
                 }
             } else {
-                port = port || 51826;
+                port = port || 50826;
 
                 while (Instance.instances.findIndex((n) => n.port === port) >= 0) port += 1000;
 

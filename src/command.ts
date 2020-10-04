@@ -45,10 +45,12 @@ export = function Command(): void {
     Program.command("plugin [action] [name]")
         .description("manage plugins for a given instance")
         .option("-i, --instance <name>", "set the instance name")
+        .option("-c, --container", "run in a container")
         .action((action, name, command) => {
             Instance.id = sanitize(command.instance);
             Instance.debug = true;
             Instance.timestamps = false;
+            Instance.container = command.container;
             Instance.instances = Instances.list();
 
             let plugin = name;
@@ -188,9 +190,11 @@ export = function Command(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-t, --tail", "set the number of lines")
         .option("-d, --debug", "turn on debug level logging")
+        .option("-c, --container", "run in a container")
         .action((command) => {
             Instance.id = "api";
             Instance.debug = command.debug;
+            Instance.container = command.container;
 
             Console.load();
 
@@ -212,10 +216,12 @@ export = function Command(): void {
     Program.command("config")
         .description("manage the configuration for a given instance")
         .option("-i, --instance <name>", "set the instance name")
+        .option("-c, --container", "run in a container")
         .action((command) => {
             Instance.id = sanitize(command.instance || "api");
             Instance.debug = true;
             Instance.timestamps = false;
+            Instance.container = command.container;
 
             writeFileSync(join(Paths.storagePath(), `${Instance.id}.config.json`), formatJson(Config.configuration()));
 
@@ -236,9 +242,11 @@ export = function Command(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-s, --skip", "skip init system intergration")
+        .option("-c, --container", "run in a container")
         .action((action, command) => {
             Instance.debug = true;
             Instance.timestamps = false;
+            Instance.container = command.container;
             Instance.instances = Instances.list();
 
             let instances = [];
@@ -285,9 +293,11 @@ export = function Command(): void {
 
     Program.command("enable [feature]")
         .description("enable additional server features")
-        .action((feature) => {
+        .option("-c, --container", "run in a container")
+        .action((feature, command) => {
             Instance.debug = true;
             Instance.timestamps = false;
+            Instance.container = command.container;
             Instance.instances = Instances.list();
 
             let results: { [key: string]: any } = {};
@@ -313,9 +323,11 @@ export = function Command(): void {
 
     Program.command("disable [feature]")
         .description("disables additional server features")
-        .action((feature) => {
+        .option("-c, --container", "run in a container")
+        .action((feature, command) => {
             Instance.debug = true;
             Instance.timestamps = false;
+            Instance.container = command.container;
             Instance.instances = Instances.list();
 
             let results: { [key: string]: any } = {};
@@ -341,10 +353,12 @@ export = function Command(): void {
 
     Program.command("system <action> [file]")
         .description("reboot, reset and upgrade this device")
-        .action((action, file) => {
+        .option("-c, --container", "run in a container")
+        .action((action, file, command) => {
             Instance.id = "api";
             Instance.debug = true;
             Instance.timestamps = false;
+            Instance.container = command.container;
             Instance.instances = Instances.list();
 
             switch (action) {

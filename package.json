@@ -58,6 +58,7 @@
         "sanitize-filename": "^1.6.3",
         "socket.io": "^2.3.0",
         "source-map-support": "^0.5.19",
+        "string-to-color": "^2.2.2",
         "systeminformation": "^4.27.3",
         "unzipper": "^0.10.11",
         "ws": "^7.3.1"
