@@ -25,7 +25,7 @@ import Prompt from "prompts";
 
 import {
     existsSync,
-    appendFileSync,
+    writeFileSync,
     unlinkSync,
     ensureDirSync,
     removeSync,
@@ -228,11 +228,7 @@ export default class Instances {
             if (index >= 0) {
                 Instance.instances[index].display = display;
 
-                if (existsSync(Paths.instancesPath())) {
-                    unlinkSync(Paths.instancesPath());
-                }
-
-                appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
 
                 return resolve(true);
             }
@@ -293,9 +289,7 @@ export default class Instances {
                             if (success) {
                                 Instance.instances.splice(index, 1);
 
-                                if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
-
-                                appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
                             }
 
                             return resolve(success);
@@ -308,9 +302,7 @@ export default class Instances {
                             if (success) {
                                 Instance.instances.splice(index, 1);
 
-                                if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
-
-                                appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
                             }
 
                             return resolve(success);
@@ -320,9 +312,7 @@ export default class Instances {
                     default:
                         Instance.instances.splice(index, 1);
 
-                        if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
-
-                        appendFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                        writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
 
                         return resolve(true);
                 }
@@ -548,9 +538,7 @@ export default class Instances {
             });
         }
 
-        if (existsSync(Paths.instancesPath())) unlinkSync(Paths.instancesPath());
-
-        appendFileSync(Paths.instancesPath(), formatJson(instances));
+        writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
     static createService(name: string, port: number, skip?: boolean) {
@@ -562,7 +550,7 @@ export default class Instances {
             }
 
             if (!existsSync(Paths.instancesPath())) {
-                appendFileSync(Paths.instancesPath(), "[]");
+                writeFileSync(Paths.instancesPath(), "[]");
             }
 
             if (name && port) {

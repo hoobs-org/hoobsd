@@ -18,10 +18,19 @@
 
 import Utility from "util";
 import Chalk from "chalk";
+import { gzipSync, gunzipSync } from "zlib";
+import { readFileSync, writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import Instance from "./instance";
+import Paths from "./paths";
 import Socket from "../server/socket";
-import { colorize, contrast } from "./formatters";
+
+import {
+    formatJson,
+    parseJson,
+    colorize,
+    contrast,
+} from "./formatters";
 
 export interface Message {
     level: LogLevel,
@@ -53,8 +62,6 @@ export const enum Events {
     PING = "ping",
     PONG = "pong",
     LOG = "log",
-    LOG_HISTORY = "log_history",
-    LOG_CACHE = "log_cache",
     LISTENING = "listening",
     MONITOR = "monitor",
     HEARTBEAT = "heartbeat",
@@ -89,7 +96,7 @@ interface IntermediateLogger {
 const CONSOLE_LOG = console.log;
 const CONSOLE_ERROR = console.error;
 
-const CACHE: Message[] = [];
+let CACHE: Message[] = [];
 
 class Logger {
     declare plugin?: string;
@@ -103,8 +110,38 @@ class Logger {
         this.prefix = prefix || "";
     }
 
-    cache(): Message[] {
-        return CACHE;
+    cache(tail?: number, instance?: string): Message[] {
+        const results = [...(CACHE.filter((m) => (instance ? m.instance === instance : true)))];
+
+        if (tail && tail > 0 && tail < results.length) {
+            results.splice(0, results.length - tail);
+        }
+
+        if (Instance.id !== "api") {
+            CACHE = [];
+        }
+
+        return results;
+    }
+
+    load() {
+        if (Instance.id === "api") {
+            try {
+                CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), []);
+            } catch (_error) {
+                CACHE = [];
+            }
+
+            CACHE.sort((a, b) => {
+                if (a.timestamp > b.timestamp) return 1;
+
+                return -1;
+            });
+
+            if (CACHE.length > 1000) {
+                CACHE.splice(0, CACHE.length - 1000);
+            }
+        }
     }
 
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
@@ -128,10 +165,16 @@ class Logger {
             return;
         }
 
-        CACHE.push(data);
+        if ((Instance.api || Instance.server) && (Instance.id === "api" || !Socket.up())) {
+            CACHE.push(data);
 
-        while (CACHE.length > 1000) {
-            CACHE.shift();
+            if (CACHE.length > 1000) {
+                CACHE.splice(0, CACHE.length - 1000);
+            }
+
+            if (Instance.id === "api") {
+                writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
+            }
         }
 
         if (Instance.api) Instance.io?.sockets.emit(Events.LOG, data);
@@ -196,75 +239,79 @@ class Logger {
     }
 
     import(data: Message[]) {
-        CACHE.push(...(data.filter((m) => (m.message !== ""))));
+        if (Instance.api && Instance.id === "api") {
+            CACHE.push(...(data.filter((m) => (m.message !== ""))));
 
-        CACHE.sort((a, b) => {
-            if (a.timestamp > b.timestamp) return 1;
+            CACHE.sort((a, b) => {
+                if (a.timestamp > b.timestamp) return 1;
 
-            return -1;
-        });
+                return -1;
+            });
 
-        while (CACHE.length > 1000) {
-            CACHE.shift();
-        }
+            if (CACHE.length > 1000) {
+                CACHE.splice(0, CACHE.length - 1000);
+            }
 
-        for (let i = 0; i < data.length; i += 1) {
-            Instance.io?.sockets.emit(Events.LOG, data[i]);
+            writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
 
-            if (Instance.id === "api" || Instance.debug) {
-                const prefixes = [];
+            for (let i = 0; i < data.length; i += 1) {
+                Instance.io?.sockets.emit(Events.LOG, data[i]);
 
-                if (Instance.timestamps && data[i].message && data[i].message !== "") {
-                    prefixes.push(Chalk.gray.dim(new Date(data[i].timestamp).toLocaleString()));
-                }
+                if (Instance.id === "api" || Instance.debug) {
+                    const prefixes = [];
 
-                if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
-                    const foreground = colorize(data[i].instance!);
+                    if (Instance.timestamps && data[i].message && data[i].message !== "") {
+                        prefixes.push(Chalk.gray.dim(new Date(data[i].timestamp).toLocaleString()));
+                    }
 
-                    prefixes.push(Chalk.hex(foreground)(data[i].display || data[i].instance));
-                }
+                    if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
+                        const foreground = colorize(data[i].instance!);
 
-                if (data[i].prefix && data[i].prefix !== "") {
-                    const background = colorize(data[i].prefix!);
-                    const foreground = contrast(background);
+                        prefixes.push(Chalk.hex(foreground)(data[i].display || data[i].instance));
+                    }
 
-                    prefixes.push(Chalk.bgHex(background).hex(foreground)(` ${data[i].prefix} `));
-                }
+                    if (data[i].prefix && data[i].prefix !== "") {
+                        const background = colorize(data[i].prefix!);
+                        const foreground = contrast(background);
 
-                let colored = data[i].message;
+                        prefixes.push(Chalk.bgHex(background).hex(foreground)(` ${data[i].prefix} `));
+                    }
 
-                switch (data[i].level) {
-                    case LogLevel.WARN:
-                        colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data[i].message)}`;
-                        break;
+                    let colored = data[i].message;
 
-                    case LogLevel.ERROR:
-                        colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data[i].message)}`;
-                        break;
+                    switch (data[i].level) {
+                        case LogLevel.WARN:
+                            colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data[i].message)}`;
+                            break;
 
-                    case LogLevel.DEBUG:
-                        colored = Chalk.gray(data[i].message);
-                        break;
-                }
+                        case LogLevel.ERROR:
+                            colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data[i].message)}`;
+                            break;
 
-                const formatted = prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored;
+                        case LogLevel.DEBUG:
+                            colored = Chalk.gray(data[i].message);
+                            break;
+                    }
 
-                switch (data[i].level) {
-                    case LogLevel.WARN:
-                        CONSOLE_LOG(formatted);
-                        break;
+                    const formatted = prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored;
 
-                    case LogLevel.ERROR:
-                        CONSOLE_ERROR(formatted);
-                        break;
+                    switch (data[i].level) {
+                        case LogLevel.WARN:
+                            CONSOLE_LOG(formatted);
+                            break;
 
-                    case LogLevel.DEBUG:
-                        if (Instance.debug) CONSOLE_LOG(formatted);
-                        break;
+                        case LogLevel.ERROR:
+                            CONSOLE_ERROR(formatted);
+                            break;
 
-                    default:
-                        if (Instance.id === "api" || Instance.debug) CONSOLE_LOG(formatted);
-                        break;
+                        case LogLevel.DEBUG:
+                            if (Instance.debug) CONSOLE_LOG(formatted);
+                            break;
+
+                        default:
+                            if (Instance.id === "api" || Instance.debug) CONSOLE_LOG(formatted);
+                            break;
+                    }
                 }
             }
         }

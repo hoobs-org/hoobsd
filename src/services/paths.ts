@@ -16,14 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import {
-    ensureDirSync,
-    existsSync,
-    unlinkSync,
-    removeSync,
-    readdirSync,
-} from "fs-extra";
-
+import File from "fs-extra";
 import { join } from "path";
 import Instance from "./instance";
 
@@ -32,19 +25,19 @@ export default class Paths {
         const paths = (process.env.PATH || "").split(":");
 
         for (let i = 0; i < paths.length; i += 1) {
-            if (existsSync(join(paths[i], command))) return true;
+            if (File.existsSync(join(paths[i], command))) return true;
         }
 
         return false;
     }
 
     static tryUnlink(filename: string): boolean {
-        if (existsSync(filename)) {
+        if (File.existsSync(filename)) {
             try {
-                unlinkSync(filename);
+                File.unlinkSync(filename);
             } catch (_fail) {
                 try {
-                    removeSync(filename);
+                    File.removeSync(filename);
                 } catch (_error) {
                     return false;
                 }
@@ -55,9 +48,9 @@ export default class Paths {
     }
 
     static isEmpty(path: string): boolean {
-        if (existsSync(path)) {
+        if (File.existsSync(path)) {
             try {
-                return (!(readdirSync(path)).length);
+                return (!(File.readdirSync(path)).length);
             } catch (_error) {
                 return false;
             }
@@ -81,39 +74,43 @@ export default class Paths {
 
         if (instance && instance !== "") path = join(path, instance);
 
-        ensureDirSync(path);
+        File.ensureDirSync(path);
 
         return path;
     }
 
+    static logPath(): string {
+        return join(Paths.storagePath(), "hoobs.log");
+    }
+
     static instancesPath(): string {
-        return join(Paths.storagePath(), "instances.json");
+        return join(Paths.storagePath(), "instances.conf");
     }
 
     static configPath(): string {
-        return join(Paths.storagePath(), `${Instance.id}.config.json`);
+        return join(Paths.storagePath(), `${Instance.id}.conf`);
     }
 
     static staticPath(): string {
-        ensureDirSync(join(Paths.storagePath(), "static"));
+        File.ensureDirSync(join(Paths.storagePath(), "static"));
 
         return join(Paths.storagePath(), "static");
     }
 
     static backupPath(): string {
-        ensureDirSync(join(Paths.storagePath(), "backups"));
+        File.ensureDirSync(join(Paths.storagePath(), "backups"));
 
         return join(Paths.storagePath(), "backups");
     }
 
     static persistPath(): string {
-        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
+        File.ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
 
         return join(Paths.storagePath(), `${Instance.id}.persist`);
     }
 
     static cachedAccessoryPath(): string {
-        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+        File.ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
 
         return join(Paths.storagePath(), `${Instance.id}.accessories`);
     }

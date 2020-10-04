@@ -39,6 +39,7 @@ import { Console, Events } from "../services/logger";
 
 import AuthController from "./auth";
 import StatusController from "./status";
+import LogController from "./log";
 import AccessoriesController from "./accessories";
 import BridgeController from "./bridge";
 import CacheController from "./cache";
@@ -83,12 +84,6 @@ export default class API extends EventEmitter {
         });
 
         Instance.io = IO(this.listner);
-
-        Instance.io.on("connection", (socket: IO.Socket) => {
-            socket.on(Events.LOG_HISTORY, () => {
-                socket.emit(Events.LOG_CACHE, Console.cache());
-            });
-        });
 
         const paths = [];
 
@@ -193,6 +188,7 @@ export default class API extends EventEmitter {
 
         new AuthController();
         new StatusController();
+        new LogController();
         new AccessoriesController();
         new BridgeController();
         new CacheController();

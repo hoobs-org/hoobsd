@@ -18,13 +18,7 @@
 
 import Crypto from "crypto";
 import { join } from "path";
-
-import {
-    existsSync,
-    unlinkSync,
-    appendFileSync,
-} from "fs-extra";
-
+import { existsSync, writeFileSync } from "fs-extra";
 import Instance from "./instance";
 import Paths from "./paths";
 import { parseJson, formatJson, loadJson } from "./formatters";
@@ -40,9 +34,9 @@ export interface UserRecord {
 
 export default class Users {
     static list() {
-        if (!existsSync(join(Paths.storagePath(), "access.json"))) appendFileSync(join(Paths.storagePath(), "access.json"), "[]");
+        if (!existsSync(join(Paths.storagePath(), "access"))) writeFileSync(join(Paths.storagePath(), "access"), formatJson([], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
-        return loadJson<UserRecord[]>(join(Paths.storagePath(), "access.json"), []);
+        return loadJson<UserRecord[]>(join(Paths.storagePath(), "access"), [], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
     }
 
     static count(): number {
@@ -159,9 +153,7 @@ export default class Users {
 
         Instance.users.push(user);
 
-        if (existsSync(join(Paths.storagePath(), "access.json"))) unlinkSync(join(Paths.storagePath(), "access.json"));
-
-        appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
+        writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
         return user;
     }
@@ -175,9 +167,8 @@ export default class Users {
             Instance.users[index].admin = admin!;
 
             if (password) Instance.users[index].password = await this.hashValue(password, Instance.users[index].salt);
-            if (existsSync(join(Paths.storagePath(), "access.json"))) unlinkSync(join(Paths.storagePath(), "access.json"));
 
-            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
+            writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
             return Instance.users[index];
         }
@@ -191,9 +182,7 @@ export default class Users {
         if (index >= 0) {
             Instance.users.splice(index, 1);
 
-            if (existsSync(join(Paths.storagePath(), "access.json"))) unlinkSync(join(Paths.storagePath(), "access.json"));
-
-            appendFileSync(join(Paths.storagePath(), "access.json"), formatJson(Instance.users));
+            writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
             return true;
         }

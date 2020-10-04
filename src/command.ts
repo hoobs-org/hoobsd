@@ -17,16 +17,26 @@
  **************************************************************************************************/
 
 import Program from "commander";
-import { existsSync, copyFileSync } from "fs-extra";
 import { join } from "path";
 import { execSync, spawn } from "child_process";
+import { LogLevel } from "homebridge/lib/logger";
+
+import {
+    existsSync,
+    copyFileSync,
+    writeFileSync,
+    unlinkSync,
+} from "fs-extra";
+
 import Paths from "./services/paths";
 import Instance from "./services/instance";
 import Instances from "./services/instances";
+import Config from "./services/config";
 import Cockpit from "./api/cockpit";
 import Plugins from "./services/plugins";
 import Ffmpeg from "./features/ffmpeg";
-import { sanitize } from "./services/formatters";
+import { Console } from "./services/logger";
+import { sanitize, loadJson, formatJson } from "./services/formatters";
 
 export = function Command(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
@@ -173,6 +183,32 @@ export = function Command(): void {
             }
         });
 
+    Program.command("log")
+        .description("show the combined log from the api and instances")
+        .option("-i, --instance <name>", "set the instance name")
+        .option("-t, --tail", "set the number of lines")
+        .option("-d, --debug", "turn on debug level logging")
+        .action((command) => {
+            Instance.id = "api";
+            Instance.debug = command.debug;
+
+            Console.load();
+
+            let instance: string;
+
+            if (command.instance) {
+                instance = sanitize(command.instance);
+            }
+
+            const messages = Console.cache(parseInt(command.tail, 10) || 500, instance!);
+
+            for (let i = 0; i < messages.length; i += 1) {
+                if (messages[i].message && messages[i].message !== "") {
+                    Console.log(LogLevel.INFO, messages[i]);
+                }
+            }
+        });
+
     Program.command("config")
         .description("manage the configuration for a given instance")
         .option("-i, --instance <name>", "set the instance name")
@@ -181,11 +217,17 @@ export = function Command(): void {
             Instance.debug = true;
             Instance.timestamps = false;
 
-            spawn("nano", [Paths.configPath()], {
+            writeFileSync(join(Paths.storagePath(), `${Instance.id}.config.json`), formatJson(Config.configuration()));
+
+            spawn("nano", [join(Paths.storagePath(), `${Instance.id}.config.json`)], {
                 stdio: "inherit",
                 detached: true,
             }).on("data", (data) => {
                 process.stdout.pipe(data);
+            }).on("close", () => {
+                Config.saveConfig(loadJson<any>(join(Paths.storagePath(), `${Instance.id}.config.json`), {}));
+
+                unlinkSync(join(Paths.storagePath(), `${Instance.id}.config.json`));
             });
         });
 

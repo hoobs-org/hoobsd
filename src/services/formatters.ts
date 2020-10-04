@@ -18,6 +18,7 @@
 
 import Sanitize from "sanitize-filename";
 import { existsSync, readFileSync } from "fs-extra";
+import { createCipheriv, createDecipheriv } from "crypto";
 
 export function sanitize(value: string, prevent?: string): string {
     if (!value || value === "") return "default";
@@ -53,8 +54,15 @@ export function parseJson<T>(value: string, replacement: T): T {
     }
 }
 
-export function loadJson<T>(file: string, replacement: T): T {
+export function loadJson<T>(file: string, replacement: T, key?: string): T {
     if (!existsSync(file)) return replacement;
+
+    if (key) {
+        const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+        const decrypted = cipher.update(readFileSync(file).toString(), "hex", "utf8") + cipher.final("utf8");
+
+        return parseJson<T>(decrypted, replacement);
+    }
 
     return parseJson<T>(readFileSync(file).toString(), replacement);
 }
@@ -69,7 +77,14 @@ export function cloneJson(object: any): any {
     return JSON.parse(JSON.stringify(object));
 }
 
-export function formatJson(object: any): string {
+export function formatJson(object: any, key?: string): string {
+    if (key) {
+        const cipher = createCipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+        const encrypted = cipher.update(JSON.stringify(object, null, 4), "utf8", "hex") + cipher.final("hex");
+
+        return encrypted;
+    }
+
     return JSON.stringify(object, null, 4);
 }
 

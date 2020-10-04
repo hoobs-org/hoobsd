@@ -90,6 +90,8 @@ export = function Daemon(): void {
             Instance.verbose = command.verbose;
             Instance.container = command.container;
 
+            Console.load();
+
             Instance.instances = Instances.list();
             Instance.users = Users.list();
 

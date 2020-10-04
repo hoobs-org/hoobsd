@@ -136,6 +136,10 @@ export default class Socket {
         if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
     }
 
+    static up() {
+        return existsSync(join(Paths.storagePath(), "api.sock"));
+    }
+
     static fetch(event: Events, body: any): Promise<any> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;

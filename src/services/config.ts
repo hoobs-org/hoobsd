@@ -19,7 +19,7 @@
 import _ from "lodash";
 import { HomebridgeConfig } from "homebridge/lib/server";
 import { join } from "path";
-import { existsSync, unlinkSync, appendFileSync } from "fs-extra";
+import { existsSync, writeFileSync } from "fs-extra";
 import Instance from "./instance";
 import { InstanceRecord } from "./instances";
 import Paths from "./paths";
@@ -98,7 +98,7 @@ export default class Config {
             };
         }
 
-        if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}));
+        if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
         if (Instance.id !== "api" && config?.ports !== undefined) {
             if (config?.ports?.start > config?.ports?.end) delete config?.ports;
@@ -126,7 +126,7 @@ export default class Config {
     static saveConfig(config: any): void {
         let current: any = {};
 
-        if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {});
+        if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
         if (Instance.id !== "api") {
             config.accessories = config?.accessories || [];
@@ -137,19 +137,16 @@ export default class Config {
         }
 
         if (!jsonEquals(current, config)) {
-            if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
-
-            appendFileSync(Paths.configPath(), formatJson(config));
+            writeFileSync(Paths.configPath(), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
         }
     }
 
     static touchConfig(): void {
         let config: any = {};
 
-        if (existsSync(Paths.configPath())) config = loadJson<any>(Paths.configPath(), {});
-        if (existsSync(Paths.configPath())) unlinkSync(Paths.configPath());
+        if (existsSync(Paths.configPath())) config = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        appendFileSync(Paths.configPath(), formatJson(config));
+        writeFileSync(Paths.configPath(), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
     }
 
     static filterConfig(value: any): void {
@@ -180,9 +177,7 @@ export default class Config {
         }
 
         if (!jsonEquals(current, pjson)) {
-            if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) unlinkSync(join(Paths.storagePath(Instance.id), "package.json"));
-
-            appendFileSync(join(Paths.storagePath(Instance.id), "package.json"), formatJson(pjson));
+            writeFileSync(join(Paths.storagePath(Instance.id), "package.json"), formatJson(pjson));
         }
     }
 
