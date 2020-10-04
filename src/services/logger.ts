@@ -18,6 +18,7 @@
 
 import Utility from "util";
 import Chalk from "chalk";
+import Table from "as-table";
 import { gzipSync, gunzipSync } from "zlib";
 import { readFileSync, writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
@@ -97,6 +98,13 @@ const CONSOLE_ERROR = console.error;
 
 let CACHE: Message[] = [];
 
+const grid = Table.configure({
+    title: (item) => Chalk.cyan(item),
+    print: (item) => Chalk.white(item),
+    delimiter: Chalk.dim(" | "),
+    dash: Chalk.dim("-"),
+});
+
 class Logger {
     declare plugin?: string;
 
@@ -141,6 +149,12 @@ class Logger {
                 CACHE.splice(0, CACHE.length - 1000);
             }
         }
+    }
+
+    table(value: any) {
+        CONSOLE_LOG("");
+        CONSOLE_LOG(grid(value));
+        CONSOLE_LOG("");
     }
 
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {

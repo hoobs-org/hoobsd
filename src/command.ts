@@ -76,7 +76,7 @@ export = function Command(): void {
                             plugins = Plugins.installed();
 
                             if (plugins.length > 0) {
-                                console.table(plugins.map((item) => ({
+                                Console.table(plugins.map((item) => ({
                                     name: item.getPluginIdentifier(),
                                     version: item.version,
                                     path: item.getPluginPath(),
@@ -84,7 +84,7 @@ export = function Command(): void {
                             }
                         });
                     } else {
-                        console.warn("please define a valid instance");
+                        Console.warn("please define a valid instance");
                     }
 
                     break;
@@ -105,7 +105,7 @@ export = function Command(): void {
                             plugins = Plugins.installed();
 
                             if (plugins.length > 0) {
-                                console.table(plugins.map((item) => ({
+                                Console.table(plugins.map((item) => ({
                                     name: item.getPluginIdentifier(),
                                     version: item.version,
                                     path: item.getPluginPath(),
@@ -113,7 +113,7 @@ export = function Command(): void {
                             }
                         });
                     } else {
-                        console.warn("please define a valid instance");
+                        Console.warn("please define a valid instance");
                     }
 
                     break;
@@ -135,7 +135,7 @@ export = function Command(): void {
                             plugins = Plugins.installed();
 
                             if (plugins.length > 0) {
-                                console.table(plugins.map((item) => ({
+                                Console.table(plugins.map((item) => ({
                                     name: item.getPluginIdentifier(),
                                     version: item.version,
                                     path: item.getPluginPath(),
@@ -147,7 +147,7 @@ export = function Command(): void {
                             plugins = Plugins.installed();
 
                             if (plugins.length > 0) {
-                                console.table(plugins.map((item) => ({
+                                Console.table(plugins.map((item) => ({
                                     name: item.getPluginIdentifier(),
                                     version: item.version,
                                     path: item.getPluginPath(),
@@ -155,7 +155,7 @@ export = function Command(): void {
                             }
                         });
                     } else {
-                        console.warn("please define a valid instance");
+                        Console.warn("please define a valid instance");
                     }
 
                     break;
@@ -165,22 +165,22 @@ export = function Command(): void {
                         plugins = Plugins.installed();
 
                         if (plugins.length > 0) {
-                            console.table(plugins.map((item) => ({
+                            Console.table(plugins.map((item) => ({
                                 name: item.getPluginIdentifier(),
                                 version: item.version,
                                 path: item.getPluginPath(),
                             })));
                         } else {
-                            console.warn("no plugins installed");
+                            Console.warn("no plugins installed");
                         }
                     } else {
-                        console.warn("please define a valid instance");
+                        Console.warn("please define a valid instance");
                     }
 
                     break;
 
                 default:
-                    console.log(Program.helpInformation());
+                    Console.info(Program.helpInformation());
                     break;
             }
         });
@@ -258,7 +258,7 @@ export = function Command(): void {
                         if (success) {
                             instances = Instances.list();
 
-                            if (instances.length > 0) console.table(instances);
+                            if (instances.length > 0) Console.table(instances);
                         }
                     });
 
@@ -269,7 +269,7 @@ export = function Command(): void {
                         if (success) {
                             instances = Instances.list();
 
-                            if (instances.length > 0) console.table(instances);
+                            if (instances.length > 0) Console.table(instances);
                         }
                     });
 
@@ -279,15 +279,15 @@ export = function Command(): void {
                     instances = Instances.list();
 
                     if (instances.length > 0) {
-                        console.table(instances);
+                        Console.table(instances);
                     } else {
-                        console.warn("no instances");
+                        Console.warn("no instances");
                     }
 
                     break;
 
                 default:
-                    console.log(Program.helpInformation());
+                    Console.info(Program.helpInformation());
                     break;
             }
         });
@@ -309,13 +309,13 @@ export = function Command(): void {
                     break;
 
                 default:
-                    console.log(Program.helpInformation());
+                    Console.info(Program.helpInformation());
                     break;
             }
 
-            if (results.error) console.log(results.error);
+            if (results.error) Console.info(results.error);
 
-            console.table([{
+            Console.table([{
                 feature: "ffmpeg",
                 description: "enables ffmpeg camera support",
                 enabled: Paths.tryCommand("ffmpeg"),
@@ -339,13 +339,13 @@ export = function Command(): void {
                     break;
 
                 default:
-                    console.log(Program.helpInformation());
+                    Console.info(Program.helpInformation());
                     break;
             }
 
-            if (results.error) console.log(results.error);
+            if (results.error) Console.info(results.error);
 
-            console.table([{
+            Console.table([{
                 feature: "ffmpeg",
                 description: "enables ffmpeg camera support",
                 enabled: Paths.tryCommand("ffmpeg"),
@@ -374,18 +374,18 @@ export = function Command(): void {
                             join(process.cwd(), filename),
                         );
 
-                        console.log("backup complete");
+                        Console.info("backup complete");
                     }).catch((error) => {
-                        console.warn(error.message || "unable to create backup");
+                        Console.warn(error.message || "unable to create backup");
                     });
 
                     break;
 
                 case "restore":
                     if (file && existsSync(file)) {
-                        Instances.restore(file).finally(() => console.log("restore complete"));
+                        Instances.restore(file).finally(() => Console.info("restore complete"));
                     } else {
-                        console.warn("invalid restore file");
+                        Console.warn("invalid restore file");
                     }
 
                     break;
@@ -393,14 +393,14 @@ export = function Command(): void {
                 case "clean":
                     Instances.clean();
 
-                    console.log("bridge caches cleaned");
+                    Console.info("bridge caches cleaned");
 
                     break;
 
                 case "reset":
                     Instances.reset();
 
-                    console.log("configuration and plugins removed");
+                    Console.info("configuration and plugins removed");
 
                     break;
 
@@ -410,13 +410,13 @@ export = function Command(): void {
                             stdio: "inherit",
                         });
                     } catch (_error) {
-                        console.warn("no sockets started");
+                        Console.warn("no sockets started");
                     }
 
                     break;
 
                 default:
-                    console.log(Program.helpInformation());
+                    Console.info(Program.helpInformation());
                     break;
             }
         });
@@ -432,9 +432,9 @@ export = function Command(): void {
             const client = new Cockpit();
 
             client.start(true).then((registration) => {
-                console.log(`access code ${registration}`);
+                Console.info(`access code ${registration}`);
             }).catch(() => {
-                console.warn("unable to connect");
+                Console.warn("unable to connect");
             });
         });
 

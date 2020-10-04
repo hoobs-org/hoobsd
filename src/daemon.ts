@@ -144,7 +144,7 @@ export = function Daemon(): void {
                             break;
 
                         default:
-                            console.log(Program.helpInformation());
+                            Console.info(Program.helpInformation());
                             break;
                     }
                 } else {
