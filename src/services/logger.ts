@@ -29,7 +29,6 @@ import {
     formatJson,
     parseJson,
     colorize,
-    contrast,
 } from "./formatters";
 
 export interface Message {
@@ -188,16 +187,11 @@ class Logger {
             }
 
             if (data.instance && data.instance !== "" && data.instance !== Instance.id) {
-                const foreground = colorize(data.instance);
-
-                prefixes.push(Chalk.hex(foreground)(data.display || data.instance));
+                prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data.instance))(data.display || data.instance));
             }
 
             if (data.prefix && data.prefix !== "") {
-                const background = colorize(data.prefix);
-                const foreground = contrast(background);
-
-                prefixes.push(Chalk.bgHex(background).hex(foreground)(` ${data.prefix} `));
+                prefixes.push(colorize(data.prefix)(data.prefix));
             }
 
             let colored = data.message;
@@ -265,16 +259,11 @@ class Logger {
                     }
 
                     if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
-                        const foreground = colorize(data[i].instance!);
-
-                        prefixes.push(Chalk.hex(foreground)(data[i].display || data[i].instance));
+                        prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data[i].instance))(data[i].display || data[i].instance));
                     }
 
                     if (data[i].prefix && data[i].prefix !== "") {
-                        const background = colorize(data[i].prefix!);
-                        const foreground = contrast(background);
-
-                        prefixes.push(Chalk.bgHex(background).hex(foreground)(` ${data[i].prefix} `));
+                        prefixes.push(colorize(data[i].prefix!)(data[i].prefix));
                     }
 
                     let colored = data[i].message;
