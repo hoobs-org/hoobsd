@@ -58,12 +58,12 @@ Program.command("server", { isDefault: true })
             stdio: "inherit",
         });
 
-        execSync(`mv ${join(root, `hoobs-hoobsd-${pjson.version}.tgz`)} ${join(root, "lib", "hoobsd.tgz")}`, {
+        execSync(`mv ${join(root, `hoobs-hoobsd-${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, {
             cwd: root,
             stdio: "inherit",
         });
 
-        execSync(`chmod 755 ${join(root, "lib", "hoobsd.tgz")}`, {
+        execSync(`chmod 755 ${join(root, "lib", "package.tgz")}`, {
             cwd: root,
             stdio: "inherit",
         });
