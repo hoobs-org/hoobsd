@@ -23,6 +23,6 @@ process.title = "hoobsd";
 const { join, dirname } = require("path");
 const { realpathSync } = require("fs");
 
-const daemon = require(join(dirname(realpathSync(__filename)), "../lib/daemon"));
+const daemon = require(join(dirname(realpathSync(__filename)), "../lib/cli"));
 
 daemon();

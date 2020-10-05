@@ -21,7 +21,6 @@
 import Os from "os";
 import Unzip from "unzipper";
 import Archiver from "archiver";
-import Prompt from "prompts";
 
 import {
     existsSync,
@@ -551,98 +550,29 @@ export default class Instances {
                 writeFileSync(Paths.instancesPath(), "[]");
             }
 
-            if (name && port) {
-                switch (type) {
-                    case "systemd":
-                        Instances.createSystemd(name, port).then((success) => {
-                            if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+            switch (type) {
+                case "systemd":
+                    Instances.createSystemd(name, port).then((success) => {
+                        if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
 
-                            resolve(success);
-                        });
+                        resolve(success);
+                    });
 
-                        break;
+                    break;
 
-                    case "launchd":
-                        Instances.createLaunchd(name, port).then((success) => {
-                            if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                case "launchd":
+                    Instances.createLaunchd(name, port).then((success) => {
+                        if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
 
-                            resolve(success);
-                        });
+                        resolve(success);
+                    });
 
-                        break;
+                    break;
 
-                    default:
-                        Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
-                        resolve(true);
-                        break;
-                }
-            } else {
-                port = port || 50826;
-
-                while (Instance.instances.findIndex((n) => n.port === port) >= 0) port += 1000;
-
-                const questions: Prompt.PromptObject<string>[] = [
-                    {
-                        type: "text",
-                        name: "name",
-                        message: "enter a name for this instance",
-                        validate: (value: string | undefined) => {
-                            if (!value || value === "") return "a name is required";
-                            if (Instance.instances.findIndex((n) => n.id === sanitize(value)) >= 0) return "instance name must be uniqie";
-
-                            return true;
-                        },
-                    },
-                    {
-                        type: "text",
-                        name: "port",
-                        initial: `${port}`,
-                        message: "enter the port for the instance",
-                        format: (value: string | undefined) => parseInt(value || "0", 10),
-                        validate: (value: string | undefined) => {
-                            const parsed: number = parseInt(`${value || port || "0"}`, 10);
-
-                            if (Number.isNaN(parsed)) return "invalid port number";
-                            if (parsed < 1 || parsed > 65535) return "select a port between 1 and 65535";
-                            if (Instance.instances.findIndex((n) => n.port === parsed) >= 0) return "port is already in use";
-
-                            return true;
-                        },
-                    },
-                ];
-
-                Prompt(questions).then((result) => {
-                    if (result && result.name && result.port) {
-                        const id = sanitize(result.name);
-
-                        switch (type) {
-                            case "systemd":
-                                Instances.createSystemd(result.name, result.port).then((success) => {
-                                    if (success) Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
-
-                                    resolve(success);
-                                });
-
-                                break;
-
-                            case "launchd":
-                                Instances.createLaunchd(result.name, result.port).then((success) => {
-                                    if (success) Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
-
-                                    resolve(success);
-                                });
-
-                                break;
-
-                            default:
-                                Instances.appendInstance(id, result.name, id === "api" ? "api" : "bridge", result.port);
-                                resolve(true);
-                                break;
-                        }
-                    } else {
-                        resolve(false);
-                    }
-                });
+                default:
+                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                    resolve(true);
+                    break;
             }
         });
     }

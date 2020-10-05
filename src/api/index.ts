@@ -44,7 +44,7 @@ import AccessoriesController from "./accessories";
 import BridgeController from "./bridge";
 import CacheController from "./cache";
 import ConfigController from "./config";
-import FeaturesController from "./features";
+import ExtentionsController from "./extentions";
 import InstancesController from "./instances";
 import PluginsController from "./plugins";
 import RemoteController from "./remote";
@@ -193,7 +193,7 @@ export default class API extends EventEmitter {
         new BridgeController();
         new CacheController();
         new ConfigController();
-        new FeaturesController();
+        new ExtentionsController();
         new InstancesController();
         new PluginsController();
         new RemoteController();

@@ -18,14 +18,14 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../services/instance";
-import FFMPEG from "../features/ffmpeg";
+import FFMPEG from "../extentions/ffmpeg";
 import Paths from "../services/paths";
 
-export default class FeaturesController {
+export default class ExtentionsController {
     constructor() {
-        Instance.app?.get("/api/features", (request, response) => this.list(request, response));
-        Instance.app?.post("/api/features/:name", (request, response) => this.enable(request, response));
-        Instance.app?.delete("/api/features/:name", (request, response) => this.disable(request, response));
+        Instance.app?.get("/api/extentions", (request, response) => this.list(request, response));
+        Instance.app?.post("/api/extentions/:name", (request, response) => this.enable(request, response));
+        Instance.app?.delete("/api/extentions/:name", (request, response) => this.disable(request, response));
     }
 
     list(_request: Request, response: Response): Response {
