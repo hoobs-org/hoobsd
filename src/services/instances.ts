@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-/* eslint-disable no-param-reassign */
-
 import Os from "os";
 import Unzip from "unzipper";
 import Archiver from "archiver";

@@ -74,7 +74,7 @@ export default class Server extends EventEmitter {
 
         Plugins.load(Instance.id, (identifier, name, _scope, directory, _pjson, library) => {
             if (existsSync(join(directory, library, "hoobs.js"))) {
-                const plugin = require(join(directory, library, "hoobs.js")); // eslint-disable-line @typescript-eslint/no-var-requires, import/no-dynamic-require, global-require
+                const plugin = require(join(directory, library, "hoobs.js"));
 
                 let initializer;
 

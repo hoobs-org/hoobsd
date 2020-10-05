@@ -16,8 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-/* eslint-disable quote-props */
-
 export const Services: { [key: string]: string } = {
     "A2": "bridge",
     "3E": "accessory_information",

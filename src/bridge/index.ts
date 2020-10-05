@@ -17,8 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-/* eslint-disable no-underscore-dangle */
-
 import { join } from "path";
 import { EventEmitter } from "events";
 import storage, { LocalStorage } from "node-persist";
@@ -69,7 +67,6 @@ import { Console, Prefixed, Events } from "../services/logger";
 
 const accessoryStorage: LocalStorage = storage.create();
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
 
@@ -113,7 +110,6 @@ export default class Server extends EventEmitter {
 
         User.setStoragePath(Paths.configPath());
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         Logger.internal = Console;
 
@@ -154,12 +150,10 @@ export default class Server extends EventEmitter {
 
         Plugins.load(Instance.id, (identifier, name, scope, directory, pjson, library) => {
             if (existsSync(join(directory, library, "index.js"))) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 if (!this.pluginManager.plugins.get(identifier)) {
                     const plugin = new Plugin(name, directory, pjson, scope);
 
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
                     this.pluginManager.plugins.set(identifier, plugin);
 
@@ -169,18 +163,15 @@ export default class Server extends EventEmitter {
                         Console.error(`Error loading plugin "${identifier}"`);
                         Console.error(error.stack);
 
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                         // @ts-ignore
                         this.pluginManager.plugins.delete(identifier);
                     }
 
                     Console.info(`Loaded plugin '${identifier}'`);
 
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
                     if (this.pluginManager.plugins.get(identifier)) {
                         try {
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                             // @ts-ignore
                             this.pluginManager.currentInitializingPlugin = plugin;
 
@@ -189,7 +180,6 @@ export default class Server extends EventEmitter {
                             Console.error(`Error initializing plugin '${identifier}'`);
                             Console.error(error.stack);
 
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                             // @ts-ignore
                             this.pluginManager.plugins.delete(identifier);
                         }
@@ -198,11 +188,9 @@ export default class Server extends EventEmitter {
             }
         });
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         this.pluginManager.currentInitializingPlugin = undefined;
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         if (this.pluginManager.plugins.size === 0) {
             Console.warn("No plugins installed.");
@@ -229,7 +217,6 @@ export default class Server extends EventEmitter {
             this.saveCachedPlatformAccessoriesOnDisk();
             this.bridge.unpublish();
 
-            // eslint-disable-next-line no-restricted-syntax
             for (const accessory of this.publishedExternalAccessories.values()) {
                 accessory._associatedHAPAccessory.unpublish();
             }
@@ -406,11 +393,9 @@ export default class Server extends EventEmitter {
         return new Promise((resolve) => {
             platformInstance.accessories(once((accessories: AccessoryPlugin[]) => {
                 accessories.forEach((accessoryInstance, index) => {
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
                     const accessoryName = accessoryInstance.name;
 
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-ignore
                     const uuidBase: string | undefined = accessoryInstance.uuid_base;
                     const accessory = this.createHAPAccessory(plugin, accessoryInstance, accessoryName, platformType, uuidBase);
@@ -465,8 +450,6 @@ export default class Server extends EventEmitter {
 
         if (accessoryInstance.identify) {
             accessory.on(AccessoryEventTypes.IDENTIFY, (_paired, callback) => {
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 accessoryInstance.identify!(() => {});
 
@@ -527,7 +510,6 @@ export default class Server extends EventEmitter {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private handleUpdatePlatformAccessories(accessories: PlatformAccessory[]): void {
         this.saveCachedPlatformAccessoriesOnDisk();
     }

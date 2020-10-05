@@ -60,5 +60,37 @@
         "class-methods-use-this": "off",
         "import/no-cycle": "off",
         "import/no-extraneous-dependencies": "off"
-    }
+    },
+    "overrides": [
+        {
+            "files": [
+                "src/bridge/index.ts"
+            ],
+            "rules": {
+                "no-underscore-dangle": "off",
+                "no-restricted-syntax": "off",
+                "@typescript-eslint/ban-ts-comment": "off",
+                "@typescript-eslint/no-unused-vars": "off",
+                "@typescript-eslint/no-empty-function": "off"
+            }
+        },
+        {
+            "files": [
+                "src/bridge/types.ts"
+            ],
+            "rules": {
+                "quote-props": "off"
+            }
+        },
+        {
+            "files": [
+                "src/server/index.ts"
+            ],
+            "rules": {
+                "@typescript-eslint/no-var-requires": "off",
+                "import/no-dynamic-require": "off",
+                "global-require": "off"
+            }
+        }
+    ]
 }
