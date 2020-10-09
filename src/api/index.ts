@@ -209,6 +209,7 @@ export default class API extends EventEmitter {
 
         Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(dirname(realpathSync(__filename)), "../../var")));
         Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(dirname(realpathSync(__filename)), "../../var")));
+        Instance.app?.use("/themes", Express.static(Paths.themePath()));
         Instance.app?.use("/backups", Express.static(Paths.backupPath()));
 
         const defined: string[] = [];

@@ -79,6 +79,12 @@ export default class Paths {
         return join(Paths.storagePath(), "hoobs.log");
     }
 
+    static themePath(): string {
+        File.ensureDirSync(join(Paths.storagePath(Instance.id), "themes"));
+
+        return join(Paths.storagePath(Instance.id), "themes");
+    }
+
     static instancesPath(): string {
         return join(Paths.storagePath(), "instances.conf");
     }
