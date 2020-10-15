@@ -33,7 +33,7 @@ export default class PluginController {
                 Plugins.load(Instance.instances[i].id, (_identifier, name, _scope, directory, _pjson, library) => {
                     const route = `/api/plugin/${name.replace(/[^a-zA-Z0-9-_]/, "")}/:action`;
 
-                    if (defined.indexOf(route) === -1 && existsSync(join(directory, library, "hoobs.js"))) {
+                    if (defined.indexOf(route) === -1 && existsSync(join(directory, library, "routes.js"))) {
                         Instance.app?.post(route, (request, response) => this.execute(Instance.instances[i], name, request, response));
 
                         defined.push(route);

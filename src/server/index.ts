@@ -73,8 +73,8 @@ export default class Server extends EventEmitter {
         new AccessoriesController();
 
         Plugins.load(Instance.id, (identifier, name, _scope, directory, _pjson, library) => {
-            if (existsSync(join(directory, library, "hoobs.js"))) {
-                const plugin = require(join(directory, library, "hoobs.js"));
+            if (existsSync(join(directory, library, "routes.js"))) {
+                const plugin = require(join(directory, library, "routes.js"));
 
                 let initializer;
 
