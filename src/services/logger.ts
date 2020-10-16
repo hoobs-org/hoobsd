@@ -146,6 +146,8 @@ class Logger {
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
         let data: Message;
 
+        const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
+
         if (typeof message === "string") {
             data = {
                 level,
@@ -154,13 +156,13 @@ class Logger {
                 timestamp: new Date().getTime(),
                 plugin: this.plugin,
                 prefix: this.prefix,
-                message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge"), ...parameters),
+                message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge").replace(ascii, ""), ...parameters),
             };
         } else {
             data = message;
         }
 
-        if (data.message === "" && data.instance !== Instance.id) {
+        if (data.message === "" && (data.instance !== Instance.id || (data.prefix && data.prefix !== ""))) {
             return;
         }
 

@@ -18,7 +18,15 @@
 
 import { spawn, execSync } from "child_process";
 import { join, dirname } from "path";
-import { existsSync, readFileSync, realpathSync } from "fs-extra";
+
+import {
+    existsSync,
+    readFileSync,
+    realpathSync,
+    unlinkSync,
+    removeSync,
+    ensureSymlinkSync,
+} from "fs-extra";
 
 import {
     uuid,
@@ -72,6 +80,20 @@ export default class Plugins {
         }
     }
 
+    static linkLibs() {
+        ensureSymlinkSync(join(Paths.applicationPath(), "node_modules", "hap-nodejs"), join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"));
+    }
+
+    static unlinkLibs() {
+        if (existsSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"))) {
+            try {
+                unlinkSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"));
+            } catch (_error) {
+                removeSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"));
+            }
+        }
+    }
+
     static install(name: string, version?: string): Promise<void> {
         const tag = version || "latest";
 
@@ -89,12 +111,16 @@ export default class Plugins {
 
             flags.push(`${name}@${tag}`);
 
+            Plugins.unlinkLibs();
+
             const proc = spawn(Instance.manager || "npm", flags, {
                 cwd: Paths.storagePath(Instance.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
             proc.on("close", async () => {
+                Plugins.linkLibs();
+
                 const path = join(Plugins.directory, name);
 
                 if (existsSync(path) && existsSync(join(path, "package.json"))) {
@@ -173,12 +199,16 @@ export default class Plugins {
 
             flags.push(name);
 
+            Plugins.unlinkLibs();
+
             const proc = spawn(Instance.manager || "npm", flags, {
                 cwd: Paths.storagePath(Instance.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
             proc.on("close", () => {
+                Plugins.linkLibs();
+
                 if (!existsSync(join(Plugins.directory, name, "package.json"))) {
                     const config = Config.configuration();
                     let index = config.plugins?.indexOf(name);
@@ -239,12 +269,15 @@ export default class Plugins {
 
             if (name) flags.push(`${name}@${tag}`);
 
+            Plugins.unlinkLibs();
+
             const proc = spawn(Instance.manager || "npm", flags, {
                 cwd: Paths.storagePath(Instance.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
             proc.on("close", () => {
+                Plugins.linkLibs();
                 Config.touchConfig();
 
                 Console.notify(

@@ -51,7 +51,6 @@ export interface InstanceRecord {
     display: string,
     port: number,
     host?: string,
-    ssl?: boolean,
     plugins?: string,
     service?: string,
 }
@@ -98,7 +97,6 @@ export default class Instances {
 
         for (let i = 0; i < instances.length; i += 1) {
             instances[i].host = host;
-            instances[i].ssl = false;
             instances[i].service = undefined;
 
             if (existsSync(join(Paths.storagePath(instances[i].id), "package.json"))) instances[i].plugins = join(Paths.storagePath(instances[i].id), "node_modules");

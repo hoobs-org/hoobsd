@@ -70,6 +70,8 @@ const accessoryStorage: LocalStorage = storage.create();
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
 
+User.setStoragePath(Paths.storagePath());
+
 export default class Server extends EventEmitter {
     public running: boolean;
 
@@ -108,8 +110,6 @@ export default class Server extends EventEmitter {
 
         if (Instance.debug) Logger.setDebugEnabled(true);
 
-        User.setStoragePath(Paths.configPath());
-
         // @ts-ignore
         Logger.internal = Console;
 
@@ -145,6 +145,8 @@ export default class Server extends EventEmitter {
 
     public async start(): Promise<void> {
         const promises: Promise<void>[] = [];
+
+        Plugins.linkLibs();
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
@@ -225,6 +227,8 @@ export default class Server extends EventEmitter {
 
             setTimeout(() => {
                 this.emit(Events.SHUTDOWN);
+
+                Plugins.unlinkLibs();
 
                 resolve();
             }, 3000);
