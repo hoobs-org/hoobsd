@@ -16,57 +16,51 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Users, { UserRecord } from "../services/users";
+import Instance from "../../services/instance";
+import Instances from "../../services/instances";
+import { SocketRequest, SocketResponse } from "../services/socket";
 
-export default class AuthController {
+export default class BridgeController {
     constructor() {
-        Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
-        Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
+        Instance.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
+        Instance.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
+        Instance.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
+        Instance.socket?.route("bridge:clean", (request: SocketRequest, response: SocketResponse) => this.clean(request, response));
     }
 
-    state(_request: Request, response: Response): Response {
-        if (Instance.api?.settings.disable_auth) {
-            return response.send({
-                state: "disabled",
-            });
-        }
+    async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
+        if (!Instance.bridge?.running) await Instance.bridge?.start();
 
-        if (Users.count() === 0) {
-            return response.send({
-                state: "uninitialized",
-            });
-        }
-
-        return response.send({
-            state: "enabled",
+        response.send({
+            success: true,
         });
     }
 
-    async logon(request: Request, response: Response): Promise<Response> {
-        const user: UserRecord | undefined = Users.get(request.body.username);
+    async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
+        if (Instance.bridge?.running) await Instance.bridge.stop();
 
-        if (!user) {
-            return response.send({
-                token: false,
-                error: "Invalid username or password.",
-            });
-        }
+        response.send({
+            success: true,
+        });
+    }
 
-        const challenge: string = await Users.hashValue(request.body.password, user.salt);
+    async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
+        if (Instance.bridge?.running) await Instance.bridge.restart();
 
-        if (challenge !== user.password) {
-            return response.send({
-                token: false,
-                error: "Invalid username or password.",
-            });
-        }
+        response.send({
+            success: true,
+        });
+    }
 
-        const remember: boolean = request.body.remember || false;
+    async clean(_request: SocketRequest, response: SocketResponse): Promise<void> {
+        if (Instance.bridge?.running) await Instance.bridge.stop();
 
-        return response.send({
-            token: await Users.generateToken(user.id, remember),
+        Instances.clean();
+
+        await Instance.bridge?.start();
+
+        response.send({
+            success: true,
         });
     }
 }

@@ -21,9 +21,9 @@ import Socket from "ws";
 import PTY from "node-pty";
 import { existsSync } from "fs-extra";
 import { join } from "path";
-import Paths from "../services/paths";
-import Instance from "../services/instance";
-import { Console } from "../services/logger";
+import Paths from "../../services/paths";
+import Instance from "../../services/instance";
+import { Console } from "../../services/logger";
 
 export default class Cockpit {
     declare socket: Socket;

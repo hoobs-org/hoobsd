@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../services/instance";
-import { Console } from "../services/logger";
-import { SocketRequest, SocketResponse } from "./socket";
+import Instance from "../../services/instance";
+import { Console } from "../../services/logger";
+import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class AccessoriesController {
     declare rooms: any[];

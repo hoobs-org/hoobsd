@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Socket from "./socket";
+import Instance from "../../services/instance";
+import Socket from "../services/socket";
 
 export default class BridgeController {
     constructor() {

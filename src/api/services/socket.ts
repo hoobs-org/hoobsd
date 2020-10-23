@@ -20,8 +20,8 @@ import RawIPC from "node-ipc";
 import { EventEmitter } from "events";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
-import Paths from "../services/paths";
-import { Print, Events } from "../services/logger";
+import Paths from "../../services/paths";
+import { Print, Events } from "../../services/logger";
 
 const sockets: { [key: string]: any } = [];
 

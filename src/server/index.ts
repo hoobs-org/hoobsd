@@ -23,7 +23,7 @@ import { join } from "path";
 import Instance from "../services/instance";
 import Paths from "../services/paths";
 import Cache from "../services/cache";
-import Socket from "./socket";
+import Socket from "./services/socket";
 import Bridge from "../bridge";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
@@ -36,12 +36,12 @@ import {
     Events,
 } from "../services/logger";
 
-import CacheController from "./cache";
-import StatusController from "./status";
-import ConfigController from "./config";
-import BridgeController from "./bridge";
-import PluginsController from "./plugins";
-import AccessoriesController from "./accessories";
+import CacheController from "./controllers/cache";
+import StatusController from "./controllers/status";
+import ConfigController from "./controllers/config";
+import BridgeController from "./controllers/bridge";
+import PluginsController from "./controllers/plugins";
+import AccessoriesController from "./controllers/accessories";
 
 export default class Server extends EventEmitter {
     declare time: number;

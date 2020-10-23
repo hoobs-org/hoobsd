@@ -17,9 +17,9 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Config from "../services/config";
-import Socket from "./socket";
+import Instance from "../../services/instance";
+import Config from "../../services/config";
+import Socket from "../services/socket";
 
 export default class ConfigController {
     constructor() {

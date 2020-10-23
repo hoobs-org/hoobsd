@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Users from "../services/users";
+import Instance from "../../services/instance";
+import Users from "../../services/users";
 
 export default class UsersController {
     constructor() {

@@ -17,26 +17,33 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Socket from "./socket";
+import Instance from "../../services/instance";
+import Socket from "../services/socket";
 
-export default class AccessoriesController {
+export default class PluginsController {
     constructor() {
-        Instance.app?.get("/api/accessories", (request, response) => this.all(request, response));
-        Instance.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
-        Instance.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
-        Instance.app?.put("/api/accessory/:instance/:id/:service", (request, response) => this.set(request, response));
+        Instance.app?.get("/api/plugins", (request, response) => this.all(request, response));
+        Instance.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
+        Instance.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
+        Instance.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
+        Instance.app?.post("/api/plugins/:instance/:name", (request, response) => this.upgrade(request, response));
+        Instance.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
+        Instance.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
+        Instance.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<void> {
-        let results: any[] = [];
+        const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
             if (Instance.instances[i].type === "bridge") {
-                const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
+                const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
 
-                if (accessories) {
-                    results = [...results, ...accessories];
+                if (plugins) {
+                    results.push({
+                        instance: Instance.instances[i].id,
+                        plugins,
+                    });
                 }
             }
         }
@@ -44,15 +51,19 @@ export default class AccessoriesController {
         response.send(results);
     }
 
-    async list(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessories:list"));
+    async installed(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "plugins:get"));
     }
 
-    async get(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessory:get", { id: request.params.id }));
+    async install(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "plugins:install", request.params));
     }
 
-    async set(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessory:set", { id: request.params.id }, request.body));
+    async upgrade(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "plugins:upgrade", request.params));
+    }
+
+    async uninstall(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "plugins:uninstall", request.params));
     }
 }

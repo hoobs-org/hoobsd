@@ -17,8 +17,8 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Cockpit from "./cockpit";
+import Instance from "../../services/instance";
+import Cockpit from "../services/cockpit";
 
 export default class RemoteController {
     declare client: Cockpit;

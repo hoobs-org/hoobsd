@@ -23,7 +23,7 @@ import { readFileSync, writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import Instance from "./instance";
 import Paths from "./paths";
-import Socket from "../server/socket";
+import Socket from "../server/services/socket";
 
 import {
     formatJson,

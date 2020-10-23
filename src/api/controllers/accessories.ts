@@ -16,31 +16,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../services/instance";
-import Paths from "../services/paths";
-import { SocketRequest, SocketResponse } from "./socket";
+import { Request, Response } from "express-serve-static-core";
+import Instance from "../../services/instance";
+import Socket from "../services/socket";
 
-export default class StatusController {
+export default class AccessoriesController {
     constructor() {
-        Instance.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
+        Instance.app?.get("/api/accessories", (request, response) => this.all(request, response));
+        Instance.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
+        Instance.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
+        Instance.app?.put("/api/accessory/:instance/:id/:service", (request, response) => this.set(request, response));
     }
 
-    status(_request: SocketRequest, response: SocketResponse): void {
-        response.send({
-            id: Instance.id,
-            instance: Instance.display || Instance.id,
-            running: Instance.bridge?.running,
-            status: Instance.bridge?.running ? "running" : "stopped",
-            uptime: new Date().getTime() - (Instance.server?.time || 0),
-            bridge_name: Instance.bridge?.settings.name || "",
-            product: "HOOBS Server",
-            version: Instance.version,
-            node_version: (process.version || "").replace(/v/gi, ""),
-            username: Instance.bridge?.settings.username || "",
-            bridge_port: Instance.bridge?.port,
-            setup_pin: Instance.bridge?.settings.pin || "",
-            setup_id: Instance.bridge?.setupURI(),
-            storage_path: Paths.storagePath(),
-        });
+    async all(_request: Request, response: Response): Promise<void> {
+        let results: any[] = [];
+
+        for (let i = 0; i < Instance.instances.length; i += 1) {
+            if (Instance.instances[i].type === "bridge") {
+                const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
+
+                if (accessories) {
+                    results = [...results, ...accessories];
+                }
+            }
+        }
+
+        response.send(results);
+    }
+
+    async list(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "accessories:list"));
+    }
+
+    async get(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "accessory:get", { id: request.params.id }));
+    }
+
+    async set(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "accessory:set", { id: request.params.id }, request.body));
     }
 }

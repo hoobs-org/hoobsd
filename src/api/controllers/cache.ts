@@ -17,19 +17,15 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Socket from "./socket";
+import Instance from "../../services/instance";
+import Socket from "../services/socket";
 
-export default class PluginsController {
+export default class CacheController {
     constructor() {
-        Instance.app?.get("/api/plugins", (request, response) => this.all(request, response));
-        Instance.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
-        Instance.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
-        Instance.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
-        Instance.app?.post("/api/plugins/:instance/:name", (request, response) => this.upgrade(request, response));
-        Instance.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
-        Instance.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
-        Instance.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
+        Instance.app?.get("/api/cache", (request, response) => this.all(request, response));
+        Instance.app?.get("/api/cache/:instance", (request, response) => this.list(request, response));
+        Instance.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
+        Instance.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<void> {
@@ -37,12 +33,14 @@ export default class PluginsController {
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
             if (Instance.instances[i].type === "bridge") {
-                const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
+                const parings = await Socket.fetch(Instance.instances[i].id, "cache:parings");
+                const accessories = await Socket.fetch(Instance.instances[i].id, "cache:accessories");
 
-                if (plugins) {
+                if (parings || accessories) {
                     results.push({
                         instance: Instance.instances[i].id,
-                        plugins,
+                        parings,
+                        accessories,
                     });
                 }
             }
@@ -51,19 +49,21 @@ export default class PluginsController {
         response.send(results);
     }
 
-    async installed(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "plugins:get"));
+    async list(request: Request, response: Response): Promise<void> {
+        const parings = await Socket.fetch(request.params.instance, "cache:parings");
+        const accessories = await Socket.fetch(request.params.instance, "cache:accessories");
+
+        response.send({
+            parings,
+            accessories,
+        });
     }
 
-    async install(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "plugins:install", request.params));
+    async listParings(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "cache:parings"));
     }
 
-    async upgrade(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "plugins:upgrade", request.params));
-    }
-
-    async uninstall(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "plugins:uninstall", request.params));
+    async listAccessories(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "cache:accessories"));
     }
 }

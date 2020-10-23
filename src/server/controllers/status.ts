@@ -16,43 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import System from "systeminformation";
-import Instance from "../services/instance";
-import { Console, Events } from "../services/logger";
-import Socket from "./socket";
+import Instance from "../../services/instance";
+import Paths from "../../services/paths";
+import { SocketRequest, SocketResponse } from "../services/socket";
 
-export default async function Monitor() {
-    const results: { [key: string]: any } = {};
-
-    for (let i = 0; i < Instance.instances.length; i += 1) {
-        if (Instance.instances[i].type === "bridge") {
-            const status = await Socket.fetch(Instance.instances[i].id, "status:get");
-
-            if (status) {
-                results[Instance.instances[i].id] = {
-                    version: status.version,
-                    running: status.running,
-                    status: status.status,
-                    uptime: status.uptime,
-                };
-            } else {
-                results[Instance.instances[i].id] = {
-                    running: false,
-                    status: "unavailable",
-                    uptime: 0,
-                };
-            }
-        }
+export default class StatusController {
+    constructor() {
+        Instance.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
     }
 
-    Console.emit(Events.MONITOR, "api", {
-        instances: results,
-        cpu: await System.currentLoad(),
-        memory: await System.mem(),
-        temp: await System.cpuTemperature(),
-    });
-
-    setTimeout(() => {
-        Monitor();
-    }, (Instance.api?.settings?.polling_seconds || 5) * 1000);
+    status(_request: SocketRequest, response: SocketResponse): void {
+        response.send({
+            id: Instance.id,
+            instance: Instance.display || Instance.id,
+            running: Instance.bridge?.running,
+            status: Instance.bridge?.running ? "running" : "stopped",
+            uptime: new Date().getTime() - (Instance.server?.time || 0),
+            bridge_name: Instance.bridge?.settings.name || "",
+            product: "HOOBS Server",
+            version: Instance.version,
+            node_version: (process.version || "").replace(/v/gi, ""),
+            username: Instance.bridge?.settings.username || "",
+            bridge_port: Instance.bridge?.port,
+            setup_pin: Instance.bridge?.settings.pin || "",
+            setup_id: Instance.bridge?.setupURI(),
+            storage_path: Paths.storagePath(),
+        });
+    }
 }

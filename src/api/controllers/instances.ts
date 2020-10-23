@@ -17,16 +17,36 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import { Console } from "../services/logger";
+import Instance from "../../services/instance";
+import Instances from "../../services/instances";
 
-export default class LogController {
+export default class InstancesController {
     constructor() {
-        Instance.app?.get("/api/log", (request, response) => this.cache(request, response));
-        Instance.app?.get("/api/log/:tail", (request, response) => this.cache(request, response));
+        Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
+        Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
+        Instance.app?.post("/api/instances/:id", (request, response) => this.update(request, response));
+        Instance.app?.delete("/api/instances/:id", (request, response) => this.remove(request, response));
     }
 
-    cache(request: Request, response: Response): Response {
-        return response.send(Console.cache(parseInt(request.params.tail, 10) || 20));
+    list(_request: Request, response: Response): Response {
+        return response.send(Instance.instances);
+    }
+
+    async create(request: Request, response: Response): Promise<void> {
+        await Instances.createService(request.body.name, parseInt(request.body.port, 10));
+
+        this.list(request, response);
+    }
+
+    async update(request: Request, response: Response): Promise<void> {
+        await Instances.renameInstance(request.params.id, request.body.name);
+
+        this.list(request, response);
+    }
+
+    async remove(request: Request, response: Response): Promise<void> {
+        await Instances.removeService(request.params.id);
+
+        this.list(request, response);
     }
 }

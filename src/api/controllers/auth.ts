@@ -17,76 +17,56 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import FFMPEG from "../extentions/ffmpeg";
-import Paths from "../services/paths";
+import Instance from "../../services/instance";
+import Users, { UserRecord } from "../../services/users";
 
-export default class ExtentionsController {
+export default class AuthController {
     constructor() {
-        Instance.app?.get("/api/extentions", (request, response) => this.list(request, response));
-        Instance.app?.post("/api/extentions/:name", (request, response) => this.enable(request, response));
-        Instance.app?.delete("/api/extentions/:name", (request, response) => this.disable(request, response));
+        Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
+        Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
     }
 
-    list(_request: Request, response: Response): Response {
-        return response.send([{
-            feature: "ffmpeg",
-            description: "enables ffmpeg camera support",
-            enabled: Paths.tryCommand("ffmpeg"),
-        }]);
-    }
-
-    enable(request: Request, response: Response): Response {
-        let results: { success: boolean, error?: string | undefined } = {
-            success: false,
-        };
-
-        switch ((request.params.name || "").toLowerCase()) {
-            case "ffmpeg":
-                results = FFMPEG.enable();
-                break;
-
-            default:
-                break;
+    state(_request: Request, response: Response): Response {
+        if (Instance.api?.settings.disable_auth) {
+            return response.send({
+                state: "disabled",
+            });
         }
 
-        if (results.success) return this.list(request, response);
-
-        if (results.error) {
+        if (Users.count() === 0) {
             return response.send({
-                error: results.error,
+                state: "uninitialized",
             });
         }
 
         return response.send({
-            error: "feature not supported",
+            state: "enabled",
         });
     }
 
-    disable(request: Request, response: Response): Response {
-        let results: { success: boolean, error?: string | undefined } = {
-            success: false,
-        };
+    async logon(request: Request, response: Response): Promise<Response> {
+        const user: UserRecord | undefined = Users.get(request.body.username);
 
-        switch ((request.params.name || "").toLowerCase()) {
-            case "ffmpeg":
-                results = FFMPEG.disable();
-                break;
-
-            default:
-                break;
-        }
-
-        if (results.success) return this.list(request, response);
-
-        if (results.error) {
+        if (!user) {
             return response.send({
-                error: results.error,
+                token: false,
+                error: "Invalid username or password.",
             });
         }
 
+        const challenge: string = await Users.hashValue(request.body.password, user.salt);
+
+        if (challenge !== user.password) {
+            return response.send({
+                token: false,
+                error: "Invalid username or password.",
+            });
+        }
+
+        const remember: boolean = request.body.remember || false;
+
         return response.send({
-            error: "feature not supported",
+            token: await Users.generateToken(user.id, remember),
         });
     }
 }

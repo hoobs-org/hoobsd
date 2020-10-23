@@ -19,7 +19,7 @@
 import Instance from "./instance";
 import Config from "./config";
 import { Prefixed, PluginLogger } from "./logger";
-import { SocketRequest, SocketResponse } from "../server/socket";
+import { SocketRequest, SocketResponse } from "../server/services/socket";
 
 export default class Plugin {
     declare readonly identifier: string;

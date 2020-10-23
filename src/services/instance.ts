@@ -21,7 +21,7 @@ import { join } from "path";
 import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import Cache from "./cache";
-import Socket from "../server/socket";
+import Socket from "../server/services/socket";
 import Server from "../server";
 import Bridge from "../bridge";
 import API from "../api";

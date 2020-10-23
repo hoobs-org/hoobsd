@@ -16,37 +16,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Instances from "../services/instances";
+import System from "systeminformation";
+import Instance from "../../services/instance";
+import { Console, Events } from "../../services/logger";
+import Socket from "./socket";
 
-export default class InstancesController {
-    constructor() {
-        Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
-        Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
-        Instance.app?.post("/api/instances/:id", (request, response) => this.update(request, response));
-        Instance.app?.delete("/api/instances/:id", (request, response) => this.remove(request, response));
+export default async function Monitor() {
+    const results: { [key: string]: any } = {};
+
+    for (let i = 0; i < Instance.instances.length; i += 1) {
+        if (Instance.instances[i].type === "bridge") {
+            const status = await Socket.fetch(Instance.instances[i].id, "status:get");
+
+            if (status) {
+                results[Instance.instances[i].id] = {
+                    version: status.version,
+                    running: status.running,
+                    status: status.status,
+                    uptime: status.uptime,
+                };
+            } else {
+                results[Instance.instances[i].id] = {
+                    running: false,
+                    status: "unavailable",
+                    uptime: 0,
+                };
+            }
+        }
     }
 
-    list(_request: Request, response: Response): Response {
-        return response.send(Instance.instances);
-    }
+    Console.emit(Events.MONITOR, "api", {
+        instances: results,
+        cpu: await System.currentLoad(),
+        memory: await System.mem(),
+        temp: await System.cpuTemperature(),
+    });
 
-    async create(request: Request, response: Response): Promise<void> {
-        await Instances.createService(request.body.name, parseInt(request.body.port, 10));
-
-        this.list(request, response);
-    }
-
-    async update(request: Request, response: Response): Promise<void> {
-        await Instances.renameInstance(request.params.id, request.body.name);
-
-        this.list(request, response);
-    }
-
-    async remove(request: Request, response: Response): Promise<void> {
-        await Instances.removeService(request.params.id);
-
-        this.list(request, response);
-    }
+    setTimeout(() => {
+        Monitor();
+    }, (Instance.api?.settings?.polling_seconds || 5) * 1000);
 }

@@ -17,9 +17,9 @@
  **************************************************************************************************/
 
 import { PluginManager } from "homebridge/lib/pluginManager";
-import Instance from "../services/instance";
-import Plugins from "../services/plugins";
-import { SocketRequest, SocketResponse } from "./socket";
+import Instance from "../../services/instance";
+import Plugins from "../../services/plugins";
+import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class PluginsController {
     constructor() {

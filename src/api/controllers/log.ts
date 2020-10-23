@@ -16,45 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import System from "systeminformation";
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../services/instance";
-import Socket from "./socket";
+import Instance from "../../services/instance";
+import { Console } from "../../services/logger";
 
-export default class StatusController {
+export default class LogController {
     constructor() {
-        Instance.app?.get("/api/status", (request, response) => this.status(request, response));
+        Instance.app?.get("/api/log", (request, response) => this.cache(request, response));
+        Instance.app?.get("/api/log/:tail", (request, response) => this.cache(request, response));
     }
 
-    async status(_request: Request, response: Response): Promise<Response> {
-        const results: { [key: string]: any } = {};
-
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                const status = await Socket.fetch(Instance.instances[i].id, "status:get");
-
-                if (status) {
-                    results[Instance.instances[i].id] = {
-                        version: status.version,
-                        running: status.running,
-                        status: status.status,
-                        uptime: status.uptime,
-                    };
-                } else {
-                    results[Instance.instances[i].id] = {
-                        running: false,
-                        status: "unavailable",
-                        uptime: 0,
-                    };
-                }
-            }
-        }
-
-        return response.send({
-            instances: results,
-            cpu: await System.currentLoad(),
-            memory: await System.mem(),
-            temp: await System.cpuTemperature(),
-        });
+    cache(request: Request, response: Response): Response {
+        return response.send(Console.cache(parseInt(request.params.tail, 10) || 20));
     }
 }
