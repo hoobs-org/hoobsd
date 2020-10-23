@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import { spawn, execSync } from "child_process";
-import { join, dirname } from "path";
+import { join } from "path";
 
 import {
     existsSync,
@@ -72,7 +72,7 @@ export default class Plugins {
                     const identifier: string = pjson.name;
                     const name: string = PluginManager.extractPluginName(identifier);
                     const scope: string = PluginManager.extractPluginScope(identifier);
-                    const library: string = dirname(pjson.main || "./index.js");
+                    const library: string = pjson.main || "./index.js";
 
                     callback(identifier, name, scope, directory, pjson, library);
                 }
