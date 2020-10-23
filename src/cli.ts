@@ -100,8 +100,12 @@ export = function Daemon(): void {
             if (instance) {
                 Instance.api = API.createServer(command.port || instance.port);
 
-                Watcher.watch(Paths.instancesPath()).on("change", () => {
+                Watcher.watch(Paths.instancesPath()).on("change", async () => {
+                    await Instance.api?.stop();
+
                     Instance.instances = Instances.list();
+                    Instance.api = API.createServer(command.port || instance.port);
+                    Instance.api.start();
                 });
 
                 Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {

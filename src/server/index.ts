@@ -143,7 +143,6 @@ export default class Server extends EventEmitter {
     }
 
     async stop(): Promise<void> {
-        Console.debug("");
         Console.debug("Shutting down");
 
         if (Instance.bridge) await Instance.bridge.stop();

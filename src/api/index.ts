@@ -265,7 +265,6 @@ export default class API extends EventEmitter {
     }
 
     async stop(): Promise<void> {
-        Console.debug("");
         Console.debug("Shutting down");
 
         await this.terminator.terminate();
