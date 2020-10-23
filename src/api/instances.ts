@@ -22,33 +22,31 @@ import Instances from "../services/instances";
 
 export default class InstancesController {
     constructor() {
-        Instance.app?.get("/api/instance", (request, response) => this.list(request, response));
-        Instance.app?.put("/api/instance", (request, response) => this.create(request, response));
-        Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
-        Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
+        Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
+        Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
+        Instance.app?.post("/api/instances/:id", (request, response) => this.update(request, response));
+        Instance.app?.delete("/api/instances/:id", (request, response) => this.remove(request, response));
     }
 
     list(_request: Request, response: Response): Response {
         return response.send(Instance.instances);
     }
 
-    create(request: Request, response: Response): void {
-        Instances.createService(
-            request.body.name,
-            parseInt(request.body.port, 10),
-        ).then(() => this.list(request, response));
+    async create(request: Request, response: Response): Promise<void> {
+        await Instances.createService(request.body.name, parseInt(request.body.port, 10));
+
+        this.list(request, response);
     }
 
-    update(request: Request, response: Response): void {
-        Instances.renameInstance(
-            request.params.id,
-            request.body.name,
-        ).then(() => this.list(request, response));
+    async update(request: Request, response: Response): Promise<void> {
+        await Instances.renameInstance(request.params.id, request.body.name);
+
+        this.list(request, response);
     }
 
-    remove(request: Request, response: Response): void {
-        Instances.removeService(
-            request.params.id,
-        ).then(() => this.list(request, response));
+    async remove(request: Request, response: Response): Promise<void> {
+        await Instances.removeService(request.params.id);
+
+        this.list(request, response);
     }
 }

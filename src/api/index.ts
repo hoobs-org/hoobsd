@@ -38,6 +38,7 @@ import Plugins from "../services/plugins";
 import { Console, Events } from "../services/logger";
 
 import AuthController from "./auth";
+import UsersController from "./users";
 import StatusController from "./status";
 import LogController from "./log";
 import AccessoriesController from "./accessories";
@@ -172,7 +173,7 @@ export default class API extends EventEmitter {
             if (request.url.indexOf("/api") === 0 && [
                 "/api/auth",
                 Users.count() > 0 ? "/api/auth/logon" : null,
-                Users.count() === 0 ? "/api/auth/create" : null,
+                Users.count() === 0 ? "/api/users" : null,
             ].indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
                 response.status(403).json({
                     error: "unauthorized",
@@ -187,6 +188,7 @@ export default class API extends EventEmitter {
         Instance.app?.get("/api", (_request, response) => response.send({ version: Instance.version }));
 
         new AuthController();
+        new UsersController();
         new StatusController();
         new LogController();
         new AccessoriesController();

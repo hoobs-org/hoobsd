@@ -24,7 +24,6 @@ export default class AuthController {
     constructor() {
         Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
         Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
-        Instance.app?.put("/api/auth/create", (request, response) => this.create(request, response));
     }
 
     state(_request: Request, response: Response): Response {
@@ -68,37 +67,6 @@ export default class AuthController {
 
         return response.send({
             token: await Users.generateToken(user.id, remember),
-        });
-    }
-
-    async create(request: Request, response: Response): Promise<Response> {
-        if (Users.count() > 0 && !(await Users.validateToken(request.headers.authorization))) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
-
-        if (!request.body.username || request.body.username === "" || request.body.username.length < 3) {
-            return response.send({
-                token: false,
-                error: "Invalid username.",
-            });
-        }
-
-        if (request.body.password.length < 5) {
-            return response.send({
-                token: false,
-                error: "Password too weak.",
-            });
-        }
-
-        if (Users.count() === 0) request.body.admin = true;
-
-        const user = await Users.create(request.body.name, request.body.username, request.body.password, request.body.admin);
-
-        return response.send({
-            token: await Users.generateToken(user.id),
         });
     }
 }
