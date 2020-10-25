@@ -35,7 +35,7 @@ import {
 } from "fs-extra";
 
 import { execSync } from "child_process";
-import { join } from "path";
+import { join, basename } from "path";
 import Instance from "./instance";
 import Paths from "./paths";
 
@@ -622,7 +622,7 @@ export default class Instances {
 
                 if (path !== Paths.backupPath()) {
                     if (lstatSync(path).isDirectory()) {
-                        archive.directory(path, entries[i]);
+                        Instances.dig(archive, path);
                     } else {
                         archive.file(path, { name: entries[i] });
                     }
@@ -631,6 +631,22 @@ export default class Instances {
 
             archive.finalize();
         });
+    }
+
+    static dig(archive: Archiver.Archiver, directory: string): void {
+        const entries = readdirSync(directory);
+
+        for (let i = 0; i < entries.length; i += 1) {
+            const path = join(directory, entries[i]);
+
+            if (basename(path) !== "node_modules") {
+                if (lstatSync(path).isDirectory()) {
+                    archive.directory(path, join(basename(directory), entries[i]));
+                } else {
+                    archive.file(path, { name: join(basename(directory), entries[i]) });
+                }
+            }
+        }
     }
 
     static restore(file: string, remove?: boolean): Promise<void> {
@@ -660,7 +676,19 @@ export default class Instances {
                 path: Paths.storagePath(),
             })).on("finish", () => {
                 unlinkSync(filename);
-                resolve();
+
+                setTimeout(() => {
+                    const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
+
+                    for (let i = 0; i < instances.length; i += 1) {
+                        execSync(`${Instance.manager || "npm"} install`, {
+                            cwd: Paths.storagePath(instances[i].id),
+                            stdio: "inherit",
+                        });
+                    }
+
+                    resolve();
+                }, 1000);
             });
         });
     }
