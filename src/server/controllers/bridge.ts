@@ -25,7 +25,7 @@ export default class BridgeController {
         Instance.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
         Instance.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
         Instance.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
-        Instance.socket?.route("bridge:clean", (request: SocketRequest, response: SocketResponse) => this.clean(request, response));
+        Instance.socket?.route("bridge:purge", (request: SocketRequest, response: SocketResponse) => this.purge(request, response));
     }
 
     async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
@@ -52,10 +52,10 @@ export default class BridgeController {
         });
     }
 
-    async clean(_request: SocketRequest, response: SocketResponse): Promise<void> {
+    async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (Instance.bridge?.running) await Instance.bridge.stop();
 
-        Instances.clean();
+        Instances.purge();
 
         await Instance.bridge?.start();
 

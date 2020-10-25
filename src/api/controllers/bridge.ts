@@ -27,7 +27,7 @@ export default class BridgeController {
         Instance.app?.post("/api/bridge/:instance/start", (request, response) => this.start(request, response));
         Instance.app?.post("/api/bridge/:instance/stop", (request, response) => this.stop(request, response));
         Instance.app?.post("/api/bridge/:instance/restart", (request, response) => this.restart(request, response));
-        Instance.app?.post("/api/bridge/:instance/clean", (request, response) => this.clean(request, response));
+        Instance.app?.post("/api/bridge/:instance/purge", (request, response) => this.purge(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<void> {
@@ -65,7 +65,7 @@ export default class BridgeController {
         response.send(await Socket.fetch(request.params.instance, "bridge:restart"));
     }
 
-    async clean(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "bridge:clean"));
+    async purge(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.instance, "bridge:purge"));
     }
 }

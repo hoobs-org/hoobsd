@@ -573,7 +573,7 @@ export default class Instances {
         });
     }
 
-    static clean(): void {
+    static purge(): void {
         if (existsSync(join(Paths.storagePath(), `${Instance.id}.persist`))) removeSync(join(Paths.storagePath(), `${Instance.id}.persist`));
 
         ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
