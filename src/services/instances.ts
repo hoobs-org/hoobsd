@@ -681,10 +681,17 @@ export default class Instances {
                     const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
                     for (let i = 0; i < instances.length; i += 1) {
-                        execSync(`${Instance.manager || "npm"} install`, {
-                            cwd: Paths.storagePath(instances[i].id),
-                            stdio: "inherit",
-                        });
+                        if (Instance.manager === "yarn") {
+                            execSync("yarn install --unsafe-perm --ignore-engines", {
+                                cwd: Paths.storagePath(instances[i].id),
+                                stdio: "inherit",
+                            });
+                        } else {
+                            execSync("npm install --unsafe-perm", {
+                                cwd: Paths.storagePath(instances[i].id),
+                                stdio: "inherit",
+                            });
+                        }
                     }
 
                     resolve();
