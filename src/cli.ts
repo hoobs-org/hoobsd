@@ -73,7 +73,7 @@ export = function Daemon(): void {
 
                 Instance.server.start();
             } else {
-                Console.error(`${Instance.id} is not created, please run 'hoobs instance create' to create`);
+                Console.error(`${Instance.id} is not created, please run 'sudo hoobs instance add' to create`);
             }
         });
 
@@ -121,7 +121,7 @@ export = function Daemon(): void {
 
                 Instance.api.start();
             } else {
-                Console.error(`${Instance.id} is not created, please run 'hoobs instance create' to create`);
+                Console.error(`${Instance.id} is not created, please run 'sudo hoobs initilize' to create`);
             }
         });
 
