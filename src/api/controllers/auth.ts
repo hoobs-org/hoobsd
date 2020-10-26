@@ -47,12 +47,12 @@ export default class AuthController {
     }
 
     disable(request: Request, response: Response): Response {
-        if (Users.count() === 0 && request.body.disable === "true") {
+        if (Users.count() === 0) {
             const config: any = Config.configuration();
 
             if (!config.api) config.api = {};
 
-            config.api.disable_auth = (request.body.disable === "true");
+            config.api.disable_auth = true;
             Config.saveConfig(config);
         }
 
