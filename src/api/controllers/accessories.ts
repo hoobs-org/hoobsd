@@ -53,6 +53,6 @@ export default class AccessoriesController {
     }
 
     async set(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessory:set", { id: request.params.id }, request.body));
+        response.send(await Socket.fetch(request.params.instance, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
     }
 }

@@ -29,29 +29,29 @@ export default class AccessoriesController {
         this.rooms = [];
         this.accessories = [];
 
-        Instance.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.listAccessories(request, response));
-        Instance.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.getAccessory(request, response));
-        Instance.socket?.route("accessory:service", (request: SocketRequest, response: SocketResponse) => this.setAccessory(request, response));
+        Instance.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
+        Instance.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
+        Instance.socket?.route("accessory:service", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
     }
 
-    listAccessories(_request: SocketRequest, response: SocketResponse): void {
-        this.getServices().then((accessories) => {
+    list(_request: SocketRequest, response: SocketResponse): void {
+        this.services().then((accessories) => {
             this.accessories = accessories;
         }).finally(() => response.send(this.accessories));
     }
 
-    getAccessory(request: SocketRequest, response: SocketResponse): void {
+    get(request: SocketRequest, response: SocketResponse): void {
         let accessory = {};
 
-        this.getService(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((results) => {
+        this.service(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((results) => {
             accessory = results;
         }).finally(() => response.send(accessory));
     }
 
-    setAccessory(request: SocketRequest, response: SocketResponse): void {
+    set(request: SocketRequest, response: SocketResponse): void {
         let accessory = {};
 
-        this.getService(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((service) => {
+        this.service(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((service) => {
             let { value } = request.body;
 
             if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
@@ -64,7 +64,7 @@ export default class AccessoriesController {
         }).catch(() => response.send(accessory));
     }
 
-    getService(id: string): Promise<any> {
+    service(id: string): Promise<any> {
         return new Promise((resolve, reject) => {
             Instance.bridge?.client.accessory(id).then((response: any) => {
                 const service = response;
@@ -76,7 +76,7 @@ export default class AccessoriesController {
         });
     }
 
-    uniqieId(services: any[]) {
+    uuid(services: any[]) {
         const lookup: { [key: string]: number } = {};
 
         const results: any[] = services;
@@ -96,7 +96,7 @@ export default class AccessoriesController {
         return results;
     }
 
-    getServices(): Promise<any[]> {
+    services(): Promise<any[]> {
         return new Promise((resolve, reject) => {
             let services: any[] = [];
 
@@ -116,11 +116,11 @@ export default class AccessoriesController {
                     }).finally(() => {
                         queue.pop();
 
-                        if (queue.length === 0) resolve(this.uniqieId(services));
+                        if (queue.length === 0) resolve(this.uuid(services));
                     });
                 }
 
-                if (queue.length === 0) resolve(this.uniqieId(services));
+                if (queue.length === 0) resolve(this.uuid(services));
             }).catch((error: Error) => reject(error));
         });
     }

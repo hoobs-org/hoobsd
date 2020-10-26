@@ -18,11 +18,13 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
+import Config from "../../services/config";
 import Users, { UserRecord } from "../../services/users";
 
 export default class AuthController {
     constructor() {
         Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
+        Instance.app?.post("/api/auth", (request, response) => this.disable(request, response));
         Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
     }
 
@@ -42,6 +44,19 @@ export default class AuthController {
         return response.send({
             state: "enabled",
         });
+    }
+
+    disable(request: Request, response: Response): Response {
+        if (Users.count() === 0 && request.body.disable === "true") {
+            const config: any = Config.configuration();
+
+            if (!config.api) config.api = {};
+
+            config.api.disable_auth = (request.body.disable === "true");
+            Config.saveConfig(config);
+        }
+
+        return this.state(request, response);
     }
 
     async logon(request: Request, response: Response): Promise<Response> {

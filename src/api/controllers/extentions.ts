@@ -24,7 +24,7 @@ import Paths from "../../services/paths";
 export default class ExtentionsController {
     constructor() {
         Instance.app?.get("/api/extentions", (request, response) => this.list(request, response));
-        Instance.app?.post("/api/extentions/:name", (request, response) => this.enable(request, response));
+        Instance.app?.put("/api/extentions/:name", (request, response) => this.enable(request, response));
         Instance.app?.delete("/api/extentions/:name", (request, response) => this.disable(request, response));
     }
 
