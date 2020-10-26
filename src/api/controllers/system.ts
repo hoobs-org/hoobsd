@@ -125,7 +125,7 @@ export default class SystemController {
     }
 
     upgrade(request: Request, response: Response): Response {
-        execSync("npm install -g --unsafe-perm @hoobs/server@latest");
+        execSync("npm install -g --unsafe-perm @hoobs/hoobsd@latest");
 
         return this.reboot(request, response);
     }
