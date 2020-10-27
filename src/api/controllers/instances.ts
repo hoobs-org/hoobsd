@@ -19,6 +19,7 @@
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
 import Instances from "../../services/instances";
+import Users from "../../services/users";
 
 export default class InstancesController {
     constructor() {
@@ -29,24 +30,31 @@ export default class InstancesController {
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send(Instance.instances);
+        return response.send(Instance.instances.filter((item) => item.type === "bridge"));
     }
 
-    async create(request: Request, response: Response): Promise<void> {
+    async create(request: Request, response: Response): Promise<Response> {
+        if (!(await Users.validateToken(request.headers.authorization))) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         await Instances.createService(request.body.name, parseInt(request.body.port, 10));
 
-        this.list(request, response);
+        return this.list(request, response);
     }
 
-    async update(request: Request, response: Response): Promise<void> {
+    async update(request: Request, response: Response): Promise<Response> {
         await Instances.renameInstance(request.params.id, request.body.name);
 
-        this.list(request, response);
+        return this.list(request, response);
     }
 
-    async remove(request: Request, response: Response): Promise<void> {
+    async remove(request: Request, response: Response): Promise<Response> {
         await Instances.removeService(request.params.id);
 
-        this.list(request, response);
+        return this.list(request, response);
     }
 }

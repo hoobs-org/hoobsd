@@ -107,6 +107,7 @@ export default class Users {
     }
 
     static async validateToken(token: string | undefined): Promise<boolean> {
+        if (Instance.api?.settings.disable_auth) return true;
         if (!token || token === "") return false;
 
         const server = Instance.cache?.get(token);
