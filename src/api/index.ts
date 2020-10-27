@@ -172,9 +172,10 @@ export default class API extends EventEmitter {
 
             if (request.url.indexOf("/api") === 0 && [
                 "/api/auth",
-                Users.count() > 0 ? "/api/auth/logon" : null,
-                Users.count() === 0 ? "/api/users" : null,
-            ].indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
+                "/api/auth/validate",
+                Users.count() > 0 ? "/api/auth/logon" : false,
+                Users.count() === 0 ? "/api/users" : false,
+            ].filter((item) => item).indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
                 response.status(403).json({
                     error: "unauthorized",
                 });

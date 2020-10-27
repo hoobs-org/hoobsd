@@ -26,6 +26,7 @@ export default class AuthController {
         Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
         Instance.app?.post("/api/auth", (request, response) => this.disable(request, response));
         Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
+        Instance.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
     }
 
     state(_request: Request, response: Response): Response {
@@ -43,6 +44,18 @@ export default class AuthController {
 
         return response.send({
             state: "enabled",
+        });
+    }
+
+    async validate(request: Request, response: Response): Promise<Response> {
+        if (Instance.api?.settings.disable_auth) {
+            return response.send({
+                valid: true,
+            });
+        }
+
+        return response.send({
+            valid: await Users.validateToken(request.headers.authorization),
         });
     }
 
