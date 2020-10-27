@@ -32,13 +32,13 @@ import {
 } from "./formatters";
 
 export interface Message {
-    level: LogLevel,
-    instance?: string,
-    display?: string,
-    timestamp: number,
-    plugin?: string,
-    prefix?: string,
-    message: string,
+    level: LogLevel;
+    instance?: string;
+    display?: string;
+    timestamp: number;
+    plugin?: string;
+    prefix?: string;
+    message: string;
 }
 
 export interface PluginLogger extends Logging {

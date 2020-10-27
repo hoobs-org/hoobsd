@@ -25,12 +25,12 @@ import { Print, Events } from "../../services/logger";
 const sockets: { [key: string]: any } = [];
 
 export interface SocketRequest {
-    params?: { [key: string]: any },
-    body?: any,
+    params?: { [key: string]: any };
+    body?: any;
 }
 
 export interface SocketResponse {
-    send: (body: any) => void
+    send: (body: any) => void;
 }
 
 export default class Socket {

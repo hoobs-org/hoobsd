@@ -46,13 +46,13 @@ import {
 } from "./formatters";
 
 export interface InstanceRecord {
-    id: string,
-    type: string,
-    display: string,
-    port: number,
-    host?: string,
-    plugins?: string,
-    service?: string,
+    id: string;
+    type: string;
+    display: string;
+    port: number;
+    host?: string;
+    plugins?: string;
+    service?: string;
 }
 
 export default class Instances {

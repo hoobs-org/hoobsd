@@ -24,12 +24,12 @@ import Paths from "./paths";
 import { parseJson, formatJson, loadJson } from "./formatters";
 
 export interface UserRecord {
-    id: number,
-    name: string,
-    admin: boolean,
-    username: string,
-    password: string,
-    salt: string
+    id: number;
+    name: string;
+    admin: boolean;
+    username: string;
+    password: string;
+    salt: string;
 }
 
 export default class Users {

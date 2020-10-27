@@ -31,31 +31,31 @@ import { UserRecord } from "./users";
 import { loadJson } from "./formatters";
 
 export interface Application {
-    app: Express | undefined,
-    io: IO.Server | undefined,
-    socket: Socket | undefined,
-    cache: Cache | undefined,
-    server: Server | undefined,
-    bridge: Bridge | undefined,
-    api: API | undefined,
+    app: Express | undefined;
+    io: IO.Server | undefined;
+    socket: Socket | undefined;
+    cache: Cache | undefined;
+    server: Server | undefined;
+    bridge: Bridge | undefined;
+    api: API | undefined;
 
-    id: string,
-    display: string,
+    id: string;
+    display: string;
 
-    debug: boolean,
-    verbose: boolean,
-    timestamps: boolean,
-    orphans: boolean,
-    container: boolean,
-    terminating: boolean,
+    debug: boolean;
+    verbose: boolean;
+    timestamps: boolean;
+    orphans: boolean;
+    container: boolean;
+    terminating: boolean;
 
-    version: string,
-    manager: string,
-    instances: InstanceRecord[],
-    users: UserRecord[],
-    loggers: Loggers,
+    version: string;
+    manager: string;
+    instances: InstanceRecord[];
+    users: UserRecord[];
+    loggers: Loggers;
 
-    plugins: { [key: string]: any },
+    plugins: { [key: string]: any };
 }
 
 const instance: Application = {
