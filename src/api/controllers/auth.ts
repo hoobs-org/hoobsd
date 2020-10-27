@@ -24,7 +24,7 @@ import Users, { UserRecord } from "../../services/users";
 export default class AuthController {
     constructor() {
         Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
-        Instance.app?.post("/api/auth", (request, response) => this.disable(request, response));
+        Instance.app?.post("/api/auth/disable", (request, response) => this.disable(request, response));
         Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
         Instance.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
     }

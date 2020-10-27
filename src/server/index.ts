@@ -22,7 +22,6 @@ import { existsSync } from "fs-extra";
 import { join } from "path";
 import Instance from "../services/instance";
 import Paths from "../services/paths";
-import Cache from "../services/cache";
 import Socket from "./services/socket";
 import Bridge from "../bridge";
 import Config from "../services/config";
@@ -63,7 +62,6 @@ export default class Server extends EventEmitter {
         this.settings = (this.config || {}).server || {};
 
         Instance.socket = new Socket(Instance.id);
-        Instance.cache = new Cache();
 
         new CacheController();
         new StatusController();

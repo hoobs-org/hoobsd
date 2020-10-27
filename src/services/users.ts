@@ -78,13 +78,14 @@ export default class Users {
                 name: user.name,
                 username: user.username,
                 admin: user.admin,
-                ttl: remember ? 525600 : Instance.api?.settings.inactive_logoff || 30,
                 token: await Users.hashValue(user.password, key),
             };
 
-            Instance.cache?.set(Buffer.from(JSON.stringify(token), "utf8").toString("base64"), true, token.ttl);
+            const session = Buffer.from(JSON.stringify(token), "utf8").toString("base64");
 
-            return Buffer.from(JSON.stringify(token), "utf8").toString("base64");
+            Instance.cache?.set(session, true, remember ? 525600 : Instance.api?.settings.inactive_logoff || 30);
+
+            return session;
         }
 
         return false;
@@ -124,7 +125,7 @@ export default class Users {
             const challenge = await this.hashValue(user.password, data.key);
 
             if (challenge === data.token) {
-                Instance.cache?.set(token, true, data.ttl || Instance.api?.settings.inactive_logoff || 30);
+                Instance.cache?.set(token, true, Instance.api?.settings.inactive_logoff || 30);
 
                 return true;
             }

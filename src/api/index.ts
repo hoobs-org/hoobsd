@@ -171,9 +171,11 @@ export default class API extends EventEmitter {
             }
 
             if (request.url.indexOf("/api") === 0 && [
+                "/api",
                 "/api/log",
                 "/api/auth",
                 "/api/instances",
+                "/api/auth/disable",
                 "/api/auth/validate",
                 Users.count() > 0 ? "/api/auth/logon" : false,
                 Users.count() === 0 ? "/api/users" : false,

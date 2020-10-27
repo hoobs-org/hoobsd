@@ -25,6 +25,7 @@ import Instance from "./services/instance";
 import Instances from "./services/instances";
 import Users from "./services/users";
 import Server from "./server";
+import Cache from "./services/cache";
 import Paths from "./services/paths";
 import API from "./api";
 import { Console } from "./services/logger";
@@ -51,6 +52,7 @@ export = function Daemon(): void {
 
             Instance.instances = Instances.list();
             Instance.users = Users.list();
+            Instance.cache = new Cache();
 
             const instance = Instance.instances.find((n) => n.id === Instance.id);
 
@@ -94,6 +96,7 @@ export = function Daemon(): void {
 
             Instance.instances = Instances.list();
             Instance.users = Users.list();
+            Instance.cache = new Cache();
 
             const instance = Instance.instances.find((n) => n.id === Instance.id);
 
