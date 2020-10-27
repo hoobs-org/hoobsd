@@ -27,6 +27,6 @@ export default class LogController {
     }
 
     cache(request: Request, response: Response): Response {
-        return response.send(Console.cache(parseInt(request.params.tail, 10) || 20));
+        return response.send(Console.cache(parseInt(request.params.tail, 10) || 500));
     }
 }
