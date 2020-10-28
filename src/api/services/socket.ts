@@ -23,7 +23,7 @@ import { join } from "path";
 import Paths from "../../services/paths";
 import { Print, Events } from "../../services/logger";
 
-const sockets: { [key: string]: any } = [];
+const sockets: { [key: string]: any } = {};
 
 export default class Socket extends EventEmitter {
     declare private pipe: any;
