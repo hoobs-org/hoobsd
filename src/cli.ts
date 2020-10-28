@@ -71,7 +71,7 @@ export = function Daemon(): void {
                     Console.notify(
                         Instance.id,
                         "Configuration Changed",
-                        `The configuration for the ${instance.display} has changed.`,
+                        `The configuration for "${instance.display}" has changed.`,
                         NotificationType.WARN,
                         "settings",
                     );
