@@ -19,28 +19,27 @@
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
 import Instances from "../../services/instances";
-import Users from "../../services/users";
 
 export default class InstancesController {
     constructor() {
         Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
         Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
-        Instance.app?.post("/api/instances/:id", (request, response) => this.update(request, response));
-        Instance.app?.delete("/api/instances/:id", (request, response) => this.remove(request, response));
+        Instance.app?.get("/api/instances/count", (request, response) => this.count(request, response));
+        Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
+        Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
     }
 
     list(_request: Request, response: Response): Response {
         return response.send(Instance.instances.filter((item) => item.type === "bridge"));
     }
 
-    async create(request: Request, response: Response): Promise<Response> {
-        if (!(await Users.validateToken(request.headers.authorization))) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+    count(_request: Request, response: Response): Response {
+        return response.send({
+            instances: (Instance.instances.filter((item) => item.type === "bridge")).length,
+        });
+    }
 
+    async create(request: Request, response: Response): Promise<Response> {
         await Instances.createService(request.body.name, parseInt(request.body.port, 10));
 
         return this.list(request, response);

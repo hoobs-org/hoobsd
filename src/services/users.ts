@@ -83,7 +83,7 @@ export default class Users {
 
             const session = Buffer.from(JSON.stringify(token), "utf8").toString("base64");
 
-            Instance.cache?.set(session, true, remember ? 525600 : Instance.api?.settings.inactive_logoff || 30);
+            Instance.cache?.set(session, remember ? 525600 : Instance.api?.settings.inactive_logoff || 30, remember ? 525600 : Instance.api?.settings.inactive_logoff || 30);
 
             return session;
         }
@@ -111,9 +111,9 @@ export default class Users {
         if (Instance.api?.settings.disable_auth) return true;
         if (!token || token === "") return false;
 
-        const server = Instance.cache?.get(token);
+        const server = Instance.cache?.get<number>(token);
 
-        if (!server) return false;
+        if (!server || server <= 0) return false;
 
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
@@ -125,11 +125,13 @@ export default class Users {
             const challenge = await this.hashValue(user.password, data.key);
 
             if (challenge === data.token) {
-                Instance.cache?.set(token, true, Instance.api?.settings.inactive_logoff || 30);
+                Instance.cache?.touch(token, server);
 
                 return true;
             }
         }
+
+        Instance.cache?.remove(token);
 
         return false;
     }

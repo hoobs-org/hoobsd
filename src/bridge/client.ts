@@ -25,7 +25,7 @@ export default class Client {
     accessories(): Promise<any[]> {
         return new Promise((resolve, reject) => {
             const key = "hap/accessories";
-            const cached = <any[]>Instance.cache?.get(key);
+            const cached = Instance.cache?.get<any[]>(key);
 
             if (cached) {
                 resolve(this.process(cached));

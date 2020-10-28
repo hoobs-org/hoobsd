@@ -174,9 +174,9 @@ export default class API extends EventEmitter {
                 "/api",
                 "/api/log",
                 "/api/auth",
-                "/api/instances",
                 "/api/auth/disable",
                 "/api/auth/validate",
+                "/api/instances/count",
                 Users.count() > 0 ? "/api/auth/logon" : false,
                 Users.count() === 0 ? "/api/users" : false,
             ].filter((item) => item).indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {

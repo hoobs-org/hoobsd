@@ -25,16 +25,18 @@ export default class Cache {
         this.client = new ServerCache();
     }
 
-    get(key: string): unknown {
+    get<T>(key: string): T {
         const value = this.client.get(key);
 
-        if (value === undefined) return null;
-
-        return value;
+        return <T>value;
     }
 
     set(key: string, value: unknown, age: number): boolean {
         return this.client.set(key, value, (age || 30) * 60);
+    }
+
+    touch(key: string, age: number): boolean {
+        return this.client.ttl(key, (age || 30) * 60);
     }
 
     remove(key: string): number {
