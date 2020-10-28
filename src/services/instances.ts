@@ -38,6 +38,7 @@ import { execSync } from "child_process";
 import { join, basename } from "path";
 import Instance from "./instance";
 import Paths from "./paths";
+import { Console, NotificationType } from "./logger";
 
 import {
     loadJson,
@@ -285,6 +286,21 @@ export default class Instances {
                                 Instance.instances.splice(index, 1);
 
                                 writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                                Console.notify(
+                                    "api",
+                                    "Instance Removed",
+                                    `Instance "${name} removed.`,
+                                    NotificationType.WARN,
+                                    "layers",
+                                );
+                            } else {
+                                Console.notify(
+                                    "api",
+                                    "Instance Not Removed",
+                                    `Unable to remove instance "${name}.`,
+                                    NotificationType.ERROR,
+                                );
                             }
 
                             return resolve(success);
@@ -298,6 +314,21 @@ export default class Instances {
                                 Instance.instances.splice(index, 1);
 
                                 writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                                Console.notify(
+                                    "api",
+                                    "Instance Removed",
+                                    `Instance "${name} removed.`,
+                                    NotificationType.WARN,
+                                    "layers",
+                                );
+                            } else {
+                                Console.notify(
+                                    "api",
+                                    "Instance Not Removed",
+                                    `Unable to remove instance "${name}.`,
+                                    NotificationType.ERROR,
+                                );
                             }
 
                             return resolve(success);
@@ -308,6 +339,14 @@ export default class Instances {
                         Instance.instances.splice(index, 1);
 
                         writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                        Console.notify(
+                            "api",
+                            "Instance Removed",
+                            `Instance "${name} removed.`,
+                            NotificationType.WARN,
+                            "layers",
+                        );
 
                         return resolve(true);
                 }
@@ -549,7 +588,24 @@ export default class Instances {
             switch (type) {
                 case "systemd":
                     Instances.createSystemd(name, port).then((success) => {
-                        if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                        if (success) {
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                            Console.notify(
+                                "api",
+                                "Instance Added",
+                                `Instance "${name} added.`,
+                                NotificationType.SUCCESS,
+                                "layers",
+                            );
+                        } else {
+                            Console.notify(
+                                "api",
+                                "Instance Not Added",
+                                `Unable to create instance "${name}.`,
+                                NotificationType.ERROR,
+                            );
+                        }
 
                         resolve(success);
                     });
@@ -558,7 +614,24 @@ export default class Instances {
 
                 case "launchd":
                     Instances.createLaunchd(name, port).then((success) => {
-                        if (success) Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                        if (success) {
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                            Console.notify(
+                                "api",
+                                "Instance Added",
+                                `Instance "${name} added.`,
+                                NotificationType.SUCCESS,
+                                "layers",
+                            );
+                        } else {
+                            Console.notify(
+                                "api",
+                                "Instance Not Added",
+                                `Unable to create instance "${name}.`,
+                                NotificationType.ERROR,
+                            );
+                        }
 
                         resolve(success);
                     });
@@ -567,6 +640,15 @@ export default class Instances {
 
                 default:
                     Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+
+                    Console.notify(
+                        "api",
+                        "Instance Added",
+                        `Instance "${name} added.`,
+                        NotificationType.SUCCESS,
+                        "layers",
+                    );
+
                     resolve(true);
                     break;
             }
@@ -581,6 +663,14 @@ export default class Instances {
         if (existsSync(join(Paths.storagePath(), `${Instance.id}.accessories`))) removeSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
 
         ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+
+        Console.notify(
+            Instance.id,
+            "Caches Purged",
+            "Accessory and connection cache purged.",
+            NotificationType.SUCCESS,
+            "memory",
+        );
     }
 
     static reset(): void {
