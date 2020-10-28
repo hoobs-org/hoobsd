@@ -281,7 +281,8 @@ export default class Plugins {
                 Config.touchConfig();
 
                 Console.notify(
-                    Instance.id, name ? "Plugin Upgraded" : "Plugins Upgraded",
+                    Instance.id,
+                    name ? "Plugin Upgraded" : "Plugins Upgraded",
                     name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
                     NotificationType.SUCCESS,
                     "extension",
