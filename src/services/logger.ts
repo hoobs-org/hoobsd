@@ -186,7 +186,7 @@ class Logger {
             }
         }
 
-        if (Instance.api) Instance.io?.sockets.emit(Events.LOG, data);
+        if (Instance.api && Instance.api.running) Instance.io?.sockets.emit(Events.LOG, data);
         if (Instance.server) Socket.fetch(Events.LOG, data);
 
         if (Instance.id === "api" || Instance.debug) {
@@ -243,7 +243,7 @@ class Logger {
     }
 
     import(data: Message[]) {
-        if (Instance.api && Instance.id === "api") {
+        if (Instance.api && Instance.api.running && Instance.id === "api") {
             CACHE.push(...(data.filter((m) => (m.message !== ""))));
 
             CACHE.sort((a, b) => {
@@ -353,7 +353,7 @@ class Logger {
             }
         }
 
-        if (Instance.api) {
+        if (Instance.api && Instance.api.running) {
             Instance.io?.sockets.emit(Events.NOTIFICATION, {
                 instance,
                 data: {
@@ -379,7 +379,7 @@ class Logger {
     }
 
     emit(event: Events, instance: string, data: any): void {
-        if (Instance.api) {
+        if (Instance.api && Instance.api.running) {
             Instance.io?.sockets.emit(event, {
                 instance,
                 data,

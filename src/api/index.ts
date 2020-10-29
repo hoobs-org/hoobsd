@@ -54,6 +54,8 @@ import SystemController from "./controllers/system";
 export default class API extends EventEmitter {
     declare time: number;
 
+    declare running: boolean;
+
     declare readonly config: any;
 
     declare readonly settings: any;
@@ -265,6 +267,8 @@ export default class API extends EventEmitter {
 
         this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();
+            this.running = true;
+
             this.emit(Events.LISTENING, this.port);
         });
 
@@ -272,10 +276,14 @@ export default class API extends EventEmitter {
     }
 
     async stop(): Promise<void> {
-        Console.debug("Shutting down");
+        if (this.running) {
+            Console.debug("Shutting down");
 
-        await this.terminator.terminate();
+            this.running = false;
 
-        this.socket.stop();
+            await this.terminator.terminate();
+
+            this.socket.stop();
+        }
     }
 }
