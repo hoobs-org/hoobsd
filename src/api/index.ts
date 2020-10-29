@@ -180,6 +180,7 @@ export default class API extends EventEmitter {
                 "/api/auth/validate",
                 "/api/instances/count",
                 Users.count() > 0 ? "/api/auth/logon" : false,
+                Users.count() > 0 ? "/api/auth/logout" : false,
                 Users.count() === 0 ? "/api/users" : false,
             ].filter((item) => item).indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
                 response.status(403).json({

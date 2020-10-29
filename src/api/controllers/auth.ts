@@ -26,6 +26,7 @@ export default class AuthController {
         Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
         Instance.app?.post("/api/auth/disable", (request, response) => this.disable(request, response));
         Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
+        Instance.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
         Instance.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
     }
 
@@ -95,6 +96,26 @@ export default class AuthController {
 
         return response.send({
             token: await Users.generateToken(user.id, remember),
+        });
+    }
+
+    logout(request: Request, response: Response): Response {
+        if (Instance.api?.settings.disable_auth) {
+            return response.send({
+                success: true,
+            });
+        }
+
+        if (!request.headers.authorization || request.headers.authorization === "") {
+            return response.send({
+                success: true,
+            });
+        }
+
+        Instance.cache?.remove(request.headers.authorization);
+
+        return response.send({
+            success: true,
         });
     }
 }
