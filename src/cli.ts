@@ -35,6 +35,8 @@ export = function Daemon(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
+    Program.option("-e, --enviornment <enviornment>", "set the enviornment", (enviornment: string) => { Instance.enviornment = enviornment; });
+
     Program.command("start", { isDefault: true })
         .description("start a server instance")
         .option("-d, --debug", "turn on debug level logging")

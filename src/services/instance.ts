@@ -31,6 +31,7 @@ import { UserRecord } from "./users";
 import { loadJson } from "./formatters";
 
 export interface Application {
+    enviornment: string;
     app: Express | undefined;
     io: IO.Server | undefined;
     socket: Socket | undefined;
@@ -59,6 +60,8 @@ export interface Application {
 }
 
 const instance: Application = {
+    enviornment: "production",
+
     app: undefined,
     io: undefined,
     socket: undefined,
