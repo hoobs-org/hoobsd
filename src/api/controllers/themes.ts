@@ -46,7 +46,7 @@ export default class ThemesController {
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
-            const filename = Themes.backdrop(files.file.path);
+            const filename = Themes.backdrop(files.file.path, files.file.type);
 
             response.send({
                 filename,

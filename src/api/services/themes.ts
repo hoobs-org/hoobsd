@@ -16,8 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { join, extname } from "path";
-import { existsSync, writeFileSync, renameSync } from "fs-extra";
+import { join } from "path";
+
+import {
+    existsSync,
+    writeFileSync,
+    renameSync,
+    ensureDirSync,
+} from "fs-extra";
+
 import Paths from "../../services/paths";
 import { sanitize, loadJson, formatJson } from "../../services/formatters";
 
@@ -319,14 +326,46 @@ export default class Themes {
         theme.name = sanitize(name);
         theme.display = name;
 
-        writeFileSync(join(Paths.themePath(), sanitize(name), "theme.js"), formatJson(theme));
-        writeFileSync(join(Paths.themePath(), sanitize(name), "theme.css"), Themes.generate(theme.name, theme));
+        ensureDirSync(join(Paths.themePath(), theme.name));
+
+        writeFileSync(join(Paths.themePath(), theme.name, "theme.js"), formatJson(theme));
+        writeFileSync(join(Paths.themePath(), theme.name, "theme.css"), Themes.generate(theme.name, theme));
     }
 
-    static backdrop(file: string): string {
-        renameSync(file, join(Paths.themePath(), `backdrop${extname(file)}`));
+    static backdrop(file: string, type: string): string {
+        const filename = `backdrop_${(new Date()).getTime()}`;
 
-        return `backdrop${extname(file)}`;
+        switch (type) {
+            case "image/png":
+                renameSync(file, join(Paths.themePath(), `${filename}.png`));
+
+                return `${filename}.png`;
+
+            case "image/gif":
+                renameSync(file, join(Paths.themePath(), `${filename}.gif`));
+
+                return `${filename}.gif`;
+
+            case "image/bmp":
+                renameSync(file, join(Paths.themePath(), `${filename}.bmp`));
+
+                return `${filename}.bmp`;
+
+            case "image/svg+xml":
+                renameSync(file, join(Paths.themePath(), `${filename}.svg`));
+
+                return `${filename}.svg`;
+
+            case "image/webp":
+                renameSync(file, join(Paths.themePath(), `${filename}.webp`));
+
+                return `${filename}.webp`;
+
+            default:
+                renameSync(file, join(Paths.themePath(), `${filename}.jpg`));
+
+                return `${filename}.jpg`;
+        }
     }
 
     static get(name: string) {
