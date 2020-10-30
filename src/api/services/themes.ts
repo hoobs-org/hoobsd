@@ -45,6 +45,7 @@ export interface ApplicationTheme {
     text: TextTheme;
     background: string;
     highlight: string;
+    accent: string,
     dark: string;
     drawer: string;
     input: InputTheme;
@@ -118,6 +119,7 @@ export const DarkTheme: Theme = {
         },
         background: "#141414",
         highlight: "#feb400",
+        accent: "#fe9300",
         dark: "#252525",
         drawer: "#1414149d",
         input: {
@@ -189,13 +191,14 @@ export const LightTheme: Theme = {
     transparency: "blur(4px)",
     application: {
         text: {
-            default: "#616161",
-            highlight: "#e75a0e",
+            default: "#727272",
+            highlight: "#000",
             input: "#000",
             error: "#a11",
         },
         background: "#fcfcfc",
         highlight: "#feb400",
+        accent: "#fe9300",
         dark: "#e7e7e7",
         drawer: "#fcfcfc9d",
         input: {
@@ -273,6 +276,7 @@ export default class Themes {
         style += `    --application-error-text: ${base.application.text.error};\n`;
         style += `    --application-background: ${base.application.background};\n`;
         style += `    --application-highlight: ${base.application.highlight};\n`;
+        style += `    --application-accent: ${base.application.accent};\n`;
         style += `    --application-dark: ${base.application.dark};\n`;
         style += `    --application-drawer: ${base.application.drawer};\n`;
         style += `    --application-input: ${base.application.input.background};\n`;
