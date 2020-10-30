@@ -50,6 +50,7 @@ import InstancesController from "./controllers/instances";
 import PluginsController from "./controllers/plugins";
 import RemoteController from "./controllers/remote";
 import SystemController from "./controllers/system";
+import ThemesController from "./controllers/themes";
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -208,6 +209,7 @@ export default class API extends EventEmitter {
         new PluginsController();
         new RemoteController();
         new SystemController();
+        new ThemesController();
 
         let gui: string | undefined = Plugins.findModule("@hoobs/gui");
 
