@@ -251,13 +251,13 @@ export const LightTheme: Theme = {
     },
     navigation: {
         text: {
-            default: "#a3a3a3",
+            default: "#a1a1a1",
             highlight: "#fff",
             active: "#feb400",
         },
-        background: "#444",
+        background: "#262626",
         highlight: "#feb400",
-        border: "#6e6e6e",
+        border: "#5a5a5a",
     },
     backdrop: "url('/defaults/backdrops/default.jpg')",
     elevation: {
