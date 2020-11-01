@@ -20,6 +20,7 @@ import IO from "socket.io";
 import { join } from "path";
 import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
+import { DotenvParseOutput } from "dotenv";
 import Cache from "./cache";
 import Socket from "../server/services/socket";
 import Server from "../server";
@@ -31,7 +32,9 @@ import { UserRecord } from "./users";
 import { loadJson } from "./formatters";
 
 export interface Application {
-    enviornment: string;
+    mode: string;
+    enviornment: DotenvParseOutput | undefined;
+
     app: Express | undefined;
     io: IO.Server | undefined;
     socket: Socket | undefined;
@@ -60,7 +63,8 @@ export interface Application {
 }
 
 const instance: Application = {
-    enviornment: "production",
+    mode: "production",
+    enviornment: {},
 
     app: undefined,
     io: undefined,

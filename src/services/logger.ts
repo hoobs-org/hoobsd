@@ -66,6 +66,7 @@ export const enum Events {
     HEARTBEAT = "heartbeat",
     NOTIFICATION = "notification",
     ACCESSORY_CHANGE = "accessory_change",
+    CONFIG_CHANGE = "config_change",
     PUBLISH_SETUP_URI = "publish_setup_uri",
     REQUEST = "request",
     COMPLETE = "complete",

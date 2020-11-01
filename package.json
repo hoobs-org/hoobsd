@@ -32,7 +32,7 @@
     "preferGlobal": true,
     "scripts": {
         "build": "bin/build",
-        "hoobsd": "sudo bin/hoobsd -e dev"
+        "hoobsd": "sudo bin/hoobsd --mode development"
     },
     "dependencies": {
         "archiver": "^5.0.2",
@@ -42,6 +42,7 @@
         "chokidar": "^3.4.3",
         "commander": "^6.1.0",
         "cors": "^2.8.5",
+        "dotenv": "^8.2.0",
         "express": "^4.17.1",
         "formidable": "^1.2.2",
         "fs-extra": "^9.0.1",

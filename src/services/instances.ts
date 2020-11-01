@@ -82,7 +82,7 @@ export default class Instances {
     }
 
     static initSystem() {
-        if (Instance.enviornment === "production") {
+        if (Instance.mode === "production") {
             if (existsSync("/etc/systemd/system")) return "systemd";
             if (existsSync("/Library/LaunchDaemons/")) return "launchd";
         }

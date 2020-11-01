@@ -17,25 +17,28 @@
  **************************************************************************************************/
 
 import "source-map-support/register";
+import * as Enviornment from "dotenv";
 
 import Program from "commander";
 import Watcher from "chokidar";
-import { join } from "path";
+import { join, dirname } from "path";
+import { realpathSync } from "fs-extra";
 import Instance from "./services/instance";
 import Instances from "./services/instances";
+import Config from "./services/config";
 import Users from "./services/users";
 import Server from "./server";
 import Cache from "./services/cache";
 import Paths from "./services/paths";
 import API from "./api";
-import { Console, NotificationType } from "./services/logger";
+import { Console, Events, NotificationType } from "./services/logger";
 import { sanitize } from "./services/formatters";
 
 export = function Daemon(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
-    Program.option("-e, --enviornment <enviornment>", "set the enviornment", (enviornment: string) => { Instance.enviornment = enviornment; });
+    Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; });
 
     Program.command("start", { isDefault: true })
         .description("start a server instance")
@@ -46,6 +49,8 @@ export = function Daemon(): void {
         .option("-o, --orphans", "keep cached accessories for orphaned plugins")
         .option("-c, --container", "run in a container")
         .action(async (command) => {
+            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+
             Instance.id = sanitize(command.instance, "api");
             Instance.debug = command.debug;
             Instance.verbose = command.verbose;
@@ -96,6 +101,8 @@ export = function Daemon(): void {
         .option("-p, --port <port>", "change the port the api runs on")
         .option("-c, --container", "run in a container")
         .action((command) => {
+            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+
             Instance.id = sanitize("api");
             Instance.display = "API";
             Instance.debug = command.debug;
@@ -126,6 +133,8 @@ export = function Daemon(): void {
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", async () => {
+                    Console.emit(Events.CONFIG_CHANGE, "api", Config.configuration());
+
                     Console.notify(
                         Instance.id,
                         "Configuration Changed",
@@ -151,6 +160,8 @@ export = function Daemon(): void {
         .option("-d, --debug", "turn on debug level logging")
         .option("-i, --instance <name>", "set the instance name")
         .action((action, command) => {
+            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+
             Instance.debug = command.debug;
 
             Instances.controlInstance(action, command.instance || "default").then((success) => {
