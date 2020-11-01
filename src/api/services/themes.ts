@@ -94,6 +94,7 @@ export interface ElevationTheme {
 export interface Theme {
     name: string;
     display: string;
+    auto?: boolean;
     mode: string;
     transparency: string;
     application: ApplicationTheme;
@@ -108,6 +109,7 @@ export interface Theme {
 export const DarkTheme: Theme = {
     name: "dark",
     display: "Dark",
+    auto: false,
     mode: "dark",
     transparency: "blur(4px)",
     application: {
@@ -187,6 +189,7 @@ export const DarkTheme: Theme = {
 export const LightTheme: Theme = {
     name: "light",
     display: "Light",
+    auto: false,
     mode: "light",
     transparency: "blur(4px)",
     application: {
