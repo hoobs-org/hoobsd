@@ -3,6 +3,7 @@ bin/build
 lib/hoobsd.tgz
 node_modules/
 src/
+.env.development
 .editorconfig
 .eslintrc
 .gitignore
