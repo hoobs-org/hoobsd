@@ -25,13 +25,12 @@ import { join, dirname } from "path";
 import { realpathSync } from "fs-extra";
 import Instance from "./services/instance";
 import Instances from "./services/instances";
-import Config from "./services/config";
 import Users from "./services/users";
 import Server from "./server";
 import Cache from "./services/cache";
 import Paths from "./services/paths";
 import API from "./api";
-import { Console, Events, NotificationType } from "./services/logger";
+import { Console } from "./services/logger";
 import { sanitize } from "./services/formatters";
 
 export = function Daemon(): void {
@@ -75,14 +74,6 @@ export = function Daemon(): void {
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", async () => {
-                    Console.notify(
-                        Instance.id,
-                        "Configuration Changed",
-                        `The configuration for "${instance.display}" has changed.`,
-                        NotificationType.WARN,
-                        "settings",
-                    );
-
                     await Instance.server?.stop();
 
                     Instance.server?.start();
@@ -133,16 +124,6 @@ export = function Daemon(): void {
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", async () => {
-                    Console.emit(Events.CONFIG_CHANGE, "api", Config.configuration());
-
-                    Console.notify(
-                        Instance.id,
-                        "Configuration Changed",
-                        "The configuration for the API has changed.",
-                        NotificationType.WARN,
-                        "settings",
-                    );
-
                     await Instance.api?.stop();
 
                     Instance.api = API.createServer(command.port || instance.port);

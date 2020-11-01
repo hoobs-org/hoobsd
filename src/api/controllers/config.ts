@@ -20,6 +20,7 @@ import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
 import Config from "../../services/config";
 import Socket from "../services/socket";
+import { Console, Events, NotificationType } from "../../services/logger";
 
 export default class ConfigController {
     constructor() {
@@ -34,6 +35,16 @@ export default class ConfigController {
     }
 
     async saveConsole(request: Request, response: Response): Promise<void> {
+        Console.emit(Events.CONFIG_CHANGE, "api", Config.configuration());
+
+        Console.notify(
+            Instance.id,
+            "Configuration Changed",
+            "The configuration for the API has changed.",
+            NotificationType.WARN,
+            "settings",
+        );
+
         Config.saveConfig(request.body);
 
         if (Instance.bridge) await Instance.bridge.restart();
@@ -48,6 +59,14 @@ export default class ConfigController {
     }
 
     async saveInstance(request: Request, response: Response): Promise<void> {
+        Console.notify(
+            Instance.id,
+            "Configuration Changed",
+            `The configuration for "${Instance.display}" has changed.`,
+            NotificationType.WARN,
+            "settings",
+        );
+
         response.send(await Socket.fetch(request.params.instance, "config:save", request.params, request.body));
     }
 }
