@@ -95,7 +95,6 @@ export interface Theme {
     name: string;
     display: string;
     mode: string;
-    color: string;
     transparency: string;
     application: ApplicationTheme;
     button: ButtonTheme;
@@ -110,7 +109,6 @@ export const DarkTheme: Theme = {
     name: "dark",
     display: "Dark",
     mode: "dark",
-    color: "yellow",
     transparency: "blur(4px)",
     application: {
         text: {
@@ -190,7 +188,6 @@ export const LightTheme: Theme = {
     name: "light",
     display: "Light",
     mode: "light",
-    color: "yellow",
     transparency: "blur(4px)",
     application: {
         text: {
