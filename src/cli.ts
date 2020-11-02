@@ -37,25 +37,21 @@ export = function Daemon(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
-    Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; });
+    Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; })
+        .option("-d, --debug", "turn on debug level logging", () => { Instance.debug = true; })
+        .option("-v, --verbose", "turn on verbose logging", () => { Instance.verbose = true; })
+        .option("-c, --container", "run in a container", () => { Instance.container = true; });
 
     Program.command("start", { isDefault: true })
         .description("start a server instance")
-        .option("-d, --debug", "turn on debug level logging")
-        .option("-v, --verbose", "turn on verbose logging")
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .option("-o, --orphans", "keep cached accessories for orphaned plugins")
-        .option("-c, --container", "run in a container")
         .action(async (command) => {
             Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
 
             Instance.id = sanitize(command.instance, "api");
-            Instance.debug = command.debug;
-            Instance.verbose = command.verbose;
             Instance.orphans = !command.orphans;
-            Instance.container = command.container;
-
             Instance.instances = Instances.list();
             Instance.users = Users.list();
             Instance.cache = new Cache();
@@ -83,18 +79,12 @@ export = function Daemon(): void {
 
     Program.command("api")
         .description("start the api service")
-        .option("-d, --debug", "turn on debug level logging")
-        .option("-v, --verbose", "turn on verbose logging")
         .option("-p, --port <port>", "change the port the api runs on")
-        .option("-c, --container", "run in a container")
         .action((command) => {
             Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
 
             Instance.id = sanitize("api");
             Instance.display = "API";
-            Instance.debug = command.debug;
-            Instance.verbose = command.verbose;
-            Instance.container = command.container;
 
             Console.load();
 
@@ -134,26 +124,25 @@ export = function Daemon(): void {
 
     Program.command("service <action>")
         .description("manage server instances")
-        .option("-d, --debug", "turn on debug level logging")
         .option("-i, --instance <name>", "set the instance name")
         .action((action, command) => {
             Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
 
-            Instance.debug = command.debug;
+            Instance.id = sanitize(command.instance);
 
-            Instances.controlInstance(action, command.instance || "default").then((success) => {
+            Instances.controlInstance(action, Instance.id).then((success) => {
                 if (success) {
                     switch (action) {
                         case "start":
-                            Console.info(`${command.instance || "Default"} instance started`);
+                            Console.info(`${Instance.id} instance started`);
                             break;
 
                         case "stop":
-                            Console.info(`${command.instance || "Default"} instance stoped`);
+                            Console.info(`${Instance.id} instance stoped`);
                             break;
 
                         case "restart":
-                            Console.info(`${command.instance || "Default"} instance restarted`);
+                            Console.info(`${Instance.id} instance restarted`);
                             break;
 
                         default:

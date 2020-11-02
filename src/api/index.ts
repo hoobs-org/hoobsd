@@ -22,7 +22,7 @@ import Express from "express";
 import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
-import { spawn } from "node-pty";
+import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
@@ -108,7 +108,7 @@ export default class API extends EventEmitter {
             socket.on(Events.SHELL_CONNECT, () => {
                 Console.debug("terminal connect");
 
-                let shell: any;
+                let shell: IPty;
 
                 try {
                     shell = spawn(process.env.SHELL || "sh", [], {
@@ -117,20 +117,18 @@ export default class API extends EventEmitter {
                         env: _.create(process.env, this.enviornment),
                     });
                 } catch (error) {
-                    shell = undefined;
-
                     Console.error(error.message);
                     Console.debug(error.stack);
 
                     return;
                 }
 
-                shell?.onData((data: any) => {
+                shell.onData((data: any) => {
                     socket.emit(Events.SHELL_OUTPUT, data);
                 });
 
                 socket.on(Events.SHELL_INPUT, (data: any): void => {
-                    shell?.write(`${data}`);
+                    shell.write(`${data}`);
                 });
 
                 socket.on(Events.SHELL_RESIZE, (data: any): void => {
@@ -139,7 +137,7 @@ export default class API extends EventEmitter {
                     const parts = `${data}`.split(":");
 
                     if (parts.length === 2 && !Number.isNaN(parseInt(parts[0], 10)) && !Number.isNaN(parseInt(parts[1], 10))) {
-                        shell?.resize(
+                        shell.resize(
                             parseInt(parts[0], 10),
                             parseInt(parts[1], 10),
                         );
@@ -147,14 +145,14 @@ export default class API extends EventEmitter {
                 });
 
                 socket.on(Events.SHELL_CLEAR, (): void => {
-                    shell?.write("clear\r");
+                    shell.write("clear\r");
                 });
 
                 socket.on(Events.SHELL_DISCONNECT, (): void => {
                     Console.debug("terminal disconnect");
 
-                    shell?.write("exit\r");
-                    shell = undefined;
+                    shell.write("exit\r");
+                    shell.kill();
                 });
             });
         });
