@@ -151,14 +151,14 @@ export const DarkTheme: Theme = {
             input: "#000",
             error: "#a11",
         },
-        background: "#ffffffe0",
+        background: "#ffffffa6",
         dark: "#f1f1f1",
         mobile: "#ffffff",
         mask: "#14141400",
         highlight: "#feb400",
         input: "#ffffff9f",
         accent: "#fcfcfc",
-        border: "#e5e5e5",
+        border: "#d4d4d4",
     },
     menu: {
         text: {
@@ -231,14 +231,14 @@ export const LightTheme: Theme = {
             input: "#000",
             error: "#a11",
         },
-        background: "#ffffffe0",
+        background: "#ffffffa6",
         dark: "#f1f1f1",
         mobile: "#ffffff",
         mask: "#ffffff00",
         highlight: "#feb400",
         input: "#ffffff9f",
         accent: "#fcfcfc",
-        border: "#e5e5e5",
+        border: "#d4d4d4",
     },
     menu: {
         text: {
