@@ -275,7 +275,7 @@ export default class Instances {
         return new Promise((resolve) => {
             const type = Instances.initSystem();
 
-            if (!name || !type) return resolve(false);
+            if (!name) return resolve(false);
 
             const id = sanitize(name);
             const index = Instance.instances.findIndex((n: InstanceRecord) => n.id === id);
@@ -288,6 +288,11 @@ export default class Instances {
                                 Instance.instances.splice(index, 1);
 
                                 writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                                removeSync(join(Paths.storagePath(), id));
+                                removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                                removeSync(join(Paths.storagePath(), `${id}.persist`));
+                                removeSync(join(Paths.storagePath(), `${id}.conf`));
 
                                 Console.notify(
                                     "api",
@@ -317,6 +322,11 @@ export default class Instances {
 
                                 writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
 
+                                removeSync(join(Paths.storagePath(), id));
+                                removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                                removeSync(join(Paths.storagePath(), `${id}.persist`));
+                                removeSync(join(Paths.storagePath(), `${id}.conf`));
+
                                 Console.notify(
                                     "api",
                                     "Instance Removed",
@@ -341,6 +351,11 @@ export default class Instances {
                         Instance.instances.splice(index, 1);
 
                         writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                        removeSync(join(Paths.storagePath(), id));
+                        removeSync(join(Paths.storagePath(), `${id}.accessories`));
+                        removeSync(join(Paths.storagePath(), `${id}.persist`));
+                        removeSync(join(Paths.storagePath(), `${id}.conf`));
 
                         Console.notify(
                             "api",
@@ -575,13 +590,9 @@ export default class Instances {
         writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
-    static createService(name: string, port: number, skip?: boolean) {
+    static createService(name: string, port: number) {
         return new Promise((resolve) => {
-            let type = "";
-
-            if (!skip) {
-                type = Instances.initSystem() || "";
-            }
+            const type = Instances.initSystem() || "";
 
             if (!existsSync(Paths.instancesPath())) {
                 writeFileSync(Paths.instancesPath(), "[]");
@@ -675,20 +686,23 @@ export default class Instances {
         );
     }
 
-    static reset(): void {
-        const entries = readdirSync(Paths.storagePath());
+    static async reset(): Promise<void> {
+        await Instance.api?.stop();
 
-        for (let i = 0; i < entries.length; i += 1) {
-            const path = join(Paths.storagePath(), entries[i]);
+        const bridges = Instances.list().filter((item) => item.type === "bridge");
 
-            if (path !== Paths.backupPath()) {
-                if (lstatSync(path).isDirectory()) {
-                    removeSync(path);
-                } else {
-                    unlinkSync(path);
-                }
-            }
+        for (let i = 0; i < bridges.length; i += 1) {
+            await Instances.removeService(bridges[i].id);
         }
+
+        removeSync(join(Paths.storagePath(), "api"));
+        removeSync(join(Paths.storagePath(), "api.accessories"));
+        removeSync(join(Paths.storagePath(), "api.persist"));
+        removeSync(join(Paths.storagePath(), "api.conf"));
+        removeSync(join(Paths.storagePath(), "hoobs.log"));
+        removeSync(join(Paths.storagePath(), "access"));
+
+        Instance.users = [];
     }
 
     static backup(): Promise<string> {
@@ -743,6 +757,7 @@ export default class Instances {
 
     static restore(file: string, remove?: boolean): Promise<void> {
         return new Promise((resolve) => {
+            const type = Instances.initSystem() || "";
             const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
             const entries = readdirSync(Paths.storagePath());
 
@@ -783,6 +798,46 @@ export default class Instances {
                                 cwd: Paths.storagePath(instances[i].id),
                                 stdio: "inherit",
                             });
+                        }
+                    }
+
+                    const bridges = instances.filter((item) => item.type === "bridge");
+
+                    for (let i = 0; i < bridges.length; i += 1) {
+                        switch (type) {
+                            case "systemd":
+                                Instances.createSystemd(bridges[i].display, bridges[i].port);
+                                break;
+
+                            case "launchd":
+                                Instances.createLaunchd(bridges[i].display, bridges[i].port);
+                                break;
+                        }
+                    }
+
+                    const api = instances.find((item) => item.type === "api");
+
+                    if (api) {
+                        switch (type) {
+                            case "systemd":
+                                if (existsSync("/etc/systemd/system/api.hoobsd.service")) {
+                                    execSync("systemctl stop api.hoobsd.service");
+                                    execSync("systemctl start api.hoobsd.service");
+                                } else {
+                                    Instances.createSystemd(api.display, api.port);
+                                }
+
+                                break;
+
+                            case "launchd":
+                                if (existsSync("/Library/LaunchDaemons/org.hoobsd.api.plist")) {
+                                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.api.plist");
+                                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.api.plist");
+                                } else {
+                                    Instances.createLaunchd(api.display, api.port);
+                                }
+
+                                break;
                         }
                     }
 

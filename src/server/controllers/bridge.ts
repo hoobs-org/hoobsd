@@ -18,6 +18,7 @@
 
 import Instance from "../../services/instance";
 import Instances from "../../services/instances";
+import Config from "../../services/config";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class BridgeController {
@@ -45,7 +46,7 @@ export default class BridgeController {
     }
 
     async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (Instance.bridge?.running) await Instance.bridge.restart();
+        Config.touchConfig();
 
         response.send({
             success: true,
@@ -53,11 +54,9 @@ export default class BridgeController {
     }
 
     async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (Instance.bridge?.running) await Instance.bridge.stop();
-
         Instances.purge();
 
-        await Instance.bridge?.start();
+        Config.touchConfig();
 
         response.send({
             success: true,

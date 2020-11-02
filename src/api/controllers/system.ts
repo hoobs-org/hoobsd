@@ -138,15 +138,11 @@ export default class SystemController {
         });
     }
 
-    reset(request: Request, response: Response): Response {
-        if (Instance.container) {
-            return response.send({
-                error: "Reset is not supported on Docker images",
-            });
-        }
+    async reset(request: Request, response: Response): Promise<Response> {
+        await Instances.reset();
 
-        Instances.reset();
-
-        return this.reboot(request, response);
+        return response.send({
+            success: true,
+        });
     }
 }

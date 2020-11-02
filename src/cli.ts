@@ -69,10 +69,6 @@ export = function Daemon(): void {
                     Instance.instances = Instances.list();
                 });
 
-                Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
-                    Instance.users = Users.list();
-                });
-
                 Watcher.watch(Paths.configPath()).on("change", async () => {
                     await Instance.server?.stop();
 
@@ -119,7 +115,7 @@ export = function Daemon(): void {
                     Instance.api.start();
                 });
 
-                Watcher.watch(join(Paths.storagePath(), "access.json")).on("change", () => {
+                Watcher.watch(join(Paths.storagePath(), "access")).on("change", () => {
                     Instance.users = Users.list();
                 });
 
