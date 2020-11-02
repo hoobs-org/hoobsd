@@ -40,10 +40,13 @@ export default class PluginsController {
                 const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
 
                 if (plugins) {
-                    results.push({
-                        instance: Instance.instances[i].id,
-                        plugins,
-                    });
+                    for (let j = 0; j < plugins.length; j += 1) {
+                        const { ...plugin } = plugins[j];
+
+                        plugin.instance = Instance.instances[i].id;
+
+                        results.push(plugin);
+                    }
                 }
             }
         }

@@ -16,9 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import Request from "axios";
 import { PluginManager } from "homebridge/lib/pluginManager";
 import Instance from "../../services/instance";
 import Plugins from "../../services/plugins";
+import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class PluginsController {
@@ -44,12 +46,27 @@ export default class PluginsController {
             const name = PluginManager.extractPluginName(identifier);
             const scope = PluginManager.extractPluginScope(identifier);
 
+            let latest = (plugin.version || "").replace(/v/gi, "");
+
+            try {
+                const definition = (await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {};
+
+                if ((definition.tags || {}).latest) {
+                    latest = (definition.tags.latest || "").replace(/v/gi, "");
+                } if (definition.versions) {
+                    latest = (Object.keys(definition.versions).pop() || "").replace(/v/gi, "");
+                }
+            } catch (_error) {
+                Console.warn("plugin site unavailable");
+            }
+
             results.push({
                 identifier,
                 scope,
                 name,
                 alias: schema.plugin_alias || schema.pluginAlias || details[0].alias || name,
-                version: plugin.version,
+                version: (plugin.version || "").replace(/v/gi, ""),
+                latest,
                 keywords: pjson.keywords || [],
                 details,
                 schema,
