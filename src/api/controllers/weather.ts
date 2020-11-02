@@ -29,7 +29,7 @@ export default class ThemesController {
 
     async search(request: Request, response: Response): Promise<void> {
         const position = await Weather.geocode(decodeURIComponent(`${request.query.query}`));
-        const results = await Weather.search(position);
+        const results = await Weather.search(position, parseInt(`${request.query.count || 5}`, 10));
 
         response.send(results);
     }
