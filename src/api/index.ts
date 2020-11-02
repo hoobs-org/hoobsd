@@ -22,7 +22,7 @@ import Express from "express";
 import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
-import PTY from "node-pty";
+import { spawn } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
@@ -106,10 +106,12 @@ export default class API extends EventEmitter {
 
         Instance.io?.on("connection", (socket: IO.Socket): void => {
             socket.on(Events.SHELL_CONNECT, () => {
-                let shell: PTY.IPty | undefined;
+                Console.debug("terminal connect");
+
+                let shell: any;
 
                 try {
-                    shell = PTY.spawn(process.env.SHELL || "sh", [], {
+                    shell = spawn(process.env.SHELL || "sh", [], {
                         name: "xterm-color",
                         cwd: Paths.storagePath(),
                         env: _.create(process.env, this.enviornment),
@@ -128,16 +130,18 @@ export default class API extends EventEmitter {
                 });
 
                 socket.on(Events.SHELL_INPUT, (data: any): void => {
-                    shell?.write(data);
+                    shell?.write(`${data}`);
                 });
 
-                socket.on(Events.SHELL_RESIZE, (data): void => {
-                    const parts = data.split(":");
+                socket.on(Events.SHELL_RESIZE, (data: any): void => {
+                    Console.debug("terminal resize");
 
-                    if (parts.length === 3 && !Number.isNaN(parseInt(parts[1], 10)) && !Number.isNaN(parseInt(parts[2], 10))) {
+                    const parts = `${data}`.split(":");
+
+                    if (parts.length === 2 && !Number.isNaN(parseInt(parts[0], 10)) && !Number.isNaN(parseInt(parts[1], 10))) {
                         shell?.resize(
+                            parseInt(parts[0], 10),
                             parseInt(parts[1], 10),
-                            parseInt(parts[2], 10),
                         );
                     }
                 });
@@ -147,6 +151,8 @@ export default class API extends EventEmitter {
                 });
 
                 socket.on(Events.SHELL_DISCONNECT, (): void => {
+                    Console.debug("terminal disconnect");
+
                     shell?.write("exit\r");
                     shell = undefined;
                 });
