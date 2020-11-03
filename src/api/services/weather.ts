@@ -133,7 +133,7 @@ export default class Weather {
 
                 results.push({
                     units,
-                    date: new Date(day),
+                    date: (new Date(day)).getTime(),
                     weather: item.weather.main,
                     description: item.weather.description,
                     icon: item.weather.icon,
