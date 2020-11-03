@@ -19,6 +19,8 @@
 import System from "systeminformation";
 import Forms from "formidable";
 import Mac from "macaddress";
+import { join } from "path";
+import { existsSync, readdirSync } from "fs-extra";
 import { exec, execSync } from "child_process";
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
@@ -35,7 +37,9 @@ export default class SystemController {
         Instance.app?.get("/api/system/activity", (request, response) => this.activity(request, response));
         Instance.app?.get("/api/system/temp", (request, response) => this.temp(request, response));
         Instance.app?.get("/api/system/backup", (request, response) => this.backup(request, response));
-        Instance.app?.post("/api/system/restore", (request, response) => this.restore(request, response));
+        Instance.app?.get("/api/system/backup/catalog", (request, response) => this.catalog(request, response));
+        Instance.app?.get("/api/system/restore", (request, response) => this.restore(request, response));
+        Instance.app?.post("/api/system/restore", (request, response) => this.upload(request, response));
         Instance.app?.post("/api/system/upgrade", (request, response) => this.upgrade(request, response));
         Instance.app?.put("/api/system/reboot", (request, response) => this.reboot(request, response));
         Instance.app?.put("/api/system/reset", (request, response) => this.reset(request, response));
@@ -102,6 +106,20 @@ export default class SystemController {
         return response.send(await System.fsSize());
     }
 
+    catalog(_request: Request, response: Response): void {
+        const results: { [key: string]: string | number }[] = [];
+        const entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".hbak"));
+
+        for (let i = 0; i < entries.length; i += 1) {
+            results.push({
+                date: parseInt(entries[i].replace(".hbak", "").replace("backup-", ""), 10),
+                path: entries[i],
+            });
+        }
+
+        response.send(results);
+    }
+
     backup(_request: Request, response: Response): void {
         Instances.backup().then((filename) => response.send({
             success: true,
@@ -111,7 +129,20 @@ export default class SystemController {
         }));
     }
 
-    restore(request: Request, response: Response): void {
+    async restore(request: Request, response: Response): Promise<void> {
+        if (existsSync(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)))) {
+            await Instances.restore(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)));
+
+            this.reboot(request, response);
+        } else {
+            response.send({
+                success: false,
+                error: "Backup file doesent exist",
+            });
+        }
+    }
+
+    upload(request: Request, response: Response): void {
         const form = new Forms.IncomingForm();
 
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
@@ -120,7 +151,9 @@ export default class SystemController {
             Instances.restore(
                 files.file.path,
                 true,
-            ).finally(() => this.reboot(request, response));
+            ).finally(() => {
+                this.reboot(request, response);
+            });
         });
     }
 
