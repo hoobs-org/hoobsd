@@ -147,27 +147,27 @@ export const DarkTheme: Theme = {
     },
     modal: {
         text: {
-            default: "#515151",
-            input: "#000",
-            error: "#a11",
+            default: "#999",
+            input: "#fff",
+            error: "#e30505",
         },
-        background: "#ffffffc2",
-        dark: "#f1f1f1",
-        form: "#ffffff",
+        background: "#111111ad",
+        dark: "#000",
+        form: "#111",
         mask: "#14141400",
         highlight: "#feb400",
-        input: "#ffffff9f",
-        accent: "#fcfcfc",
-        border: "#e5e5e5",
+        input: "#262626",
+        accent: "#444",
+        border: "#1d1d1d",
     },
     menu: {
         text: {
             default: "#b4b4b4",
             highlight: "#fff",
         },
-        background: "#2727279d",
-        highlight: "#4949499d",
-        border: "#303030",
+        background: "#1111119d",
+        highlight: "#0000009d",
+        border: "#1d1d1d",
     },
     navigation: {
         text: {
@@ -181,8 +181,8 @@ export const DarkTheme: Theme = {
     },
     backdrop: "url('/defaults/backdrops/default.jpg')",
     elevation: {
-        default: "0 1px 1px 0 rgba(0, 0, 0, 0.24), 0 2px 1px -1px rgba(0, 0, 0, 0.22), 0 1px 3px 1px rgba(0, 0, 0, 0.3)",
-        button: "0 1px 1px 0 rgba(0, 0, 0, 0.24), 0 2px 1px -1px rgba(0, 0, 0, 0.22), 0 1px 3px 1px rgba(0, 0, 0, 0.3)",
+        default: "0 1px 1px 1px rgba(0, 0, 0, 0.44), 0 -3px 1px -1px rgba(0, 0, 0, 0.42), 0 1px 3px 1px rgba(0, 0, 0, 0.5)",
+        button: "0 1px 1px 0 rgba(0, 0, 0, 0.44), 0 2px 1px -1px rgba(0, 0, 0, 0.42), 0 1px 3px 1px rgba(0, 0, 0, 0.5)",
     },
 };
 
