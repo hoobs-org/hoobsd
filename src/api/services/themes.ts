@@ -157,7 +157,7 @@ export const DarkTheme: Theme = {
         mask: "#14141400",
         highlight: "#feb400",
         input: "#262626",
-        accent: "#444",
+        accent: "#303030c4",
         border: "#1d1d1d",
     },
     menu: {
