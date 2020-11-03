@@ -111,7 +111,7 @@ export const DarkTheme: Theme = {
     display: "Dark",
     auto: false,
     mode: "dark",
-    transparency: "blur(4px)",
+    transparency: "blur(6px)",
     application: {
         text: {
             default: "#999",
@@ -151,9 +151,9 @@ export const DarkTheme: Theme = {
             input: "#fff",
             error: "#e30505",
         },
-        background: "#111111ad",
+        background: "#111111d2",
         dark: "#000",
-        form: "#111",
+        form: "#11111100",
         mask: "#14141400",
         highlight: "#feb400",
         input: "#262626",
@@ -191,7 +191,7 @@ export const LightTheme: Theme = {
     display: "Light",
     auto: false,
     mode: "light",
-    transparency: "blur(4px)",
+    transparency: "blur(6px)",
     application: {
         text: {
             default: "#727272",
@@ -233,7 +233,7 @@ export const LightTheme: Theme = {
         },
         background: "#ffffffc2",
         dark: "#f1f1f1",
-        form: "#ffffff",
+        form: "#ffffff00",
         mask: "#ffffff00",
         highlight: "#feb400",
         input: "#ffffff9f",
