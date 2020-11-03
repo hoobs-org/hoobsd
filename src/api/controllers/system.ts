@@ -124,8 +124,26 @@ export default class SystemController {
         });
     }
 
-    upgrade(request: Request, response: Response): Response {
-        execSync("npm install -g --unsafe-perm @hoobs/hoobsd@latest");
+    async upgrade(request: Request, response: Response): Promise<Response> {
+        await Instances.backup();
+
+        const flags = [];
+
+        if (Instance.manager === "yarn") {
+            flags.push("global");
+            flags.push("upgrade");
+            flags.push("--ignore-engines");
+        } else {
+            flags.push("install");
+            flags.push("-g");
+            flags.push("--unsafe-perm");
+        }
+
+        execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/hoobsd@latest`);
+        execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/cli@latest`);
+
+        if ((Instances.extentions().find((item) => item.feature === "gui") || {}).enabled) execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/gui@latest`);
+        if ((Instances.extentions().find((item) => item.feature === "touch") || {}).enabled) execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/touch@latest`);
 
         return this.reboot(request, response);
     }

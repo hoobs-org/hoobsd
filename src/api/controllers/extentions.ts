@@ -18,8 +18,8 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
+import Instances from "../../services/instances";
 import FFMPEG from "../../extentions/ffmpeg";
-import Paths from "../../services/paths";
 
 export default class ExtentionsController {
     constructor() {
@@ -29,11 +29,7 @@ export default class ExtentionsController {
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send([{
-            feature: "ffmpeg",
-            description: "enables ffmpeg camera support",
-            enabled: Paths.tryCommand("ffmpeg"),
-        }]);
+        return response.send(Instances.extentions());
     }
 
     enable(request: Request, response: Response): Response {

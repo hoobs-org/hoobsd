@@ -90,6 +90,14 @@ export default class Instances {
         return null;
     }
 
+    static extentions(): { [key: string]: string | boolean }[] {
+        return [{
+            feature: "ffmpeg",
+            description: "enables ffmpeg camera support",
+            enabled: Paths.tryCommand("ffmpeg"),
+        }];
+    }
+
     static list(): InstanceRecord[] {
         const type = Instances.initSystem();
         const host = Instances.network()[0];
@@ -688,6 +696,7 @@ export default class Instances {
 
     static async reset(): Promise<void> {
         await Instance.api?.stop();
+        await Instances.backup();
 
         const bridges = Instances.list().filter((item) => item.type === "bridge");
 
