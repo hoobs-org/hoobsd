@@ -722,8 +722,8 @@ export default class Instances {
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbf`));
-                resolve(`${filename}.hbf`);
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.hbak`));
+                resolve(`${filename}.hbak`);
             });
 
             archive.on("error", (error) => {
