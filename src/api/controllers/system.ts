@@ -123,7 +123,7 @@ export default class SystemController {
     backup(_request: Request, response: Response): void {
         Instances.backup().then((filename) => response.send({
             success: true,
-            filename: `/backups/${filename}`,
+            filename,
         })).catch((error) => response.send({
             error: error.message || "Unable to create backup",
         }));
