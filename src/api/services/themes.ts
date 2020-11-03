@@ -64,7 +64,7 @@ export interface ModalTheme {
     text: TextTheme;
     background: string;
     dark: string;
-    mobile: string;
+    form: string;
     mask: string;
     highlight: string;
     input: string;
@@ -151,14 +151,14 @@ export const DarkTheme: Theme = {
             input: "#000",
             error: "#a11",
         },
-        background: "#ffffffa6",
+        background: "#ffffffc2",
         dark: "#f1f1f1",
-        mobile: "#ffffff",
+        form: "#ffffff",
         mask: "#14141400",
         highlight: "#feb400",
         input: "#ffffff9f",
         accent: "#fcfcfc",
-        border: "#d4d4d4",
+        border: "#e5e5e5",
     },
     menu: {
         text: {
@@ -231,14 +231,14 @@ export const LightTheme: Theme = {
             input: "#000",
             error: "#a11",
         },
-        background: "#ffffffa6",
+        background: "#ffffffc2",
         dark: "#f1f1f1",
-        mobile: "#ffffff",
+        form: "#ffffff",
         mask: "#ffffff00",
         highlight: "#feb400",
         input: "#ffffff9f",
         accent: "#fcfcfc",
-        border: "#d4d4d4",
+        border: "#e5e5e5",
     },
     menu: {
         text: {
@@ -301,7 +301,7 @@ export default class Themes {
         style += `    --modal-error-text: ${base.modal.text.error};\n`;
         style += `    --modal-background: ${base.modal.background};\n`;
         style += `    --modal-dark: ${base.modal.dark};\n`;
-        style += `    --modal-mobile: ${base.modal.mobile};\n`;
+        style += `    --modal-form: ${base.modal.form};\n`;
         style += `    --modal-mask: ${base.modal.mask};\n`;
         style += `    --modal-highlight: ${base.modal.highlight};\n`;
         style += `    --modal-input: ${base.modal.input};\n`;
