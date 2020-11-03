@@ -32,7 +32,7 @@
     "preferGlobal": true,
     "scripts": {
         "build": "bin/build",
-        "hoobsd": "sudo bin/hoobsd --mode development"
+        "hoobsd": "sudo bin/hoobsd --mode development --debug"
     },
     "dependencies": {
         "archiver": "^5.0.2",
