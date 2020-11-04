@@ -113,7 +113,7 @@ export default class SystemController {
         for (let i = 0; i < entries.length; i += 1) {
             results.push({
                 date: parseInt(entries[i].replace(".hbak", "").replace("backup-", ""), 10),
-                path: entries[i],
+                filename: entries[i],
             });
         }
 
