@@ -108,11 +108,11 @@ export default class SystemController {
 
     catalog(_request: Request, response: Response): void {
         const results: { [key: string]: string | number }[] = [];
-        const entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".hbak"));
+        const entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".backup"));
 
         for (let i = 0; i < entries.length; i += 1) {
             results.push({
-                date: parseInt(entries[i].replace(".hbak", "").replace("backup-", ""), 10),
+                date: parseInt(entries[i].replace(".backup", ""), 10),
                 filename: entries[i],
             });
         }

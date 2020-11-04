@@ -31,8 +31,10 @@
     },
     "preferGlobal": true,
     "scripts": {
-        "build": "bin/build",
-        "hoobsd": "clear && sudo bin/hoobsd --mode development --debug"
+        "build": "bin/build --lint --pack",
+        "lint": "eslint 'src/**/*.ts'",
+        "api": "sudo nodemon --watch src --ext ts --exec 'bin/build && clear && bin/hoobsd --mode development --debug api'",
+        "default": "sudo nodemon --watch src --ext ts --delay 3 --exec 'bin/build && clear && bin/hoobsd --mode development --debug -i default'"
     },
     "dependencies": {
         "archiver": "^5.0.2",
@@ -87,6 +89,7 @@
         "eslint-plugin-jsx-a11y": "^6.3.1",
         "eslint-plugin-react": "^7.20.6",
         "eslint-plugin-react-hooks": "^4.1.2",
+        "nodemon": "^2.0.6",
         "prompts": "^2.3.2",
         "rimraf": "^3.0.2",
         "ts-node": "^9.0.0",
