@@ -34,7 +34,7 @@
         "build": "bin/build --lint --pack",
         "lint": "eslint 'src/**/*.ts'",
         "api": "sudo nodemon --watch src --ext ts --exec 'bin/build && clear && bin/hoobsd --mode development --debug api'",
-        "default": "sudo nodemon --watch src --ext ts --delay 3 --exec 'bin/build && clear && bin/hoobsd --mode development --debug -i default'"
+        "default": "sudo nodemon --watch src --ext ts --delay 5 --exec 'clear && bin/hoobsd --mode development --debug -i default'"
     },
     "dependencies": {
         "archiver": "^5.0.2",
