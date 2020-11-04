@@ -151,7 +151,7 @@ export default class Server extends EventEmitter {
         this.loadCachedPlatformAccessoriesFromDisk();
 
         Plugins.load(Instance.id, (identifier, name, scope, directory, pjson, library) => {
-            if (existsSync(join(directory, library))) {
+            if ((this.config.plugins || []).indexOf(identifier) >= 0 && existsSync(join(directory, library))) {
                 // @ts-ignore
                 if (!this.pluginManager.plugins.get(identifier)) {
                     const plugin = new Plugin(name, directory, pjson, scope);

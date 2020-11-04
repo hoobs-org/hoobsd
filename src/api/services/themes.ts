@@ -72,6 +72,13 @@ export interface ModalTheme {
     border: string;
 }
 
+export interface WidgetTheme {
+    text: TextTheme;
+    background: string;
+    highlight: string;
+    border: string;
+}
+
 export interface MenuTheme {
     text: TextTheme;
     background: string;
@@ -100,6 +107,7 @@ export interface Theme {
     application: ApplicationTheme;
     button: ButtonTheme;
     modal: ModalTheme;
+    widget: WidgetTheme;
     menu: MenuTheme;
     navigation: NavigationTheme;
     backdrop: string;
@@ -160,6 +168,14 @@ export const DarkTheme: Theme = {
         accent: "#303030",
         border: "#1d1d1d",
     },
+    widget: {
+        text: {
+            default: "#999",
+        },
+        background: "#181818d2",
+        highlight: "#feb400",
+        border: "#1d1d1d",
+    },
     menu: {
         text: {
             default: "#b4b4b4",
@@ -199,19 +215,19 @@ export const LightTheme: Theme = {
             input: "#000",
             error: "#a11",
         },
-        background: "#fcfcfc",
+        background: "#f8f8f8",
         highlight: "#feb400",
         accent: "#ffd400",
         dark: "#e7e7e7",
-        drawer: "#fcfcfc9d",
+        drawer: "#f8f8f89d",
         input: {
-            background: "#fcfcfc",
+            background: "#f8f8f8",
             accent: "#f1f1f1",
         },
         border: "#dfdfdf",
     },
     button: {
-        background: "#fcfcfc",
+        background: "#f8f8f8",
         text: "#1a1a1a",
         border: "#dfdfdf",
         primary: {
@@ -237,7 +253,15 @@ export const LightTheme: Theme = {
         mask: "#ffffff00",
         highlight: "#feb400",
         input: "#ffffff9f",
-        accent: "#fcfcfc",
+        accent: "#f8f8f8",
+        border: "#e5e5e5",
+    },
+    widget: {
+        text: {
+            default: "#515151",
+        },
+        background: "#ffffffc2",
+        highlight: "#feb400",
         border: "#e5e5e5",
     },
     menu: {
@@ -307,6 +331,11 @@ export default class Themes {
         style += `    --modal-input: ${base.modal.input};\n`;
         style += `    --modal-input-accent: ${base.modal.accent};\n`;
         style += `    --modal-border: ${base.modal.border};\n`;
+
+        style += `    --widget-text: ${base.widget.text.default};\n`;
+        style += `    --widget-background: ${base.widget.background};\n`;
+        style += `    --widget-highlight: ${base.widget.highlight};\n`;
+        style += `    --widget-border: ${base.widget.border};\n`;
 
         style += `    --menu-text: ${base.menu.text.default};\n`;
         style += `    --menu-highlight-text: ${base.menu.text.highlight};\n`;
