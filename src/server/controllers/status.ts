@@ -32,15 +32,14 @@ export default class StatusController {
             running: Instance.bridge?.running,
             status: Instance.bridge?.running ? "running" : "stopped",
             uptime: new Date().getTime() - (Instance.server?.time || 0),
-            bridge_name: Instance.bridge?.settings.name || "",
-            product: "HOOBS Server",
+            product: "HOOBS Instance",
             version: Instance.version,
-            node_version: (process.version || "").replace(/v/gi, ""),
-            username: Instance.bridge?.settings.username || "",
+            bridge_name: Instance.bridge?.settings.name || "",
+            bridge_username: Instance.bridge?.settings.username || "",
             bridge_port: Instance.bridge?.port,
             setup_pin: Instance.bridge?.settings.pin || "",
             setup_id: Instance.bridge?.setupURI(),
-            storage_path: Paths.storagePath(),
+            instance_path: Paths.storagePath(Instance.id),
         });
     }
 }

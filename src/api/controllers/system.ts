@@ -46,18 +46,28 @@ export default class SystemController {
     }
 
     async info(_request: Request, response: Response): Promise<Response> {
+        const operating: { [key: string]: any } = await System.osInfo();
+        const system: { [key: string]: any } = await System.system();
+
+        if (Instance.api?.config.system === "hoobs-box") {
+            system.manufacturer = "HOOBS.org";
+            system.model = "HSLF-1";
+            system.sku = "7-45114-12419-7";
+        }
+
+        system.manufacturer = system.manufacturer || operating.distro || operating.hostname;
+        system.model = system.model || operating.platform;
+        system.version = system.version || operating.release;
+        system.hostname = operating.hostname;
+        system.serial = system.serial !== "" && system.serial !== "-" ? system.serial : undefined;
+        system.uuid = system.uuid !== "" && system.uuid !== "-" ? system.uuid : undefined;
+        system.sku = system.sku !== "" && system.sku !== "-" ? system.sku : undefined;
+
         const data = {
             mac: await this.mac(),
             ffmpeg_enabled: Paths.tryCommand("ffmpeg"),
-            system: await System.system(),
-            operating_system: await System.osInfo(),
+            system,
         };
-
-        if (Instance.api?.config.system === "hoobs-box") {
-            data.system.manufacturer = "HOOBS.org";
-            data.system.model = "HSLF-1";
-            data.system.sku = "7-45114-12419-7";
-        }
 
         return response.send(data);
     }

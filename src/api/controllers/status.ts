@@ -39,6 +39,13 @@ export default class StatusController {
                         running: status.running,
                         status: status.status,
                         uptime: status.uptime,
+                        product: status.productproduct,
+                        bridge_name: status.bridge_name,
+                        bridge_username: status.bridge_username,
+                        bridge_port: status.bridge_port,
+                        setup_pin: status.setup_pin,
+                        setup_id: status.setup_id,
+                        instance_path: status.instance_path,
                     };
                 } else {
                     results[Instance.instances[i].id] = {
@@ -51,6 +58,8 @@ export default class StatusController {
         }
 
         return response.send({
+            version: Instance.version,
+            node_version: (process.version || "").replace(/v/gi, ""),
             instances: results,
             cpu: await System.currentLoad(),
             memory: await System.mem(),
