@@ -182,7 +182,7 @@ export const DarkTheme: Theme = {
             highlight: "#fff",
         },
         background: "#1111119d",
-        highlight: "#0000009d",
+        highlight: "#1d1d1d9d",
         border: "#1d1d1d",
     },
     navigation: {
