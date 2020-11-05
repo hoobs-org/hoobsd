@@ -166,7 +166,7 @@ export const DarkTheme: Theme = {
         highlight: "#feb400",
         input: "#262626",
         accent: "#303030",
-        border: "#1d1d1d",
+        border: "#252525",
     },
     widget: {
         text: {
@@ -174,7 +174,7 @@ export const DarkTheme: Theme = {
         },
         background: "#181818d2",
         highlight: "#feb400",
-        border: "#1d1d1d",
+        border: "#252525",
     },
     menu: {
         text: {
