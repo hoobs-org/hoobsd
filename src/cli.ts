@@ -55,6 +55,7 @@ export = function Daemon(): void {
             Instance.instances = Instances.list();
             Instance.users = Users.list();
             Instance.cache = new Cache();
+            Instance.cache.load(join(Paths.storagePath(Instance.id), "cache"));
 
             const instance = Instance.instances.find((n) => n.id === Instance.id);
 
@@ -91,6 +92,7 @@ export = function Daemon(): void {
             Instance.instances = Instances.list();
             Instance.users = Users.list();
             Instance.cache = new Cache();
+            Instance.cache.load(join(Paths.storagePath(Instance.id), "cache"));
 
             const instance = Instance.instances.find((n) => n.id === Instance.id);
 
@@ -168,6 +170,7 @@ export = function Daemon(): void {
 
             Instance.terminating = true;
 
+            if (Instance.cache) Instance.cache.save(join(Paths.storagePath(Instance.id), "cache"), ["hap/accessories"]);
             if (Instance.server) await Instance.server.stop();
             if (Instance.api) await Instance.api.stop();
 

@@ -764,7 +764,7 @@ export default class Instances {
         for (let i = 0; i < entries.length; i += 1) {
             const path = join(directory, entries[i]);
 
-            if (basename(path) !== "node_modules") {
+            if (basename(path) !== "node_modules" && basename(path) !== "cache") {
                 if (lstatSync(path).isDirectory()) {
                     archive.directory(path, join(basename(directory), entries[i]));
                 } else {

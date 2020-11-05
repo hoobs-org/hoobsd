@@ -17,6 +17,9 @@
  **************************************************************************************************/
 
 import ServerCache from "node-cache";
+import { writeFileSync } from "fs-extra";
+import { formatJson, loadJson } from "./formatters";
+import { Console } from "./logger";
 
 export default class Cache {
     declare client: ServerCache;
@@ -41,5 +44,35 @@ export default class Cache {
 
     remove(key: string): number {
         return this.client.del(key);
+    }
+
+    load(filename: string) {
+        const now = (new Date()).getTime();
+        const cache = loadJson<any>(filename, [], "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo");
+
+        for (let i = 0; i < cache.length; i += 1) {
+            const ttl = (cache[i].ttl - now) / 1000;
+
+            if (ttl > 0) {
+                this.client.set(cache[i].key, cache[i].value, ttl);
+            }
+        }
+    }
+
+    save(filename: string, exclude: string[]) {
+        const keys = this.client.keys();
+        const cache = [];
+
+        for (let i = 0; i < keys.length; i += 1) {
+            if (exclude.indexOf(keys[i]) === -1) {
+                cache.push({
+                    key: keys[i],
+                    value: this.client.get(keys[i]),
+                    ttl: this.client.getTtl(keys[i]),
+                });
+            }
+        }
+
+        writeFileSync(filename, formatJson(cache, "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo"));
     }
 }
