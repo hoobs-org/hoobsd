@@ -55,9 +55,9 @@ export default class Weather {
     }
 
     static async current(): Promise<{ [key: string]: any }> {
-        if (!Instance.api?.config.weather || !Instance.api?.config.weather.id || Instance.api?.config.weather.id <= 0) return {};
+        if (!(((Instance.api || {}).config || {}).weather || {}).location || (((((Instance.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return {};
 
-        const id = Instance.api?.config.weather.id;
+        const id = Instance.api?.config.weather.location.id;
         const units = Instance.api?.config.weather.units || "celsius";
         const key = `weather/${id}/${units}`;
         const cached = Instance.cache?.get<{ [key: string]: any }>(key);
@@ -69,9 +69,9 @@ export default class Weather {
 
         const results = {
             units,
-            weather: weather.weather.main,
-            description: weather.weather.description,
-            icon: weather.weather.icon,
+            weather: weather.weather[0].main,
+            description: weather.weather[0].description.toLowerCase().replace(/ /gi, "_"),
+            icon: weather.weather[0].id,
             temp: weather.main.temp,
             min: weather.main.temp_min,
             max: weather.main.temp_max,
@@ -91,9 +91,9 @@ export default class Weather {
     }
 
     static async forecast(): Promise<{ [key: string]: any }[]> {
-        if (!Instance.api?.config.weather || !Instance.api?.config.weather.id || Instance.api?.config.weather.id <= 0) return [];
+        if (!(((Instance.api || {}).config || {}).weather || {}).location || (((((Instance.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return [];
 
-        const id = Instance.api?.config.weather.id;
+        const id = Instance.api?.config.weather.location.id;
         const units = Instance.api?.config.weather.units || "celsius";
         const key = `forecast/${id}/${units}`;
         const cached = Instance.cache?.get<{ [key: string]: any }[]>(key);
@@ -120,11 +120,11 @@ export default class Weather {
 
             if (`${time.getMonth() + 1}/${time.getDate()}/${time.getFullYear()}` !== day) {
                 if (count > 0) {
-                    results[index].windchill = windchill / count;
-                    results[index].pressure = pressure / count;
-                    results[index].humidity = (humidity / count) / 100;
-                    results[index].visibility = visibility / count;
-                    results[index].wind.speed = wind / count;
+                    results[index].windchill = parseFloat((windchill / count).toFixed(2));
+                    results[index].pressure = parseFloat((pressure / count).toFixed(0));
+                    results[index].humidity = parseFloat(((humidity / count) / 100).toFixed(2));
+                    results[index].visibility = parseFloat((visibility / count).toFixed(0));
+                    results[index].wind.speed = parseFloat((wind / count).toFixed(2));
                 }
 
                 day = `${time.getMonth() + 1}/${time.getDate()}/${time.getFullYear()}`;
@@ -134,9 +134,9 @@ export default class Weather {
                 results.push({
                     units,
                     date: (new Date(day)).getTime(),
-                    weather: item.weather.main,
-                    description: item.weather.description,
-                    icon: item.weather.icon,
+                    weather: item.weather[0].main,
+                    description: item.weather[0].description.toLowerCase().replace(/ /gi, "_"),
+                    icon: item.weather[0].id,
                     windchill: item.main.feels_like,
                     pressure: item.main.pressure,
                     humidity: item.main.humidity / 100,
@@ -148,24 +148,24 @@ export default class Weather {
                 });
             }
 
-            if (!item.main.temp_min || item.main.temp_min < results[index].min) results[index].min = item.main.temp_min;
-            if (!item.main.temp_max || item.main.temp_max > results[index].max) results[index].min = item.main.temp_max;
+            if (!results[index].min || item.main.temp_min < results[index].min) results[index].min = item.main.temp_min;
+            if (!results[index].max || item.main.temp_max > results[index].max) results[index].max = item.main.temp_max;
 
             windchill += item.main.feels_like;
             pressure += item.main.pressure;
             humidity += item.main.humidity;
-            visibility += item.main.visibility;
-            wind += item.main.wind.speed;
+            visibility += item.visibility;
+            wind += item.wind.speed;
 
             count += 1;
         }
 
         if (count > 0) {
-            results[index].windchill = windchill / count;
-            results[index].pressure = pressure / count;
-            results[index].humidity = (humidity / count) / 100;
-            results[index].visibility = visibility / count;
-            results[index].wind.speed = wind / count;
+            results[index].windchill = parseFloat((windchill / count).toFixed(2));
+            results[index].pressure = parseFloat((pressure / count).toFixed(0));
+            results[index].humidity = parseFloat(((humidity / count) / 100).toFixed());
+            results[index].visibility = parseFloat((visibility / count).toFixed(0));
+            results[index].wind.speed = parseFloat((wind / count).toFixed(2));
         }
 
         Instance.cache?.set(key, results, 60);
