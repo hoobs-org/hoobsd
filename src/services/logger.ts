@@ -138,8 +138,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 1000) {
-                CACHE.splice(0, CACHE.length - 1000);
+            if (CACHE.length > 5000) {
+                CACHE.splice(0, CACHE.length - 5000);
             }
         }
     }
@@ -178,8 +178,8 @@ class Logger {
         if ((Instance.api || Instance.server) && (Instance.id === "api" || !Socket.up())) {
             CACHE.push(data);
 
-            if (CACHE.length > 1000) {
-                CACHE.splice(0, CACHE.length - 1000);
+            if (CACHE.length > 5000) {
+                CACHE.splice(0, CACHE.length - 5000);
             }
 
             if (Instance.id === "api") {
@@ -253,8 +253,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 1000) {
-                CACHE.splice(0, CACHE.length - 1000);
+            if (CACHE.length > 5000) {
+                CACHE.splice(0, CACHE.length - 5000);
             }
 
             writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
