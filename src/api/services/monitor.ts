@@ -33,12 +33,14 @@ export default async function Monitor() {
                     version: status.version,
                     running: status.running,
                     status: status.status,
+                    display: Instance.instances[i].display,
                     uptime: status.uptime,
                 };
             } else {
                 results[Instance.instances[i].id] = {
                     running: false,
                     status: "unavailable",
+                    display: "Unavailable",
                     uptime: 0,
                 };
             }
