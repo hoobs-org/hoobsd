@@ -100,6 +100,7 @@ export default class API extends EventEmitter {
 
         this.enviornment = {
             PATH: `${join(dirname(realpathSync(join(__filename, "../../"))), "cmd")}:${process.env.PATH}:${paths.join(":")}`,
+            USER: `${process.env.USER}`,
         };
 
         if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";

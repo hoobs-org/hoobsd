@@ -16,7 +16,7 @@ while [ "$1" != "" ]; do
 done
 
 if [[ "$BUILD" = "true" ]]; then
-    ./node_modules/.bin/nodemon --watch src --ext ts --exec "bin/build && clear && bin/hoobsd --mode development$ARGUMENTS" --signal SIGINT
+    ./node_modules/.bin/nodemon --watch src --ext ts --signal SIGINT --exec "bin/build && clear && bin/hoobsd --mode development$ARGUMENTS"
 else
-    ./node_modules/.bin/nodemon --watch src --ext ts --delay 5 --exec "clear && bin/hoobsd --mode development$ARGUMENTS" --signal SIGINT
+    ./node_modules/.bin/nodemon --watch src --ext ts --delay 5 --signal SIGINT --exec "clear && bin/hoobsd --mode development$ARGUMENTS"
 fi
