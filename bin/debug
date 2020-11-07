@@ -1,0 +1,22 @@
+#!/bin/bash
+
+ARGUMENTS=""
+BUILD="false"
+
+while [ "$1" != "" ]; do
+    case $1 in
+        build ) BUILD="true"
+                ;;
+
+        * )     ARGUMENTS="$ARGUMENTS $1"
+                ;;
+    esac
+
+    shift
+done
+
+if [[ "$BUILD" = "true" ]]; then
+    ./node_modules/.bin/nodemon --watch src --ext ts --exec "bin/build && clear && bin/hoobsd --mode development$ARGUMENTS" --signal SIGINT
+else
+    ./node_modules/.bin/nodemon --watch src --ext ts --delay 5 --exec "clear && bin/hoobsd --mode development$ARGUMENTS" --signal SIGINT
+fi

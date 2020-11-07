@@ -1,5 +1,6 @@
 .vscode
 bin/build
+bin/debug
 lib/hoobsd.tgz
 node_modules/
 src/
