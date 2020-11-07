@@ -259,10 +259,6 @@ export default class API extends EventEmitter {
             Console.info(`API is running on port ${port}`);
         });
 
-        api.on(Events.REQUEST, (method, url) => {
-            Console.debug(`"${method}" ${url}`);
-        });
-
         return api;
     }
 
