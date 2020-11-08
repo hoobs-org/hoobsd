@@ -40,7 +40,7 @@ export default class InstancesController {
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instances) {
+        if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instance) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -53,7 +53,7 @@ export default class InstancesController {
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instances) {
+        if (!request.user?.permissions.instance) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -66,7 +66,7 @@ export default class InstancesController {
     }
 
     async remove(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instances) {
+        if (!request.user?.permissions.instance) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
