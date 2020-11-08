@@ -19,6 +19,7 @@
  **************************************************************************************************/
 
 process.title = "hoobsd";
+process.unhandledRejections = "none";
 
 const { join, dirname } = require("path");
 const { realpathSync } = require("fs");

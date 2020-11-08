@@ -59,7 +59,7 @@ export default class PluginsController {
     }
 
     async install(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.plugins) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -70,7 +70,7 @@ export default class PluginsController {
     }
 
     async upgrade(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.plugins) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -81,7 +81,7 @@ export default class PluginsController {
     }
 
     async uninstall(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.plugins) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

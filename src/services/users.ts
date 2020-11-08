@@ -26,7 +26,7 @@ import { parseJson, formatJson, loadJson } from "./formatters";
 export interface UserRecord {
     id: number;
     name: string;
-    admin: boolean;
+    permissions: { [key: string]: boolean };
     username: string;
     password: string;
     salt: string;
@@ -77,7 +77,7 @@ export default class Users {
                 id: user.id,
                 name: user.name,
                 username: user.username,
-                admin: user.admin,
+                permissions: user.permissions,
                 token: await Users.hashValue(user.password, key),
             };
 
@@ -92,7 +92,22 @@ export default class Users {
     }
 
     static decodeToken(token: string | undefined): { [key: string]: any } {
-        if (Instance.api?.settings.disable_auth) return { admin: true, username: "unavailable" };
+        if (Instance.api?.settings.disable_auth) {
+            return {
+                permissions: {
+                    accessories: true,
+                    controller: true,
+                    instnace: true,
+                    terminal: true,
+                    plugins: true,
+                    users: false,
+                    reboot: true,
+                    config: true,
+                },
+                username: "unavailable",
+            };
+        }
+
         if (!token || token === "") return {};
 
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
@@ -141,17 +156,16 @@ export default class Users {
         return Instance.users.filter((u) => u.username.toLowerCase() === username.toLowerCase())[0];
     }
 
-    static async create(name: string, username: string, password: string, admin: boolean): Promise<UserRecord> {
+    static async create(name: string, username: string, password: string, permissions: { [key: string]: boolean }): Promise<UserRecord> {
         const user = {
             id: 1,
             name,
-            admin,
+            permissions,
             username,
             password,
             salt: await Users.generateSalt(),
         };
 
-        user.admin = admin;
         user.password = await this.hashValue(user.password, user.salt);
 
         if (Instance.users.length > 0) user.id = Instance.users[Instance.users.length - 1].id + 1;
@@ -163,14 +177,14 @@ export default class Users {
         return user;
     }
 
-    static async update(id: number, name: string, username: string, password?: string, admin?: boolean): Promise<UserRecord | boolean> {
+    static async update(id: number, name: string, username: string, password?: string, permissions?: { [key: string]: boolean }): Promise<UserRecord | boolean> {
         const index = Instance.users.findIndex((u) => u.id === id);
 
         if (index >= 0) {
             Instance.users[index].name = name;
             Instance.users[index].username = username;
-            Instance.users[index].admin = admin!;
 
+            if (permissions) Instance.users[index].permissions = permissions;
             if (password) Instance.users[index].password = await this.hashValue(password, Instance.users[index].salt);
 
             writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));

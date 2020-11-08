@@ -55,7 +55,7 @@ export default class ConfigController {
     }
 
     async getInstance(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -66,7 +66,7 @@ export default class ConfigController {
     }
 
     async saveInstance(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

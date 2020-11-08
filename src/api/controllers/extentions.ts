@@ -29,7 +29,7 @@ export default class ExtentionsController {
     }
 
     list(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -40,7 +40,7 @@ export default class ExtentionsController {
     }
 
     enable(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -74,7 +74,7 @@ export default class ExtentionsController {
     }
 
     disable(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

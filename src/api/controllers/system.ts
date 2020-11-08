@@ -131,7 +131,7 @@ export default class SystemController {
     }
 
     backup(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -151,7 +151,7 @@ export default class SystemController {
     }
 
     async restore(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.reboot) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -175,7 +175,7 @@ export default class SystemController {
     }
 
     upload(request: Request, response: Response): void {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -199,7 +199,7 @@ export default class SystemController {
     }
 
     async upgrade(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.reboot) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -230,7 +230,7 @@ export default class SystemController {
     }
 
     reboot(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.reboot) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -245,7 +245,7 @@ export default class SystemController {
     }
 
     async reset(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.reboot) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

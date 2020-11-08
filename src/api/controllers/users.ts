@@ -30,23 +30,16 @@ export default class UsersController {
     }
 
     list(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
-
         return response.send(Users.list().map((item) => ({
             id: item.id,
             username: item.username,
             name: item.name,
-            admin: item.admin,
+            permissions: item.permissions,
         })));
     }
 
     get(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.users) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -65,12 +58,12 @@ export default class UsersController {
             id: user.id,
             username: user.username,
             name: user.name,
-            admin: user.admin,
+            permissions: user.permissions,
         });
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.admin)) {
+        if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.permissions.users)) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -91,15 +84,35 @@ export default class UsersController {
             });
         }
 
-        if (Users.count() === 0) request.body.admin = true;
+        if (Users.count() === 0) {
+            request.body.permissions = {
+                accessories: true,
+                controller: true,
+                instnace: true,
+                terminal: true,
+                plugins: true,
+                users: true,
+                reboot: true,
+                config: true,
+            };
+        }
 
-        await Users.create(request.body.name, request.body.username, request.body.password, request.body.admin);
+        await Users.create(request.body.name, request.body.username, request.body.password, request.body.permissions || {
+            accessories: false,
+            controller: false,
+            instnace: false,
+            terminal: false,
+            plugins: false,
+            users: false,
+            reboot: false,
+            config: false,
+        });
 
         return this.list(request, response);
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.users && request.user?.id !== parseInt(request.params.id, 10)) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -120,9 +133,9 @@ export default class UsersController {
             });
         }
 
-        if (Users.count() === 0) request.body.admin = true;
+        if (Users.count() === 0) request.body.permissions.users = true;
 
-        const user = await Users.update(parseInt(request.params.id, 10), request.body.name, request.body.username, request.body.password, request.body.admin);
+        const user = await Users.update(parseInt(request.params.id, 10), request.body.name, request.body.username, request.body.password, request.body.permissions);
 
         if (!user) {
             return response.send({
@@ -134,7 +147,7 @@ export default class UsersController {
     }
 
     delete(request: Request, response: Response): Response {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.users) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

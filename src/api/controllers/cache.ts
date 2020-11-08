@@ -29,7 +29,7 @@ export default class CacheController {
     }
 
     async all(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -57,7 +57,7 @@ export default class CacheController {
     }
 
     async list(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -74,7 +74,7 @@ export default class CacheController {
     }
 
     async listParings(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -85,7 +85,7 @@ export default class CacheController {
     }
 
     async listAccessories(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.admin) {
+        if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
