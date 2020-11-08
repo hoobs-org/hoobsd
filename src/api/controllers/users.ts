@@ -77,7 +77,7 @@ export default class UsersController {
             });
         }
 
-        if (request.body.password.length < 5) {
+        if (request.body.password && request.body.password.length < 5) {
             return response.send({
                 token: false,
                 error: "Password too weak.",
@@ -126,14 +126,19 @@ export default class UsersController {
             });
         }
 
-        if (request.body.password.length < 5) {
+        if (request.body.password && request.body.password.length < 5) {
             return response.send({
                 token: false,
                 error: "Password too weak.",
             });
         }
 
-        if (Users.count() === 0) request.body.permissions.users = true;
+        if (Users.count() === 0) {
+            return response.send({
+                token: false,
+                error: "No users exist.",
+            });
+        }
 
         const user = await Users.update(parseInt(request.params.id, 10), request.body.name, request.body.username, request.body.password, request.body.permissions);
 
