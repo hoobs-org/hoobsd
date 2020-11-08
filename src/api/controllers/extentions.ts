@@ -28,11 +28,25 @@ export default class ExtentionsController {
         Instance.app?.delete("/api/extentions/:name", (request, response) => this.disable(request, response));
     }
 
-    list(_request: Request, response: Response): Response {
+    list(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         return response.send(Instances.extentions());
     }
 
     enable(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         let results: { success: boolean, error?: string | undefined } = {
             success: false,
         };
@@ -60,6 +74,13 @@ export default class ExtentionsController {
     }
 
     disable(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         let results: { success: boolean, error?: string | undefined } = {
             success: false,
         };

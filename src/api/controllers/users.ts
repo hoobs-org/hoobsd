@@ -29,7 +29,14 @@ export default class UsersController {
         Instance.app?.delete("/api/users/:id", (request, response) => this.delete(request, response));
     }
 
-    list(_request: Request, response: Response): Response {
+    list(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         return response.send(Users.list().map((item) => ({
             id: item.id,
             username: item.username,
@@ -39,6 +46,13 @@ export default class UsersController {
     }
 
     get(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         const user = Users.list().filter((u) => u.id === parseInt(request.params.id, 10))[0];
 
         if (!user) {
@@ -56,7 +70,7 @@ export default class UsersController {
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        if (Users.count() > 0 && !(await Users.validateToken(request.headers.authorization))) {
+        if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.admin)) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -85,6 +99,13 @@ export default class UsersController {
     }
 
     async update(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         if (!request.body.username || request.body.username === "" || request.body.username.length < 3) {
             return response.send({
                 token: false,
@@ -113,6 +134,13 @@ export default class UsersController {
     }
 
     delete(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         Users.delete(parseInt(request.params.id, 10));
 
         return this.list(request, response);

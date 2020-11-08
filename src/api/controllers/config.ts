@@ -30,11 +30,11 @@ export default class ConfigController {
         Instance.app?.post("/api/config/:instance", (request, response) => this.saveInstance(request, response));
     }
 
-    async getConsole(_request: Request, response: Response): Promise<void> {
-        response.send(Instance.api?.config);
+    async getConsole(_request: Request, response: Response): Promise<Response> {
+        return response.send(Instance.api?.config);
     }
 
-    async saveConsole(request: Request, response: Response): Promise<void> {
+    async saveConsole(request: Request, response: Response): Promise<Response> {
         Console.emit(Events.CONFIG_CHANGE, "api", Config.configuration());
 
         Console.notify(
@@ -49,16 +49,30 @@ export default class ConfigController {
 
         if (Instance.bridge) await Instance.bridge.restart();
 
-        response.send({
+        return response.send({
             success: true,
         });
     }
 
-    async getInstance(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "config:get"));
+    async getInstance(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "config:get"));
     }
 
-    async saveInstance(request: Request, response: Response): Promise<void> {
+    async saveInstance(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         Console.notify(
             Instance.id,
             "Configuration Changed",
@@ -67,6 +81,6 @@ export default class ConfigController {
             "settings",
         );
 
-        response.send(await Socket.fetch(request.params.instance, "config:save", request.params, request.body));
+        return response.send(await Socket.fetch(request.params.instance, "config:save", request.params, request.body));
     }
 }

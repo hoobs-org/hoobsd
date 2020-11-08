@@ -91,7 +91,8 @@ export default class Users {
         return false;
     }
 
-    static decodeToken(token: string): { [key: string]: any } | boolean {
+    static decodeToken(token: string | undefined): { [key: string]: any } {
+        if (Instance.api?.settings.disable_auth) return { admin: true, username: "unavailable" };
         if (!token || token === "") return {};
 
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
@@ -104,7 +105,7 @@ export default class Users {
             return user;
         }
 
-        return false;
+        return {};
     }
 
     static async validateToken(token: string | undefined): Promise<boolean> {

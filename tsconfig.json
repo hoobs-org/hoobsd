@@ -18,6 +18,9 @@
         "esModuleInterop": true,
         "preserveConstEnums": true
     },
+    "files": [
+        "src/request.d.ts"
+    ],
     "include": [
         "src/"
     ],

@@ -173,6 +173,8 @@ export default class API extends EventEmitter {
         }
 
         Instance.app?.use(async (request, response, next) => {
+            request.user = Users.decodeToken(request.headers.authorization);
+
             if (this.settings.disable_auth) {
                 next();
 

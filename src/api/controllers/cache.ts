@@ -28,7 +28,14 @@ export default class CacheController {
         Instance.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
     }
 
-    async all(_request: Request, response: Response): Promise<void> {
+    async all(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
@@ -46,24 +53,45 @@ export default class CacheController {
             }
         }
 
-        response.send(results);
+        return response.send(results);
     }
 
-    async list(request: Request, response: Response): Promise<void> {
+    async list(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         const parings = await Socket.fetch(request.params.instance, "cache:parings");
         const accessories = await Socket.fetch(request.params.instance, "cache:accessories");
 
-        response.send({
+        return response.send({
             parings,
             accessories,
         });
     }
 
-    async listParings(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "cache:parings"));
+    async listParings(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "cache:parings"));
     }
 
-    async listAccessories(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "cache:accessories"));
+    async listAccessories(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "cache:accessories"));
     }
 }

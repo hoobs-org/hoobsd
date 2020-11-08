@@ -40,18 +40,39 @@ export default class InstancesController {
     }
 
     async create(request: Request, response: Response): Promise<Response> {
+        if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         await Instances.createService(request.body.name, parseInt(request.body.port, 10));
 
         return this.list(request, response);
     }
 
     async update(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         await Instances.renameInstance(request.params.id, request.body.name);
 
         return this.list(request, response);
     }
 
     async remove(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         await Instances.removeService(request.params.id);
 
         return this.list(request, response);

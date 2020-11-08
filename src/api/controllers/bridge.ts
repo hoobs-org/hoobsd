@@ -30,7 +30,7 @@ export default class BridgeController {
         Instance.app?.post("/api/bridge/:instance/purge", (request, response) => this.purge(request, response));
     }
 
-    async all(_request: Request, response: Response): Promise<void> {
+    async all(_request: Request, response: Response): Promise<Response> {
         const results = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
@@ -46,26 +46,54 @@ export default class BridgeController {
             }
         }
 
-        response.send(results);
+        return response.send(results);
     }
 
-    async status(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "status:get"));
+    async status(request: Request, response: Response): Promise<Response> {
+        return response.send(await Socket.fetch(request.params.instance, "status:get"));
     }
 
-    async start(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "bridge:start"));
+    async start(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "bridge:start"));
     }
 
-    async stop(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "bridge:stop"));
+    async stop(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "bridge:stop"));
     }
 
-    async restart(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "bridge:restart"));
+    async restart(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "bridge:restart"));
     }
 
-    async purge(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "bridge:purge"));
+    async purge(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.instance, "bridge:purge"));
     }
 }

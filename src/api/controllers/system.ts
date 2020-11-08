@@ -130,29 +130,60 @@ export default class SystemController {
         response.send(results);
     }
 
-    backup(_request: Request, response: Response): void {
+    backup(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         Instances.backup().then((filename) => response.send({
             success: true,
             filename,
         })).catch((error) => response.send({
             error: error.message || "Unable to create backup",
         }));
+
+        return response.send({
+            success: true,
+        });
     }
 
-    async restore(request: Request, response: Response): Promise<void> {
+    async restore(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         if (existsSync(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)))) {
             await Instances.restore(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)));
 
             this.reboot(request, response);
-        } else {
-            response.send({
-                success: false,
-                error: "Backup file doesent exist",
+
+            return response.send({
+                success: true,
             });
         }
+
+        return response.send({
+            success: false,
+            error: "Backup file doesent exist",
+        });
     }
 
     upload(request: Request, response: Response): void {
+        if (!request.user?.admin) {
+            response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+
+            return;
+        }
+
         const form = new Forms.IncomingForm();
 
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
@@ -168,6 +199,13 @@ export default class SystemController {
     }
 
     async upgrade(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         await Instances.backup();
 
         const flags = [];
@@ -191,7 +229,14 @@ export default class SystemController {
         return this.reboot(request, response);
     }
 
-    reboot(_request: Request, response: Response): Response {
+    reboot(request: Request, response: Response): Response {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         exec("shutdown -r now");
 
         return response.send({
@@ -200,6 +245,13 @@ export default class SystemController {
     }
 
     async reset(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.admin) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
         await Instances.reset();
 
         return response.send({
