@@ -58,12 +58,12 @@ Program.command("server", { isDefault: true })
         });
 
         if (command.pack) {
-            execSync("npm pack", {
+            execSync("yarn pack", {
                 cwd: root,
                 stdio: "inherit",
             });
 
-            execSync(`mv ${join(root, `hoobs-hoobsd-${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, {
+            execSync(`mv ${join(root, `hoobs-hoobsd-v${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, {
                 cwd: root,
                 stdio: "inherit",
             });
@@ -102,7 +102,7 @@ Program.command("publish")
                     stdio: ["inherit", "inherit", "inherit"],
                 });
 
-                execSync("npm publish --access public", {
+                execSync("yarn publish --access public", {
                     cwd: root,
                     stdio: ["inherit", "inherit", "inherit"],
                 });
