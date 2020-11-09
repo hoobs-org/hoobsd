@@ -1,7 +1,7 @@
 .vscode
 bin/build
 bin/debug
-lib/hoobsd.tgz
+lib/*.tgz
 node_modules/
 src/
 .env.development
