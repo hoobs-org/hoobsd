@@ -1,5 +1,5 @@
 declare namespace Express {
     export interface Request {
-        user?: { [key: string]: any }
+        user?: { [key: string]: any };
     }
 }
