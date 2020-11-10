@@ -38,6 +38,7 @@ import { execSync } from "child_process";
 import { join, basename } from "path";
 import Instance from "./instance";
 import Paths from "./paths";
+import Config from "./config";
 import { Console, NotificationType } from "./logger";
 
 import {
@@ -51,6 +52,10 @@ export interface InstanceRecord {
     type: string;
     display: string;
     port: number;
+    pin?: string;
+    username?: string;
+    ports?: { [key: string]: number};
+    autostart?: number,
     host?: string;
     plugins?: string;
     service?: string;
@@ -224,7 +229,7 @@ export default class Instances {
         });
     }
 
-    static renameInstance(name: string, display: string) {
+    static updateInstance(name: string, display: string, pin?: string, username?: string, autostart?: number) {
         return new Promise((resolve) => {
             if (!name) return resolve(false);
 
@@ -233,6 +238,31 @@ export default class Instances {
 
             if (index >= 0) {
                 Instance.instances[index].display = display;
+                Instance.instances[index].pin = pin || Instance.instances[index].pin || "031-45-154";
+                Instance.instances[index].username = username || Instance.instances[index].username || Config.generateUsername();
+                Instance.instances[index].autostart = autostart || Instance.instances[index].autostart || 0;
+
+                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                return resolve(true);
+            }
+
+            return resolve(false);
+        });
+    }
+
+    static updatePorts(name: string, start: number, end: number) {
+        return new Promise((resolve) => {
+            if (!name) return resolve(false);
+
+            const id = sanitize(name);
+            const index = Instance.instances.findIndex((n) => n.id === id);
+
+            if (index >= 0) {
+                Instance.instances[index].ports = {
+                    start,
+                    end,
+                };
 
                 writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
 
@@ -556,7 +586,7 @@ export default class Instances {
         });
     }
 
-    static appendInstance(id: string, display: string, type: string, port: number) {
+    static appendInstance(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
         const instances: InstanceRecord[] = [];
 
         for (let i = 0; i < Instance.instances.length; i += 1) {
@@ -568,6 +598,9 @@ export default class Instances {
                     type: instance.type,
                     display: instance.display,
                     port: instance.port,
+                    pin: instance.pin,
+                    username: instance.username,
+                    autostart: 0,
                 });
             } else {
                 instances.push({
@@ -575,6 +608,10 @@ export default class Instances {
                     type: instance.type,
                     display: instance.display,
                     port: instance.port,
+                    pin: instance.pin,
+                    username: instance.username,
+                    ports: instance.ports,
+                    autostart: instance.autostart,
                 });
             }
         }
@@ -585,6 +622,9 @@ export default class Instances {
                 type,
                 display,
                 port,
+                pin,
+                username,
+                autostart: 0,
             });
         } else {
             instances.push({
@@ -592,13 +632,16 @@ export default class Instances {
                 type,
                 display,
                 port,
+                pin,
+                username,
+                autostart: autostart || 0,
             });
         }
 
         writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
-    static createService(name: string, port: number) {
+    static createService(name: string, port: number, pin: string, username: string) {
         return new Promise((resolve) => {
             const type = Instances.initSystem() || "";
 
@@ -610,7 +653,7 @@ export default class Instances {
                 case "systemd":
                     Instances.createSystemd(name, port).then((success) => {
                         if (success) {
-                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, username, 0);
 
                             Console.notify(
                                 "api",
@@ -636,7 +679,7 @@ export default class Instances {
                 case "launchd":
                     Instances.createLaunchd(name, port).then((success) => {
                         if (success) {
-                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                            Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, username, 0);
 
                             Console.notify(
                                 "api",
@@ -660,7 +703,7 @@ export default class Instances {
                     break;
 
                 default:
-                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port);
+                    Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, username, 0);
 
                     Console.notify(
                         "api",

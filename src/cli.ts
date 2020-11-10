@@ -31,7 +31,7 @@ import Cache from "./services/cache";
 import Paths from "./services/paths";
 import API from "./api";
 import { Console } from "./services/logger";
-import { sanitize } from "./services/formatters";
+import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
 export = function Daemon(): void {
     Program.version(Instance.version, "-v, --version", "output the current version");
@@ -63,13 +63,21 @@ export = function Daemon(): void {
                 Instance.server = new Server(command.port || instance.port);
 
                 Watcher.watch(Paths.instancesPath()).on("change", () => {
+                    const current = cloneJson(Instance.instances.find((n: any) => n.id === Instance.id));
+
                     Instance.instances = Instances.list();
+
+                    if (jsonEquals(current, Instance.instances.find((n: any) => n.id === Instance.id))) {
+                        Instance.server?.stop().then(() => {
+                            Instance.server?.start();
+                        });
+                    }
                 });
 
-                Watcher.watch(Paths.configPath()).on("change", async () => {
-                    await Instance.server?.stop();
-
-                    Instance.server?.start();
+                Watcher.watch(Paths.configPath()).on("change", () => {
+                    Instance.server?.stop().then(() => {
+                        Instance.server?.start();
+                    });
                 });
 
                 Instance.server.start();
@@ -99,23 +107,23 @@ export = function Daemon(): void {
             if (instance) {
                 Instance.api = API.createServer(command.port || instance.port);
 
-                Watcher.watch(Paths.instancesPath()).on("change", async () => {
-                    await Instance.api?.stop();
-
-                    Instance.instances = Instances.list();
-                    Instance.api = API.createServer(command.port || instance.port);
-                    Instance.api.start();
+                Watcher.watch(Paths.instancesPath()).on("change", () => {
+                    Instance.api?.stop().then(() => {
+                        Instance.instances = Instances.list();
+                        Instance.api = API.createServer(command.port || instance.port);
+                        Instance.api.start();
+                    });
                 });
 
                 Watcher.watch(join(Paths.storagePath(), "access")).on("change", () => {
                     Instance.users = Users.list();
                 });
 
-                Watcher.watch(Paths.configPath()).on("change", async () => {
-                    await Instance.api?.stop();
-
-                    Instance.api = API.createServer(command.port || instance.port);
-                    Instance.api.start();
+                Watcher.watch(Paths.configPath()).on("change", () => {
+                    Instance.api?.stop().then(() => {
+                        Instance.api = API.createServer(command.port || instance.port);
+                        Instance.api.start();
+                    });
                 });
 
                 Instance.api.start();

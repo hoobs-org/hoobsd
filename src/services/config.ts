@@ -79,19 +79,9 @@ export default class Config {
                 api: {
                     origin: "*",
                 },
-                description: "",
             };
         } else {
             config = {
-                server: {
-                    origin: "*",
-                },
-                bridge: {
-                    name: "HOOBS",
-                    pin: "031-45-154",
-                },
-                description: "",
-                ports: {},
                 plugins: [],
                 accessories: [],
                 platforms: [],
@@ -99,14 +89,6 @@ export default class Config {
         }
 
         if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
-
-        if (Instance.id !== "api" && config?.ports !== undefined) {
-            if (config?.ports?.start > config?.ports?.end) delete config?.ports;
-        }
-
-        if (Instance.id !== "api" && (!config?.bridge?.username || !(/^([0-9A-F]{2}:){5}([0-9A-F]{2})$/).test(config?.bridge?.username))) {
-            config.bridge.username = Config.generateUsername();
-        }
 
         if (Instance.id !== "api") {
             let instances: any = [];

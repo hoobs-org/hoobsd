@@ -19,6 +19,7 @@
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
 import Instances from "../../services/instances";
+import Config from "../../services/config";
 
 export default class InstancesController {
     constructor() {
@@ -26,6 +27,7 @@ export default class InstancesController {
         Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
         Instance.app?.get("/api/instances/count", (request, response) => this.count(request, response));
         Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
+        Instance.app?.post("/api/instance/:id/ports", (request, response) => this.ports(request, response));
         Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
     }
 
@@ -47,7 +49,7 @@ export default class InstancesController {
             });
         }
 
-        await Instances.createService(request.body.name, parseInt(request.body.port, 10));
+        await Instances.createService(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
 
         return this.list(request, response);
     }
@@ -60,7 +62,20 @@ export default class InstancesController {
             });
         }
 
-        await Instances.renameInstance(request.params.id, request.body.name);
+        await Instances.updateInstance(request.params.id, request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
+
+        return this.list(request, response);
+    }
+
+    async ports(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.permissions.instance) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        await Instances.updatePorts(request.params.id, request.body.start, request.body.end);
 
         return this.list(request, response);
     }

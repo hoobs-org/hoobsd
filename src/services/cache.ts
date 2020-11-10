@@ -19,7 +19,6 @@
 import ServerCache from "node-cache";
 import { writeFileSync } from "fs-extra";
 import { formatJson, loadJson } from "./formatters";
-import { Console } from "./logger";
 
 export default class Cache {
     declare client: ServerCache;

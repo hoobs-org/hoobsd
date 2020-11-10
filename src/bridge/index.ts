@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
 import storage, { LocalStorage } from "node-persist";
@@ -63,6 +64,7 @@ import Instance from "../services/instance";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
 import Client from "./client";
+import { InstanceRecord } from "../services/instances";
 import { Console, Prefixed, Events } from "../services/logger";
 
 const accessoryStorage: LocalStorage = storage.create();
@@ -78,6 +80,8 @@ export default class Server extends EventEmitter {
     public readonly port: number;
 
     public readonly settings: BridgeConfiguration;
+
+    public readonly instance: InstanceRecord | undefined;
 
     public readonly client: Client;
 
@@ -120,7 +124,27 @@ export default class Server extends EventEmitter {
         })();
 
         this.running = false;
-        this.config = Config.configuration();
+        this.instance = Instance.instances.find((n: any) => n.id === Instance.id);
+
+        this.config = {
+            bridge: {
+                name: this.instance?.display || "HOOBS",
+                pin: this.instance?.pin || "031-45-154",
+                username: this.instance?.username || "",
+            },
+            plugins: [],
+            accessories: [],
+            platforms: [],
+        };
+
+        if (this.instance?.ports?.start && this.instance?.ports?.start) {
+            this.config.ports = {
+                start: this.instance.ports.start,
+                end: this.instance.ports.end,
+            };
+        }
+
+        this.config = _.extend(this.config, Config.configuration());
         this.settings = this.config.bridge;
         this.port = port || 51826;
         this.keepOrphanedCachedAccessories = false;

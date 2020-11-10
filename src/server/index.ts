@@ -98,6 +98,8 @@ export default class Server extends EventEmitter {
     }
 
     start(): void {
+        const instance = Instance.instances.find((n: any) => n.id === Instance.id);
+
         Instance.bridge = new Bridge(this.port || undefined);
 
         Instance.bridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
@@ -131,10 +133,10 @@ export default class Server extends EventEmitter {
             });
         });
 
-        if ((this.config.server.autostart || 0) >= 0) {
+        if ((instance?.autostart || 0) >= 0) {
             setTimeout(() => {
                 Instance.bridge?.start();
-            }, (this.config.server.autostart || 0) * 1000);
+            }, (instance?.autostart || 0) * 1000);
         }
 
         Instance.socket?.start();
