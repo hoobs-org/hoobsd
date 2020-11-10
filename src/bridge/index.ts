@@ -145,6 +145,15 @@ export default class Server extends EventEmitter {
         }
 
         this.config = _.extend(this.config, Config.configuration());
+
+        for (let i = 0; i < this.config.accessories.length; i += 1) {
+            delete this.config.accessories[i].plugin_map;
+        }
+
+        for (let i = 0; i < this.config.platforms.length; i += 1) {
+            delete this.config.platforms[i].plugin_map;
+        }
+
         this.settings = this.config.bridge;
         this.port = port || 51826;
         this.keepOrphanedCachedAccessories = false;
