@@ -167,14 +167,6 @@ class Logger {
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
-        if (data.message.toLowerCase().indexOf("config.json") >= 0 && data.message.toLowerCase().indexOf("unknown") >= 0 && data.message.toLowerCase().indexOf("key") >= 0) {
-            data.level = LogLevel.DEBUG;
-        }
-
-        if (data.message.toLowerCase().indexOf("config.json") >= 0 && data.message.toLowerCase().indexOf("invalid") >= 0 && data.message.toLowerCase().indexOf("key") >= 0) {
-            data.level = LogLevel.DEBUG;
-        }
-
         if ((Instance.api || Instance.server) && (Instance.id === "api" || !Socket.up())) {
             CACHE.push(data);
 
