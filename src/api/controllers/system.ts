@@ -187,10 +187,7 @@ export default class SystemController {
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
-            Instances.restore(
-                files.file.path,
-                true,
-            ).finally(() => {
+            Instances.restore(files.file.path, true).finally(() => {
                 this.reboot(request, response);
             });
         });

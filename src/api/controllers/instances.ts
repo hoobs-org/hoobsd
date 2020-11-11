@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
+import Forms from "formidable";
 import Instance from "../../services/instance";
 import Instances from "../../services/instances";
 import Config from "../../services/config";
@@ -26,6 +27,7 @@ export default class InstancesController {
         Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
         Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
         Instance.app?.get("/api/instances/count", (request, response) => this.count(request, response));
+        Instance.app?.post("/api/instances/import", (request, response) => this.import(request, response));
         Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
         Instance.app?.post("/api/instance/:id/ports", (request, response) => this.ports(request, response));
         Instance.app?.get("/api/instance/:id/export", (request, response) => this.export(request, response));
@@ -78,6 +80,27 @@ export default class InstancesController {
         await Instances.updatePorts(request.params.id, request.body.start, request.body.end);
 
         return this.list(request, response);
+    }
+
+    import(request: Request, response: Response): void {
+        if (!request.user?.permissions.reboot) {
+            response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+
+            return;
+        }
+
+        const form = new Forms.IncomingForm();
+
+        form.maxFileSize = 5 * 1024 * 1024 * 1024;
+
+        form.parse(request, (_error, fields, files) => {
+            Instances.import(<string>fields.name, parseInt(<string>fields.port, 10), <string>fields.pin, <string>fields.username, files.file.path, true).finally(() => {
+                this.list(request, response);
+            });
+        });
     }
 
     export(request: Request, response: Response): void {
