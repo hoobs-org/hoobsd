@@ -163,6 +163,8 @@ class Logger {
             data = message;
         }
 
+        data.message = data.message || "";
+
         if (data.message === "" && (data.instance !== Instance.id || (data.prefix && data.prefix !== ""))) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
