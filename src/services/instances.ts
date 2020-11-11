@@ -869,25 +869,21 @@ export default class Instances {
         return new Promise((resolve) => {
             let results: { [key: string]: any } = {};
 
-            createReadStream(file)
-                .pipe(Unzip.Parse())
-                .on("entry", async (entry) => {
-                    const filename = entry.path;
+            createReadStream(file).pipe(Unzip.Parse()).on("entry", (entry) => {
+                const filename = entry.path;
 
-                    if (filename === "meta") {
-                        const content = await entry.buffer();
-
+                if (filename === "meta") {
+                    entry.buffer().then((content: any) => {
                         try {
                             results = JSON.parse(content);
                         } catch (_error) {
                             results = {};
                         }
-                    } else {
-                        entry.autodrain();
 
-                        resolve(results);
-                    }
-                });
+                        return resolve(results);
+                    });
+                }
+            }).on("finish", () => resolve(results));
         });
     }
 
@@ -917,16 +913,25 @@ export default class Instances {
 
                             await Instances.createService(name, port, pin, username);
 
-                            if (Instance.manager === "yarn") {
-                                execSync("yarn install --unsafe-perm --ignore-engines", {
-                                    cwd: Paths.storagePath(id),
-                                    stdio: "inherit",
-                                });
-                            } else {
-                                execSync("npm install --unsafe-perm", {
-                                    cwd: Paths.storagePath(id),
-                                    stdio: "inherit",
-                                });
+                            const index = Instance.instances.findIndex((n) => n.id === id);
+
+                            if (index >= 0) {
+                                if (metadata.data.autostart !== undefined) Instance.instances[index].autostart = metadata.data.autostart;
+                                if (metadata.data.ports !== undefined) Instance.instances[index].ports = metadata.data.ports;
+
+                                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+
+                                if (Instance.manager === "yarn") {
+                                    execSync("yarn install --unsafe-perm --ignore-engines", {
+                                        cwd: Paths.storagePath(id),
+                                        stdio: "inherit",
+                                    });
+                                } else {
+                                    execSync("npm install --unsafe-perm", {
+                                        cwd: Paths.storagePath(id),
+                                        stdio: "inherit",
+                                    });
+                                }
                             }
 
                             removeSync(join(Paths.backupPath(), "stage"));
