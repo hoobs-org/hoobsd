@@ -64,6 +64,7 @@ export default class InstancesController {
                 error: "Unauthorized.",
             });
         }
+
         await Instances.updateInstance(request.params.id, request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
 
         return this.list(request, response);
