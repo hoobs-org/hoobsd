@@ -913,13 +913,13 @@ export default class Instances {
 
                             await Instances.createService(name, port, pin, username);
 
-                            const index = Instance.instances.findIndex((n) => n.id === id);
+                            const instances = Instances.list();
+                            const index = instances.findIndex((n) => n.id === id);
 
                             if (index >= 0) {
-                                if (metadata.data.autostart !== undefined) Instance.instances[index].autostart = metadata.data.autostart;
-                                if (metadata.data.ports !== undefined) Instance.instances[index].ports = metadata.data.ports;
-
-                                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                                if (metadata.data.autostart !== undefined) instances[index].autostart = metadata.data.autostart;
+                                if (metadata.data.ports !== undefined) instances[index].ports = metadata.data.ports;
+                                if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.instancesPath(), formatJson(instances));
 
                                 if (Instance.manager === "yarn") {
                                     execSync("yarn install --unsafe-perm --ignore-engines", {
