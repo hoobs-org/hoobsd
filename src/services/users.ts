@@ -97,7 +97,7 @@ export default class Users {
                 permissions: {
                     accessories: true,
                     controller: true,
-                    instnace: true,
+                    instances: true,
                     terminal: true,
                     plugins: true,
                     users: false,

@@ -28,6 +28,7 @@ export default class InstancesController {
         Instance.app?.get("/api/instances/count", (request, response) => this.count(request, response));
         Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
         Instance.app?.post("/api/instance/:id/ports", (request, response) => this.ports(request, response));
+        Instance.app?.get("/api/instance/:id/export", (request, response) => this.export(request, response));
         Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
     }
 
@@ -42,7 +43,7 @@ export default class InstancesController {
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instance) {
+        if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instances) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -55,20 +56,19 @@ export default class InstancesController {
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instance) {
+        if (!request.user?.permissions.instances) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
             });
         }
-
-        await Instances.updateInstance(request.params.id, request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
+        await Instances.updateInstance(request.params.id, request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
 
         return this.list(request, response);
     }
 
     async ports(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instance) {
+        if (!request.user?.permissions.instances) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -80,8 +80,26 @@ export default class InstancesController {
         return this.list(request, response);
     }
 
+    export(request: Request, response: Response): void {
+        if (!request.user?.permissions.instances) {
+            response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+
+            return;
+        }
+
+        Instances.export(request.params.id).then((filename) => response.send({
+            success: true,
+            filename,
+        })).catch((error) => response.send({
+            error: error.message || "Unable to create backup",
+        }));
+    }
+
     async remove(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instance) {
+        if (!request.user?.permissions.instances) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

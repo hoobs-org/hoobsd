@@ -26,7 +26,14 @@ import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
-import { dirname, join } from "path";
+
+import {
+    dirname,
+    join,
+    extname,
+    basename,
+} from "path";
+
 import { LogLevel } from "homebridge/lib/logger";
 import Paths from "../services/paths";
 import Config from "../services/config";
@@ -85,6 +92,7 @@ export default class API extends EventEmitter {
         this.listner = HTTP.createServer(Instance.app);
 
         this.terminator = createHttpTerminator({
+            gracefulTerminationTimeout: 500,
             server: this.listner,
         });
 
@@ -233,8 +241,9 @@ export default class API extends EventEmitter {
         Instance.app?.use("/themes", Express.static(Paths.themePath()));
 
         Instance.app?.use("/backups", Express.static(Paths.backupPath(), {
-            setHeaders: (response) => {
-                response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
+            setHeaders: (response, path) => {
+                if (extname(path) === ".instance") response.set("content-disposition", `attachment; filename="${basename(path).split("_")[0]}.instance"`);
+                if (extname(path) === ".backup") response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
             },
         }));
 
@@ -293,10 +302,11 @@ export default class API extends EventEmitter {
             Console.debug("Shutting down");
 
             this.running = false;
+            this.socket.stop();
 
             await this.terminator.terminate();
 
-            this.socket.stop();
+            Console.debug("Stopped");
         }
     }
 }

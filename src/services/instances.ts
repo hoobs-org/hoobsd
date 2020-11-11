@@ -757,6 +757,53 @@ export default class Instances {
         Instance.users = [];
     }
 
+    static export(id: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+            id = sanitize(id);
+
+            const instance = Instance.instances.find((item) => item.id === id);
+
+            writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
+                date: (new Date()).getTime(),
+                type: "instance",
+                data: {
+                    type: instance?.type,
+                    ports: instance?.ports,
+                    autostart: instance?.autostart,
+                },
+                product: "hoobs",
+                generator: "hoobsd",
+                version: Instance.version,
+            }));
+
+            if (!instance) reject(new Error("instance does not exist"));
+
+            const filename = `${id}_${new Date().getTime()}`;
+            const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
+            const archive = Archiver("zip");
+
+            output.on("close", () => {
+                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.instance`));
+                unlinkSync(join(Paths.storagePath(), "meta"));
+
+                resolve(`${filename}.instance`);
+            });
+
+            archive.on("error", (error) => {
+                reject(error);
+            });
+
+            archive.pipe(output);
+
+            archive.file(join(Paths.storagePath(), "meta"), { name: "meta" });
+            archive.file(join(Paths.storagePath(), `${instance?.id}.conf`), { name: `${instance?.id}.conf` });
+
+            Instances.dig(archive, join(Paths.storagePath(), `${instance?.id}`));
+
+            archive.finalize();
+        });
+    }
+
     static backup(): Promise<string> {
         return new Promise((resolve, reject) => {
             writeFileSync(join(Paths.storagePath(), "meta"), formatJson({

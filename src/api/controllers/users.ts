@@ -88,7 +88,7 @@ export default class UsersController {
             request.body.permissions = {
                 accessories: true,
                 controller: true,
-                instnace: true,
+                instances: true,
                 terminal: true,
                 plugins: true,
                 users: true,
@@ -100,7 +100,7 @@ export default class UsersController {
         await Users.create(request.body.name, request.body.username, request.body.password, request.body.permissions || {
             accessories: false,
             controller: false,
-            instnace: false,
+            instances: false,
             terminal: false,
             plugins: false,
             users: false,

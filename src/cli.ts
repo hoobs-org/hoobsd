@@ -67,7 +67,7 @@ export = function Daemon(): void {
 
                     Instance.instances = Instances.list();
 
-                    if (jsonEquals(current, Instance.instances.find((n: any) => n.id === Instance.id))) {
+                    if (!jsonEquals(current, Instance.instances.find((n: any) => n.id === Instance.id))) {
                         Instance.server?.stop().then(() => {
                             Instance.server?.start();
                         });

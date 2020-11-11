@@ -130,12 +130,14 @@ export default class SystemController {
         response.send(results);
     }
 
-    backup(request: Request, response: Response): Response {
+    backup(request: Request, response: Response): void {
         if (!request.user?.permissions.controller) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         Instances.backup().then((filename) => response.send({
@@ -144,10 +146,6 @@ export default class SystemController {
         })).catch((error) => response.send({
             error: error.message || "Unable to create backup",
         }));
-
-        return response.send({
-            success: true,
-        });
     }
 
     async restore(request: Request, response: Response): Promise<Response> {

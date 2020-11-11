@@ -146,10 +146,9 @@ export default class Server extends EventEmitter {
         Console.debug("Shutting down");
 
         if (Instance.bridge) await Instance.bridge.stop();
+        if (Instance.socket) Instance.socket.stop();
 
         Console.debug("Stopped");
-
-        if (Instance.socket) Instance.socket.stop();
 
         Instance.bridge = undefined;
     }
