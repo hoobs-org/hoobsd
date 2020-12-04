@@ -33,8 +33,7 @@
     "scripts": {
         "build": "bin/build --lint --pack",
         "lint": "eslint 'src/**/*.ts'",
-        "api": "sudo bin/debug build --debug api",
-        "instance": "sudo bin/debug --debug"
+        "hoobsd": "sudo bin/debug build --debug"
     },
     "dependencies": {
         "archiver": "^5.0.2",

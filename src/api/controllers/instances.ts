@@ -44,7 +44,7 @@ export default class InstancesController {
         });
     }
 
-    async create(request: Request, response: Response): Promise<Response> {
+    create(request: Request, response: Response): Response {
         if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instances) {
             return response.send({
                 token: false,
@@ -52,7 +52,7 @@ export default class InstancesController {
             });
         }
 
-        await Instances.createService(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
+        Instances.createService(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
 
         return this.list(request, response);
     }
@@ -122,7 +122,7 @@ export default class InstancesController {
         }));
     }
 
-    async remove(request: Request, response: Response): Promise<Response> {
+    remove(request: Request, response: Response): Response {
         if (!request.user?.permissions.instances) {
             return response.send({
                 token: false,
@@ -130,7 +130,7 @@ export default class InstancesController {
             });
         }
 
-        await Instances.removeService(request.params.id);
+        Instances.removeService(request.params.id);
 
         return this.list(request, response);
     }

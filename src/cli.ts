@@ -40,53 +40,10 @@ export = function Daemon(): void {
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; })
         .option("-d, --debug", "turn on debug level logging", () => { Instance.debug = true; })
         .option("-v, --verbose", "turn on verbose logging", () => { Instance.verbose = true; })
-        .option("-c, --container", "run in a container", () => { Instance.container = true; });
+        .option("-c, --container", "run in a container", () => { Instance.container = true; })
+        .option("-o, --orphans", "keep cached accessories for orphaned plugins", () => { Instance.orphans = false; });
 
     Program.command("start", { isDefault: true })
-        .description("start a server instance")
-        .option("-i, --instance <name>", "set the instance name")
-        .option("-p, --port <port>", "change the port the bridge runs on")
-        .option("-o, --orphans", "keep cached accessories for orphaned plugins")
-        .action(async (command) => {
-            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
-
-            Instance.id = sanitize(command.instance, "api");
-            Instance.orphans = !command.orphans;
-            Instance.instances = Instances.list();
-            Instance.users = Users.list();
-            Instance.cache = new Cache();
-            Instance.cache.load(join(Paths.storagePath(Instance.id), "cache"));
-
-            const instance = Instance.instances.find((n) => n.id === Instance.id);
-
-            if (instance) {
-                Instance.server = new Server(command.port || instance.port);
-
-                Watcher.watch(Paths.instancesPath()).on("change", () => {
-                    const current = cloneJson(Instance.instances.find((n: any) => n.id === Instance.id));
-
-                    Instance.instances = Instances.list();
-
-                    if (!jsonEquals(current, Instance.instances.find((n: any) => n.id === Instance.id))) {
-                        Instance.server?.stop().then(() => {
-                            Instance.server?.start();
-                        });
-                    }
-                });
-
-                Watcher.watch(Paths.configPath()).on("change", () => {
-                    Instance.server?.stop().then(() => {
-                        Instance.server?.start();
-                    });
-                });
-
-                Instance.server.start();
-            } else {
-                Console.error(`${Instance.id} is not created, please run 'sudo hoobs instance add' to create`);
-            }
-        });
-
-    Program.command("api")
         .description("start the api service")
         .option("-p, --port <port>", "change the port the api runs on")
         .action((command) => {
@@ -108,11 +65,8 @@ export = function Daemon(): void {
                 Instance.api = API.createServer(command.port || instance.port);
 
                 Watcher.watch(Paths.instancesPath()).on("change", () => {
-                    Instance.api?.stop().then(() => {
-                        Instance.instances = Instances.list();
-                        Instance.api = API.createServer(command.port || instance.port);
-                        Instance.api.start();
-                    });
+                    Instance.instances = Instances.list();
+                    Instance.api?.sync();
                 });
 
                 Watcher.watch(join(Paths.storagePath(), "access")).on("change", () => {
@@ -132,6 +86,52 @@ export = function Daemon(): void {
             }
         });
 
+    Program.command("instance")
+        .description("start a bridge instance")
+        .option("-i, --instance <name>", "set the instance name")
+        .option("-p, --port <port>", "change the port the bridge runs on")
+        .action(async (command) => {
+            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+
+            Instance.id = sanitize(command.instance, "api");
+            Instance.instances = Instances.list();
+            Instance.users = Users.list();
+            Instance.cache = new Cache();
+            Instance.cache.load(join(Paths.storagePath(Instance.id), "cache"));
+
+            const instance = Instance.instances.find((n) => n.id === Instance.id);
+
+            if (instance) {
+                Instance.server = new Server(command.port || instance.port);
+
+                Watcher.watch(Paths.instancesPath()).on("change", () => {
+                    const current = cloneJson(Instance.instances.find((n: any) => n.id === Instance.id));
+
+                    if (current) {
+                        Instance.instances = Instances.list();
+
+                        const modified = Instance.instances.find((n: any) => n.id === Instance.id);
+
+                        if (modified && !jsonEquals(current, modified)) {
+                            Instance.server?.stop().then(() => {
+                                Instance.server?.start();
+                            });
+                        }
+                    }
+                });
+
+                Watcher.watch(Paths.configPath()).on("change", () => {
+                    Instance.server?.stop().then(() => {
+                        Instance.server?.start();
+                    });
+                });
+
+                Instance.server.start();
+            } else {
+                Console.error(`${Instance.id} is not created, please run 'sudo hoobs instance add' to create`);
+            }
+        });
+
     Program.command("service <action>")
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
@@ -140,19 +140,19 @@ export = function Daemon(): void {
 
             Instance.id = sanitize(command.instance);
 
-            Instances.controlInstance(action, Instance.id).then((success) => {
+            Instances.controlInstance(action).then((success) => {
                 if (success) {
                     switch (action) {
                         case "start":
-                            Console.info(`${Instance.id} instance started`);
+                            Console.info("hoobsd started");
                             break;
 
                         case "stop":
-                            Console.info(`${Instance.id} instance stoped`);
+                            Console.info("hoobsd stoped");
                             break;
 
                         case "restart":
-                            Console.info(`${Instance.id} instance restarted`);
+                            Console.info("hoobsd restarted");
                             break;
 
                         default:
@@ -182,7 +182,7 @@ export = function Daemon(): void {
             if (Instance.server) await Instance.server.stop();
             if (Instance.api) await Instance.api.stop();
 
-            process.exit(128 + signals[signal]);
+            process.exit();
         });
     });
 

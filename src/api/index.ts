@@ -22,8 +22,9 @@ import Express from "express";
 import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
-import { spawn, IPty } from "node-pty";
+import PTY from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
+import { spawn, ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
 
@@ -38,6 +39,7 @@ import { LogLevel } from "homebridge/lib/logger";
 import Paths from "../services/paths";
 import Config from "../services/config";
 import Instance from "../services/instance";
+import { InstanceRecord } from "../services/instances";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
@@ -73,6 +75,8 @@ export default class API extends EventEmitter {
 
     declare private enviornment: { [key: string]: string };
 
+    declare private processes: { [key: string]: ChildProcess };
+
     declare private socket: Socket;
 
     declare private listner: HTTP.Server;
@@ -86,6 +90,7 @@ export default class API extends EventEmitter {
         this.config = Config.configuration();
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
+        this.processes = {};
 
         Instance.app = Express();
 
@@ -117,10 +122,10 @@ export default class API extends EventEmitter {
             socket.on(Events.SHELL_CONNECT, () => {
                 Console.debug("terminal connect");
 
-                let shell: IPty;
+                let shell: PTY.IPty;
 
                 try {
-                    shell = spawn(process.env.SHELL || "sh", [], {
+                    shell = PTY.spawn(process.env.SHELL || "sh", [], {
                         name: "xterm-color",
                         cwd: Paths.storagePath(),
                         env: _.create(process.env, this.enviornment),
@@ -274,6 +279,67 @@ export default class API extends EventEmitter {
         return api;
     }
 
+    launch(id: string, port: number): void {
+        const flags: string[] = [
+            "instance",
+            "--mode", Instance.mode,
+            "--instance", id,
+            "--port", `${port}`,
+        ];
+
+        if (Instance.debug) flags.push("--debug");
+        if (Instance.verbose) flags.push("--verbose");
+        if (Instance.container) flags.push("--container");
+        if (!Instance.orphans) flags.push("--orphans");
+
+        this.processes[id] = spawn(join(dirname(realpathSync(__filename)), "../../bin/hoobsd"), flags).on("exit", () => {
+            this.launch(id, port);
+        });
+    }
+
+    teardown(id: string): Promise<void> {
+        return new Promise((resolve) => {
+            if (this.processes[id] && !this.processes[id].killed) {
+                this.processes[id].removeAllListeners("exit");
+
+                this.processes[id].on("exit", () => {
+                    resolve();
+                });
+
+                this.processes[id].kill();
+
+                delete this.processes[id];
+            } else {
+                resolve();
+            }
+        });
+    }
+
+    sync(): Promise<void> {
+        return new Promise((resolve) => {
+            const waiters: Promise<void>[] = [];
+            const current = Object.keys(this.processes);
+
+            for (let i = 0; i < current.length; i += 1) {
+                if (!Instance.instances.find((item) => item.id === current[i])) {
+                    waiters.push(this.teardown(current[i]));
+                }
+            }
+
+            const instances = Instance.instances.filter((item) => item.type === "bridge");
+
+            for (let i = 0; i < instances.length; i += 1) {
+                if (!this.processes[instances[i].id] || this.processes[instances[i].id].killed) {
+                    this.launch(instances[i].id, instances[i].port);
+                }
+            }
+
+            Promise.all(waiters).then(() => {
+                resolve();
+            });
+        });
+    }
+
     async start(): Promise<void> {
         this.socket = new Socket();
 
@@ -294,19 +360,41 @@ export default class API extends EventEmitter {
             this.emit(Events.LISTENING, this.port);
         });
 
+        const instances = Instance.instances.filter((item) => item.type === "bridge");
+
+        for (let i = 0; i < instances.length; i += 1) {
+            this.launch(instances[i].id, instances[i].port);
+        }
+
         Monitor();
     }
 
-    async stop(): Promise<void> {
-        if (this.running) {
-            Console.debug("Shutting down");
+    stop(): Promise<void> {
+        return new Promise((resolve) => {
+            if (this.running) {
+                Console.debug("Shutting down");
 
-            this.running = false;
-            this.socket.stop();
+                this.running = false;
 
-            await this.terminator.terminate();
+                const instances = Instance.instances.filter((item) => item.type === "bridge");
+                const waiters: Promise<void>[] = [];
 
-            Console.debug("Stopped");
-        }
+                for (let i = 0; i < instances.length; i += 1) {
+                    waiters.push(this.teardown(instances[i].id));
+                }
+
+                Promise.all(waiters).then(() => {
+                    this.socket.stop();
+
+                    this.terminator.terminate().then(() => {
+                        Console.debug("Stopped");
+
+                        resolve();
+                    });
+                });
+            } else {
+                resolve();
+            }
+        });
     }
 }
