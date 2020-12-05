@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import File from "fs-extra";
-import { dirname, join } from "path";
+import { join, basename, dirname } from "path";
 import Instance from "./instance";
 
 export default class Paths {
@@ -60,7 +60,19 @@ export default class Paths {
     }
 
     static applicationPath(): string {
-        return join(dirname(File.realpathSync(__filename)), "../../");
+        if (basename(process.execPath) === "node") {
+            return join(__dirname, "../../");
+        }
+
+        return dirname(process.execPath);
+    }
+
+    static yarn(): string {
+        if (basename(process.execPath) === "node") {
+            return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
+        }
+
+        return join(Paths.applicationPath(), "yarn");
     }
 
     static storagePath(instance?: string): string {

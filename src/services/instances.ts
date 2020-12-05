@@ -636,17 +636,10 @@ export default class Instances {
                                 if (metadata.data.ports !== undefined) instances[index].ports = metadata.data.ports;
                                 if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.instancesPath(), formatJson(instances));
 
-                                if (Instance.manager === "yarn") {
-                                    execSync("yarn install --unsafe-perm --ignore-engines", {
-                                        cwd: Paths.storagePath(id),
-                                        stdio: "inherit",
-                                    });
-                                } else {
-                                    execSync("npm install --unsafe-perm", {
-                                        cwd: Paths.storagePath(id),
-                                        stdio: "inherit",
-                                    });
-                                }
+                                execSync(`${Paths.yarn()} install --unsafe-perm --ignore-engines`, {
+                                    cwd: Paths.storagePath(id),
+                                    stdio: "inherit",
+                                });
                             }
 
                             removeSync(join(Paths.backupPath(), "stage"));
@@ -694,17 +687,10 @@ export default class Instances {
                             const instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
                             for (let i = 0; i < instances.length; i += 1) {
-                                if (Instance.manager === "yarn") {
-                                    execSync("yarn install --unsafe-perm --ignore-engines", {
-                                        cwd: Paths.storagePath(instances[i].id),
-                                        stdio: "inherit",
-                                    });
-                                } else {
-                                    execSync("npm install --unsafe-perm", {
-                                        cwd: Paths.storagePath(instances[i].id),
-                                        stdio: "inherit",
-                                    });
-                                }
+                                execSync(`${Paths.yarn()} install --unsafe-perm --ignore-engines`, {
+                                    cwd: Paths.storagePath(instances[i].id),
+                                    stdio: "inherit",
+                                });
                             }
 
                             if (instances.find((item) => item.type === "api")) Instances.launchService();

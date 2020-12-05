@@ -54,7 +54,6 @@ export interface Application {
     terminating: boolean;
 
     version: string;
-    manager: string;
     instances: InstanceRecord[];
     users: UserRecord[];
     loggers: Loggers;
@@ -84,8 +83,7 @@ const instance: Application = {
     container: false,
     terminating: false,
 
-    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
-    manager: existsSync("/usr/local/bin/yarn") || existsSync("/usr/bin/yarn") ? "yarn" : "npm",
+    version: loadJson<any>(existsSync(join(__dirname, "../var/package.json")) ? join(__dirname, "../../var/package.json") : join(__dirname, "../../package.json"), {}).version,
     instances: [],
     users: [],
     loggers: {},

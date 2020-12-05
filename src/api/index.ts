@@ -22,9 +22,9 @@ import Express from "express";
 import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
-import PTY from "node-pty";
+import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
-import { spawn, ChildProcess } from "child_process";
+import Process from "child_process";
 import { EventEmitter } from "events";
 import { realpathSync, existsSync } from "fs-extra";
 
@@ -36,10 +36,10 @@ import {
 } from "path";
 
 import { LogLevel } from "homebridge/lib/logger";
+
 import Paths from "../services/paths";
 import Config from "../services/config";
 import Instance from "../services/instance";
-import { InstanceRecord } from "../services/instances";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
@@ -75,7 +75,7 @@ export default class API extends EventEmitter {
 
     declare private enviornment: { [key: string]: string };
 
-    declare private processes: { [key: string]: ChildProcess };
+    declare private processes: { [key: string]: Process.ChildProcess };
 
     declare private socket: Socket;
 
@@ -112,7 +112,7 @@ export default class API extends EventEmitter {
         }
 
         this.enviornment = {
-            PATH: `${join(dirname(realpathSync(join(__filename, "../../"))), "cmd")}:${process.env.PATH}:${paths.join(":")}`,
+            PATH: `${process.env.PATH}:${paths.join(":")}`,
             USER: `${process.env.USER}`,
         };
 
@@ -122,10 +122,10 @@ export default class API extends EventEmitter {
             socket.on(Events.SHELL_CONNECT, () => {
                 Console.debug("terminal connect");
 
-                let shell: PTY.IPty;
+                let shell: IPty;
 
                 try {
-                    shell = PTY.spawn(process.env.SHELL || "sh", [], {
+                    shell = spawn(process.env.SHELL || "sh", [], {
                         name: "xterm-color",
                         cwd: Paths.storagePath(),
                         env: _.create(process.env, this.enviornment),
@@ -292,9 +292,19 @@ export default class API extends EventEmitter {
         if (Instance.container) flags.push("--container");
         if (!Instance.orphans) flags.push("--orphans");
 
-        this.processes[id] = spawn(join(dirname(realpathSync(__filename)), "../../bin/hoobsd"), flags).on("exit", () => {
-            this.launch(id, port);
-        });
+        if (basename(process.execPath) === "node") {
+            this.processes[id] = Process.spawn(process.execPath, [join(__dirname, "../../bin/hoobsd"), ...flags], {
+                stdio: "ignore",
+            }).on("exit", () => {
+                this.launch(id, port);
+            });
+        } else {
+            this.processes[id] = Process.spawn(join(dirname(process.execPath), "worker"), flags, {
+                stdio: "ignore",
+            }).on("exit", () => {
+                this.launch(id, port);
+            });
+        }
     }
 
     teardown(id: string): Promise<void> {

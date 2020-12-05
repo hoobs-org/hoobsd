@@ -261,8 +261,6 @@ export default class Server extends EventEmitter {
             setTimeout(() => {
                 this.emit(Events.SHUTDOWN);
 
-                Plugins.unlinkLibs();
-
                 resolve();
             }, 3000);
         });

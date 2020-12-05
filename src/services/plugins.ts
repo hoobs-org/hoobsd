@@ -23,9 +23,6 @@ import {
     existsSync,
     readFileSync,
     realpathSync,
-    unlinkSync,
-    removeSync,
-    ensureSymlinkSync,
 } from "fs-extra";
 
 import {
@@ -65,33 +62,45 @@ export default class Plugins {
             const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(instance), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
-                const directory = join(Plugins.directory, plugins[i]);
-                const pjson = Plugins.loadPackage(directory);
+                if (plugins[i] !== "hap-nodejs") {
+                    const directory = join(Plugins.directory, plugins[i]);
+                    const pjson = Plugins.loadPackage(directory);
 
-                if (existsSync(directory) && pjson) {
-                    const identifier: string = pjson.name;
-                    const name: string = PluginManager.extractPluginName(identifier);
-                    const scope: string = PluginManager.extractPluginScope(identifier);
-                    const library: string = pjson.main || "./index.js";
+                    if (existsSync(directory) && pjson) {
+                        const identifier: string = pjson.name;
+                        const name: string = PluginManager.extractPluginName(identifier);
+                        const scope: string = PluginManager.extractPluginScope(identifier);
+                        const library: string = pjson.main || "./index.js";
 
-                    callback(identifier, name, scope, directory, pjson, library);
+                        callback(identifier, name, scope, directory, pjson, library);
+                    }
                 }
             }
         }
     }
 
-    static linkLibs() {
-        ensureSymlinkSync(join(Paths.applicationPath(), "node_modules", "hap-nodejs"), join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"));
-    }
+    static linkLibs(): Promise<void> {
+        return new Promise((resolve) => {
+            if (!existsSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"))) {
+                const flags = [];
 
-    static unlinkLibs() {
-        if (existsSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"))) {
-            try {
-                unlinkSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"));
-            } catch (_error) {
-                removeSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"));
+                flags.push("add");
+                flags.push("--unsafe-perm");
+                flags.push("--ignore-engines");
+                flags.push("hap-nodejs");
+
+                const proc = spawn(Paths.yarn(), flags, {
+                    cwd: Paths.storagePath(Instance.id),
+                    stdio: "ignore",
+                });
+
+                proc.on("close", () => {
+                    resolve();
+                });
+            } else {
+                resolve();
             }
-        }
+        });
     }
 
     static install(name: string, version?: string): Promise<void> {
@@ -100,20 +109,12 @@ export default class Plugins {
         return new Promise((resolve, reject) => {
             const flags = [];
 
-            if (Instance.manager === "yarn") {
-                flags.push("add");
-                flags.push("--unsafe-perm");
-                flags.push("--ignore-engines");
-            } else {
-                flags.push("install");
-                flags.push("--unsafe-perm");
-            }
-
+            flags.push("add");
+            flags.push("--unsafe-perm");
+            flags.push("--ignore-engines");
             flags.push(`${name}@${tag}`);
 
-            Plugins.unlinkLibs();
-
-            const proc = spawn(Instance.manager || "npm", flags, {
+            const proc = spawn(Paths.yarn(), flags, {
                 cwd: Paths.storagePath(Instance.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
@@ -191,17 +192,10 @@ export default class Plugins {
         return new Promise((resolve, reject) => {
             const flags = [];
 
-            if (Instance.manager === "yarn") {
-                flags.push("remove");
-            } else {
-                flags.push("uninstall");
-            }
-
+            flags.push("remove");
             flags.push(name);
 
-            Plugins.unlinkLibs();
-
-            const proc = spawn(Instance.manager || "npm", flags, {
+            const proc = spawn(Paths.yarn(), flags, {
                 cwd: Paths.storagePath(Instance.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
@@ -260,18 +254,12 @@ export default class Plugins {
         return new Promise((resolve) => {
             const flags = [];
 
-            if (Instance.manager === "yarn") {
-                flags.push("upgrade");
-                flags.push("--ignore-engines");
-            } else {
-                flags.push("update");
-            }
+            flags.push("upgrade");
+            flags.push("--ignore-engines");
 
             if (name) flags.push(`${name}@${tag}`);
 
-            Plugins.unlinkLibs();
-
-            const proc = spawn(Instance.manager || "npm", flags, {
+            const proc = spawn(Paths.yarn(), flags, {
                 cwd: Paths.storagePath(Instance.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
@@ -418,7 +406,7 @@ export default class Plugins {
                 prefix = undefined;
 
                 try {
-                    prefix = (`${execSync("yarn global dir")}`).trim();
+                    prefix = (`${execSync(`${Paths.yarn()} global dir`)}`).trim();
                 } catch (error) {
                     prefix = undefined;
                 }

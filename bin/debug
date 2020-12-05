@@ -2,6 +2,7 @@
 
 ARGUMENTS=""
 BUILD="false"
+USER=$(whoami)
 
 while [ "$1" != "" ]; do
     case $1 in
@@ -16,7 +17,7 @@ while [ "$1" != "" ]; do
 done
 
 if [[ "$BUILD" = "true" ]]; then
-    ./node_modules/.bin/nodemon --watch src --ext ts --signal SIGINT --exec "bin/build && clear && bin/hoobsd --mode development$ARGUMENTS"
+    sudo ./node_modules/.bin/nodemon --watch src --ext ts --signal SIGINT --exec "sudo -u $USER bin/build && clear && node bin/hoobsd --mode development$ARGUMENTS"
 else
-    ./node_modules/.bin/nodemon --watch src --ext ts --delay 5 --signal SIGINT --exec "clear && bin/hoobsd --mode development$ARGUMENTS"
+    sudo ./node_modules/.bin/nodemon --watch src --ext ts --delay 5 --signal SIGINT --exec "clear && node bin/hoobsd --mode development$ARGUMENTS"
 fi

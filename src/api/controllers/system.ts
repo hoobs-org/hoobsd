@@ -21,11 +21,12 @@ import Forms from "formidable";
 import Mac from "macaddress";
 import { join } from "path";
 import { existsSync, readdirSync } from "fs-extra";
-import { exec, execSync } from "child_process";
+import { exec } from "child_process";
 import { Request, Response } from "express-serve-static-core";
 import Instance from "../../services/instance";
 import Paths from "../../services/paths";
 import Instances from "../../services/instances";
+import { Console } from "../../services/logger";
 
 export default class SystemController {
     constructor() {
@@ -203,23 +204,9 @@ export default class SystemController {
 
         await Instances.backup();
 
-        const flags = [];
+        Console.info("system upgrade not implimented");
 
-        if (Instance.manager === "yarn") {
-            flags.push("global");
-            flags.push("upgrade");
-            flags.push("--ignore-engines");
-        } else {
-            flags.push("install");
-            flags.push("-g");
-            flags.push("--unsafe-perm");
-        }
-
-        execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/hoobsd@latest`);
-        execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/cli@latest`);
-
-        if ((Instances.extentions().find((item) => item.feature === "gui") || {}).enabled) execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/gui@latest`);
-        if ((Instances.extentions().find((item) => item.feature === "touch") || {}).enabled) execSync(`${Instance.manager || "npm"} ${flags.join(" ")} @hoobs/touch@latest`);
+        // UPGRADE BINARY
 
         return this.reboot(request, response);
     }

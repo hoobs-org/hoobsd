@@ -23,6 +23,7 @@ import Program from "commander";
 import Watcher from "chokidar";
 import { join, dirname } from "path";
 import { realpathSync } from "fs-extra";
+
 import Instance from "./services/instance";
 import Instances from "./services/instances";
 import Users from "./services/users";
@@ -39,15 +40,15 @@ export = function Daemon(): void {
 
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; })
         .option("-d, --debug", "turn on debug level logging", () => { Instance.debug = true; })
-        .option("-v, --verbose", "turn on verbose logging", () => { Instance.verbose = true; })
-        .option("-c, --container", "run in a container", () => { Instance.container = true; })
-        .option("-o, --orphans", "keep cached accessories for orphaned plugins", () => { Instance.orphans = false; });
+        .option("--container", "run in a container", () => { Instance.container = true; })
+        .option("--orphans", "keep cached accessories for orphaned plugins", () => { Instance.orphans = false; })
+        .option("--verbose", "turn on verbose logging", () => { Instance.verbose = true; });
 
     Program.command("start", { isDefault: true })
         .description("start the api service")
         .option("-p, --port <port>", "change the port the api runs on")
         .action((command) => {
-            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+            Instance.enviornment = Enviornment.config({ path: join(__dirname, `../var/.env.${Instance.mode || "production"}`) }).parsed;
 
             Instance.id = sanitize("api");
             Instance.display = "API";

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**************************************************************************************************
  * hoobsd                                                                                         *
  * Copyright (C) 2020 HOOBS                                                                       *
@@ -19,11 +17,5 @@
  **************************************************************************************************/
 
 process.title = "hoobsd";
-process.unhandledRejections = "none";
 
-const { join, dirname } = require("path");
-const { realpathSync } = require("fs");
-
-const daemon = require(join(dirname(realpathSync(__filename)), "../lib/cli"));
-
-daemon();
+require("../lib/cli")();
