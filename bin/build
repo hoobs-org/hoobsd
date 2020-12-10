@@ -20,20 +20,11 @@
 
 const Program = require("commander");
 const Prompt = require("prompts");
-
-const {
-    existsSync,
-    mkdirSync,
-    realpathSync,
-    readFileSync,
-    removeSync,
-    writeFileSync,
-} = require("fs-extra");
-
-const { join, dirname } = require("path");
+const { existsSync, mkdirSync, readFileSync } = require("fs-extra");
+const { join } = require("path");
 const { execSync } = require("child_process");
 
-const root = join(dirname(realpathSync(__filename)), "../");
+const root = join(__dirname, "../");
 const pjson = JSON.parse(readFileSync(join(root, "package.json")).toString());
 
 Program.version(pjson.version, "-v, --version", "output the current version")
@@ -47,40 +38,14 @@ Program.command("server", { isDefault: true })
         if (command.lint) execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, { cwd: root, stdio: "inherit" });
 
         if (!existsSync(join(root, "lib"))) mkdirSync(join(root, "lib"));
-        if (!existsSync(join(root, "dist"))) mkdirSync(join(root, "dist"));
-        if (!existsSync(join(root, "dist"))) mkdirSync(join(root, "yarn"));
 
         execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
-        execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
-        execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "yarn")}`, { cwd: root, stdio: "inherit" });
-
         execSync(`${join(root, "node_modules", ".bin", "tsc")}`, { cwd: root, stdio: "inherit" });
 
         if (command.pack) {
-            const bonjour = readFileSync(join(root, "node_modules", "bonjour-hap", "lib", "helpers.js")).toString();
-
-            if (!existsSync(join(root, "dist"))) mkdirSync(join(root, "yarn"));
-
-            execSync(`cp -R ${join(root, "node_modules/yarn/*")} ${join(root, "yarn")}`, { cwd: root, stdio: "inherit" });
-
-            const pjson = JSON.parse(readFileSync(join(root, "yarn", "package.json")).toString());
-            const content = readFileSync(join(root, "yarn", "bin", "yarn.js")).toString();
-
-            pjson.main = "lib/cli.js";
-            pjson.bin = "bin/yarn.js";
-
-            writeFileSync(join(root, "yarn", "package.json"), JSON.stringify(pjson, null, 4));
-            writeFileSync(join(root, "yarn", "bin", "yarn.js"), content.replace(/require\(__dirname \+ '\//g, "require('"));
-            writeFileSync(join(root, "node_modules", "bonjour-hap", "lib", "helpers.js"), bonjour.replace(/require\('deep-equal'\)/g, "require('fast-deep-equal')"));
-
-            execSync(`cp ${join(root, "package.json")} ${join(root, "var", "package.json")}`, { cwd: root, stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . --target host --options max_old_space_size=4096 --output ../dist/yarn`, { cwd: join(root, "yarn"), stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . --target host --options max_old_space_size=4096 --output dist/hoobsd`, { cwd: root, stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "pkg")} . --target host --options max_old_space_size=4096 --output dist/worker`, { cwd: root, stdio: "inherit" });
-            execSync(`cp ${join(root, "node_modules/node-pty/build/Release/pty.node")} ${join(root, "dist", "pty.node")}`, { cwd: root, stdio: "inherit" });
-            execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "yarn")}`, { cwd: root, stdio: "inherit" });
-
-            removeSync(join(root, "var", "package.json"));
+            execSync("yarn pack", { cwd: root, stdio: "inherit" });
+            execSync(`mv ${join(root, `hoobs-hoobsd-v${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, { cwd: root, stdio: "inherit" });
+            execSync(`chmod 755 ${join(root, "lib", "package.tgz")}`, { cwd: root, stdio: "inherit" });
         }
     });
 

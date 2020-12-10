@@ -26,15 +26,8 @@ import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import Process from "child_process";
 import { EventEmitter } from "events";
-import { realpathSync, existsSync } from "fs-extra";
-
-import {
-    dirname,
-    join,
-    extname,
-    basename,
-} from "path";
-
+import { existsSync } from "fs-extra";
+import { join, extname, basename } from "path";
 import { LogLevel } from "homebridge/lib/logger";
 
 import Paths from "../services/paths";
@@ -241,8 +234,8 @@ export default class API extends EventEmitter {
 
         if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
 
-        Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(dirname(realpathSync(__filename)), "../../var")));
-        Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(dirname(realpathSync(__filename)), "../../var")));
+        Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../../var")));
+        Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../../var")));
         Instance.app?.use("/themes", Express.static(Paths.themePath()));
 
         Instance.app?.use("/backups", Express.static(Paths.backupPath(), {
@@ -292,19 +285,9 @@ export default class API extends EventEmitter {
         if (Instance.container) flags.push("--container");
         if (!Instance.orphans) flags.push("--orphans");
 
-        if (basename(process.execPath) === "node") {
-            this.processes[id] = Process.spawn(process.execPath, [join(__dirname, "../../bin/hoobsd"), ...flags], {
-                stdio: "ignore",
-            }).on("exit", () => {
-                this.launch(id, port);
-            });
-        } else {
-            this.processes[id] = Process.spawn(join(dirname(process.execPath), "worker"), flags, {
-                stdio: "ignore",
-            }).on("exit", () => {
-                this.launch(id, port);
-            });
-        }
+        this.processes[id] = Process.spawn(join(__dirname, "../../bin/hoobsd"), flags).on("exit", () => {
+            this.launch(id, port);
+        });
     }
 
     teardown(id: string): Promise<void> {

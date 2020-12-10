@@ -18,7 +18,6 @@
 
 import IO from "socket.io";
 import { join } from "path";
-import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
 import Cache from "./cache";
@@ -32,6 +31,7 @@ import { UserRecord } from "./users";
 import { loadJson } from "./formatters";
 
 export interface Application {
+    version: string;
     mode: string;
     enviornment: DotenvParseOutput | undefined;
 
@@ -53,7 +53,6 @@ export interface Application {
     container: boolean;
     terminating: boolean;
 
-    version: string;
     instances: InstanceRecord[];
     users: UserRecord[];
     loggers: Loggers;
@@ -62,6 +61,7 @@ export interface Application {
 }
 
 const instance: Application = {
+    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
     mode: "production",
     enviornment: {},
 
@@ -83,7 +83,6 @@ const instance: Application = {
     container: false,
     terminating: false,
 
-    version: loadJson<any>(existsSync(join(__dirname, "../var/package.json")) ? join(__dirname, "../../var/package.json") : join(__dirname, "../../package.json"), {}).version,
     instances: [],
     users: [],
     loggers: {},

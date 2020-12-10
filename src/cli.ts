@@ -21,8 +21,7 @@ import * as Enviornment from "dotenv";
 
 import Program from "commander";
 import Watcher from "chokidar";
-import { join, dirname } from "path";
-import { realpathSync } from "fs-extra";
+import { join } from "path";
 
 import Instance from "./services/instance";
 import Instances from "./services/instances";
@@ -34,8 +33,10 @@ import API from "./api";
 import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
+const runtime: string = (process.version || "").replace(/v/gi, "");
+
 export = function Daemon(): void {
-    Program.version(Instance.version, "-v, --version", "output the current version");
+    Program.version(`${Instance.version}${runtime !== "" ? ` (runtime ${runtime})` : ""}`, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; })
@@ -92,7 +93,7 @@ export = function Daemon(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .action(async (command) => {
-            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+            Instance.enviornment = Enviornment.config({ path: join(__dirname, `../.env.${Instance.mode || "production"}`) }).parsed;
 
             Instance.id = sanitize(command.instance, "api");
             Instance.instances = Instances.list();
@@ -137,7 +138,7 @@ export = function Daemon(): void {
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
         .action((action, command) => {
-            Instance.enviornment = Enviornment.config({ path: join(dirname(realpathSync(__filename)), `../.env.${Instance.mode || "production"}`) }).parsed;
+            Instance.enviornment = Enviornment.config({ path: join(__dirname, `../.env.${Instance.mode || "production"}`) }).parsed;
 
             Instance.id = sanitize(command.instance);
 
