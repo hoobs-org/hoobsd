@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import File from "fs-extra";
-import { join, basename } from "path";
+import { join } from "path";
 import Instance from "./instance";
 
 export default class Paths {

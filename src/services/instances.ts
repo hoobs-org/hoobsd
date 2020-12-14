@@ -270,7 +270,7 @@ export default class Instances {
             Console.notify(
                 "api",
                 "Instance Removed",
-                `Instance "${name} removed.`,
+                `Instance "${name}" removed.`,
                 NotificationType.WARN,
                 "layers",
             );
@@ -430,7 +430,7 @@ export default class Instances {
         Console.notify(
             "api",
             "Instance Added",
-            `Instance "${name} added.`,
+            `Instance "${name}" added.`,
             NotificationType.SUCCESS,
             "layers",
         );
