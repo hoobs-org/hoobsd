@@ -64,11 +64,7 @@ export default class Paths {
     }
 
     static yarn(): string {
-        if (basename(process.execPath) === "node") {
-            return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
-        }
-
-        return join(Paths.applicationPath(), "yarn");
+        return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
     }
 
     static storagePath(instance?: string): string {
