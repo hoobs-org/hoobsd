@@ -19,7 +19,7 @@
 import Crypto from "crypto";
 import { join } from "path";
 import { existsSync, writeFileSync } from "fs-extra";
-import Instance from "./instance";
+import State from "../state";
 import Paths from "./paths";
 import { parseJson, formatJson, loadJson } from "./formatters";
 
@@ -40,7 +40,7 @@ export default class Users {
     }
 
     static count(): number {
-        return Instance.users.length;
+        return State.users.length;
     }
 
     static generateSalt(): Promise<string> {
@@ -68,7 +68,7 @@ export default class Users {
     }
 
     static async generateToken(id: number, remember?: boolean): Promise<string | boolean> {
-        const user: UserRecord = Instance.users.filter((u) => u.id === id)[0];
+        const user: UserRecord = State.users.filter((u) => u.id === id)[0];
         const key: string = await Users.generateSalt();
 
         if (user) {
@@ -83,7 +83,7 @@ export default class Users {
 
             const session = Buffer.from(JSON.stringify(token), "utf8").toString("base64");
 
-            Instance.cache?.set(session, remember ? 525600 : Instance.api?.settings.inactive_logoff || 30, remember ? 525600 : Instance.api?.settings.inactive_logoff || 30);
+            State.cache?.set(session, remember ? 525600 : State.api?.settings.inactive_logoff || 30, remember ? 525600 : State.api?.settings.inactive_logoff || 30);
 
             return session;
         }
@@ -92,7 +92,7 @@ export default class Users {
     }
 
     static decodeToken(token: string | undefined): { [key: string]: any } {
-        if (Instance.api?.settings.disable_auth) {
+        if (State.api?.settings.disable_auth) {
             return {
                 permissions: {
                     accessories: true,
@@ -113,7 +113,7 @@ export default class Users {
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
         if (data) {
-            const user: UserRecord = Instance.users.filter((u) => u.id === data.id)[0];
+            const user: UserRecord = State.users.filter((u) => u.id === data.id)[0];
 
             if (!user) return {};
 
@@ -124,36 +124,36 @@ export default class Users {
     }
 
     static async validateToken(token: string | undefined): Promise<boolean> {
-        if (Instance.api?.settings.disable_auth) return true;
+        if (State.api?.settings.disable_auth) return true;
         if (!token || token === "") return false;
 
-        const server = Instance.cache?.get<number>(token);
+        const server = State.cache?.get<number>(token);
 
         if (!server || server <= 0) return false;
 
         const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
 
         if (data) {
-            const user = Instance.users.filter((u) => u.id === data.id)[0];
+            const user = State.users.filter((u) => u.id === data.id)[0];
 
             if (!user) return false;
 
             const challenge = await this.hashValue(user.password, data.key);
 
             if (challenge === data.token) {
-                Instance.cache?.touch(token, server);
+                State.cache?.touch(token, server);
 
                 return true;
             }
         }
 
-        Instance.cache?.remove(token);
+        State.cache?.remove(token);
 
         return false;
     }
 
     static get(username: string): UserRecord | undefined {
-        return Instance.users.filter((u) => u.username.toLowerCase() === username.toLowerCase())[0];
+        return State.users.filter((u) => u.username.toLowerCase() === username.toLowerCase())[0];
     }
 
     static async create(name: string, username: string, password: string, permissions: { [key: string]: boolean }): Promise<UserRecord> {
@@ -168,40 +168,40 @@ export default class Users {
 
         user.password = await this.hashValue(user.password, user.salt);
 
-        if (Instance.users.length > 0) user.id = Instance.users[Instance.users.length - 1].id + 1;
+        if (State.users.length > 0) user.id = State.users[State.users.length - 1].id + 1;
 
-        Instance.users.push(user);
+        State.users.push(user);
 
-        writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+        writeFileSync(join(Paths.storagePath(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
         return user;
     }
 
     static async update(id: number, name: string, username: string, password?: string, permissions?: { [key: string]: boolean }): Promise<UserRecord | boolean> {
-        const index = Instance.users.findIndex((u) => u.id === id);
+        const index = State.users.findIndex((u) => u.id === id);
 
         if (index >= 0) {
-            Instance.users[index].name = name;
-            Instance.users[index].username = username;
+            State.users[index].name = name;
+            State.users[index].username = username;
 
-            if (permissions) Instance.users[index].permissions = permissions;
-            if (password) Instance.users[index].password = await this.hashValue(password, Instance.users[index].salt);
+            if (permissions) State.users[index].permissions = permissions;
+            if (password) State.users[index].password = await this.hashValue(password, State.users[index].salt);
 
-            writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+            writeFileSync(join(Paths.storagePath(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
-            return Instance.users[index];
+            return State.users[index];
         }
 
         return false;
     }
 
     static delete(id: number): boolean {
-        const index = Instance.users.findIndex((u) => u.id === id);
+        const index = State.users.findIndex((u) => u.id === id);
 
         if (index >= 0) {
-            Instance.users.splice(index, 1);
+            State.users.splice(index, 1);
 
-            writeFileSync(join(Paths.storagePath(), "access"), formatJson(Instance.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+            writeFileSync(join(Paths.storagePath(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
             return true;
         }

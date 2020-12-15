@@ -20,7 +20,7 @@ import { EventEmitter } from "events";
 import { HAPStorage } from "hap-nodejs";
 import { existsSync } from "fs-extra";
 import { join } from "path";
-import Instance from "../services/instance";
+import State from "../state";
 import Paths from "../services/paths";
 import Socket from "./services/socket";
 import Bridge from "../bridge";
@@ -61,7 +61,7 @@ export default class Server extends EventEmitter {
         this.config = Config.configuration();
         this.settings = (this.config || {}).server || {};
 
-        Instance.socket = new Socket(Instance.id);
+        State.socket = new Socket(State.id);
 
         new CacheController();
         new StatusController();
@@ -70,7 +70,7 @@ export default class Server extends EventEmitter {
         new PluginsController();
         new AccessoriesController();
 
-        Plugins.load(Instance.id, (identifier, name, _scope, directory, _pjson, library) => {
+        Plugins.load(State.id, (identifier, name, _scope, directory, _pjson, library) => {
             if (existsSync(join(directory, library, "routes.js"))) {
                 const plugin = require(join(directory, library, "routes.js"));
 
@@ -98,36 +98,36 @@ export default class Server extends EventEmitter {
     }
 
     start(): void {
-        const instance = Instance.instances.find((n: any) => n.id === Instance.id);
+        const instance = State.instances.find((n: any) => n.id === State.id);
 
-        Instance.bridge = new Bridge(this.port || undefined);
+        State.bridge = new Bridge(this.port || undefined);
 
-        Instance.bridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
+        State.bridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
             Console.debug(`Setup URI '${uri}'`);
         });
 
-        Instance.bridge?.on(Events.LISTENING, () => {
+        State.bridge?.on(Events.LISTENING, () => {
             Console.notify(
-                Instance.id,
-                "Instance Started",
-                `${Instance.display || Instance.id} has been started.`,
+                State.id,
+                "State Started",
+                `${State.display || State.id} has been started.`,
                 NotificationType.SUCCESS,
                 "router",
             );
         });
 
-        Instance.bridge?.on(Events.SHUTDOWN, () => {
+        State.bridge?.on(Events.SHUTDOWN, () => {
             Console.notify(
-                Instance.id,
-                "Instance Stopped",
-                `${Instance.display || Instance.id} has been stopped.`,
+                State.id,
+                "State Stopped",
+                `${State.display || State.id} has been stopped.`,
                 NotificationType.WARN,
                 "router",
             );
         });
 
-        Instance.bridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
-            Console.emit(Events.ACCESSORY_CHANGE, Instance.id, {
+        State.bridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
+            Console.emit(Events.ACCESSORY_CHANGE, State.id, {
                 accessory,
                 value,
             });
@@ -135,21 +135,21 @@ export default class Server extends EventEmitter {
 
         if ((instance?.autostart || 0) >= 0) {
             setTimeout(() => {
-                Instance.bridge?.start();
+                State.bridge?.start();
             }, (instance?.autostart || 0) * 1000);
         }
 
-        Instance.socket?.start();
+        State.socket?.start();
     }
 
     async stop(): Promise<void> {
         Console.debug("Shutting down");
 
-        if (Instance.bridge) await Instance.bridge.stop();
-        if (Instance.socket) Instance.socket.stop();
+        if (State.bridge) await State.bridge.stop();
+        if (State.socket) State.socket.stop();
 
         Console.debug("Stopped");
 
-        Instance.bridge = undefined;
+        State.bridge = undefined;
     }
 }

@@ -18,17 +18,18 @@
 
 import IO from "socket.io";
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
-import Cache from "./cache";
-import Socket from "../server/services/socket";
-import Server from "../server";
-import Bridge from "../bridge";
-import API from "../api";
-import { Loggers } from "./logger";
-import { InstanceRecord } from "./instances";
-import { UserRecord } from "./users";
-import { loadJson } from "./formatters";
+import Cache from "./services/cache";
+import Socket from "./server/services/socket";
+import Server from "./server";
+import Bridge from "./bridge";
+import API from "./api";
+import { Loggers } from "./services/logger";
+import { InstanceRecord } from "./services/instances";
+import { UserRecord } from "./services/users";
+import { loadJson } from "./services/formatters";
 
 export interface Application {
     version: string;
@@ -61,7 +62,7 @@ export interface Application {
 }
 
 const instance: Application = {
-    version: loadJson<any>(join(__dirname, "../../package.json"), {}).version,
+    version: loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
     mode: "production",
     enviornment: {},
 

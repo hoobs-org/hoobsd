@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import Request from "axios";
-import Instance from "../../services/instance";
+import State from "../../state";
 
 export interface Position {
     lat: number;
@@ -28,19 +28,19 @@ export default class Weather {
     static async geocode(query: string): Promise<Position> {
         if (!query || query === "") return { lat: 0, lng: 0 };
 
-        const { results } = (await Request.get(`http://open.mapquestapi.com/geocoding/v1/address?key=${Instance.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`)).data;
+        const { results } = (await Request.get(`http://open.mapquestapi.com/geocoding/v1/address?key=${State.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`)).data;
 
         return results[0].locations[0].latLng;
     }
 
     static async search(position: Position, count?: number): Promise<{ [key: string]: number | string }[]> {
         const key = `locations/${position.lat}/${position.lng}:${count || 5}`;
-        const cached = Instance.cache?.get<{ [key: string]: number | string }[]>(key);
+        const cached = State.cache?.get<{ [key: string]: number | string }[]>(key);
 
         if (cached) return cached;
 
         const locations: { [key: string]: any } = (
-            await Request.get(`https://api.openweathermap.org/data/2.5/find?lat=${position.lat}&lon=${position.lng}&cnt=${count || 5}&appid=${Instance.enviornment?.APP_OPENWEATHER || ""}`)
+            await Request.get(`https://api.openweathermap.org/data/2.5/find?lat=${position.lat}&lon=${position.lng}&cnt=${count || 5}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`)
         ).data || {};
 
         const results: { [key: string]: number | string }[] = (locations.list || []).map((item: { [key: string]: any }) => ({
@@ -49,22 +49,22 @@ export default class Weather {
             country: item.sys.country,
         }));
 
-        Instance.cache?.set(key, results, 60);
+        State.cache?.set(key, results, 60);
 
         return results;
     }
 
     static async current(): Promise<{ [key: string]: any }> {
-        if (!(((Instance.api || {}).config || {}).weather || {}).location || (((((Instance.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return {};
+        if (!(((State.api || {}).config || {}).weather || {}).location || (((((State.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return {};
 
-        const id = Instance.api?.config.weather.location.id;
-        const units = Instance.api?.config.weather.units || "celsius";
+        const id = State.api?.config.weather.location.id;
+        const units = State.api?.config.weather.units || "celsius";
         const key = `weather/${id}/${units}`;
-        const cached = Instance.cache?.get<{ [key: string]: any }>(key);
+        const cached = State.cache?.get<{ [key: string]: any }>(key);
 
         if (cached) return cached;
 
-        const url = `https://api.openweathermap.org/data/2.5/weather?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${Instance.enviornment?.APP_OPENWEATHER || ""}`;
+        const url = `https://api.openweathermap.org/data/2.5/weather?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`;
         const weather = (await Request.get(url)).data || {};
 
         const results = {
@@ -85,23 +85,23 @@ export default class Weather {
             },
         };
 
-        Instance.cache?.set(key, results, 30);
+        State.cache?.set(key, results, 30);
 
         return results;
     }
 
     static async forecast(): Promise<{ [key: string]: any }[]> {
-        if (!(((Instance.api || {}).config || {}).weather || {}).location || (((((Instance.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return [];
+        if (!(((State.api || {}).config || {}).weather || {}).location || (((((State.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return [];
 
-        const id = Instance.api?.config.weather.location.id;
-        const units = Instance.api?.config.weather.units || "celsius";
+        const id = State.api?.config.weather.location.id;
+        const units = State.api?.config.weather.units || "celsius";
         const key = `forecast/${id}/${units}`;
-        const cached = Instance.cache?.get<{ [key: string]: any }[]>(key);
+        const cached = State.cache?.get<{ [key: string]: any }[]>(key);
 
         if (cached) return cached;
 
         const results: { [key: string]: any }[] = [];
-        const url = `https://api.openweathermap.org/data/2.5/forecast?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${Instance.enviornment?.APP_OPENWEATHER || ""}`;
+        const url = `https://api.openweathermap.org/data/2.5/forecast?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`;
         const list = ((await Request.get(url)).data || {}).list || [];
 
         let day = "";
@@ -168,7 +168,7 @@ export default class Weather {
             results[index].wind.speed = parseFloat((wind / count).toFixed(2));
         }
 
-        Instance.cache?.set(key, results, 60);
+        State.cache?.set(key, results, 60);
 
         return results;
     }

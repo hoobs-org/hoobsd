@@ -17,23 +17,23 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Socket from "../services/socket";
 
 export default class AccessoriesController {
     constructor() {
-        Instance.app?.get("/api/accessories", (request, response) => this.all(request, response));
-        Instance.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
-        Instance.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
-        Instance.app?.put("/api/accessory/:instance/:id/:service", (request, response) => this.set(request, response));
+        State.app?.get("/api/accessories", (request, response) => this.all(request, response));
+        State.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
+        State.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
+        State.app?.put("/api/accessory/:instance/:id/:service", (request, response) => this.set(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<void> {
         let results: any[] = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                const accessories = await Socket.fetch(Instance.instances[i].id, "accessories:list");
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                const accessories = await Socket.fetch(State.instances[i].id, "accessories:list");
 
                 if (accessories) {
                     results = [...results, ...accessories];

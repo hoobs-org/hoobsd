@@ -16,30 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../../services/instance";
+import State from "../../state";
 import Paths from "../../services/paths";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class StatusController {
     constructor() {
-        Instance.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
+        State.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
     }
 
     status(_request: SocketRequest, response: SocketResponse): void {
         response.send({
-            id: Instance.id,
-            instance: Instance.display || Instance.id,
-            running: Instance.bridge?.running,
-            status: Instance.bridge?.running ? "running" : "stopped",
-            uptime: new Date().getTime() - (Instance.server?.time || 0),
-            product: "HOOBS Instance",
-            version: Instance.version,
-            bridge_name: Instance.bridge?.settings.name || "",
-            bridge_username: Instance.bridge?.settings.username || "",
-            bridge_port: Instance.bridge?.port,
-            setup_pin: Instance.bridge?.settings.pin || "",
-            setup_id: Instance.bridge?.setupURI(),
-            instance_path: Paths.storagePath(Instance.id),
+            id: State.id,
+            instance: State.display || State.id,
+            running: State.bridge?.running,
+            status: State.bridge?.running ? "running" : "stopped",
+            uptime: new Date().getTime() - (State.server?.time || 0),
+            product: "HOOBS State",
+            version: State.version,
+            bridge_name: State.bridge?.settings.name || "",
+            bridge_username: State.bridge?.settings.username || "",
+            bridge_port: State.bridge?.port,
+            setup_pin: State.bridge?.settings.pin || "",
+            setup_id: State.bridge?.setupURI(),
+            instance_path: Paths.storagePath(State.id),
         });
     }
 }

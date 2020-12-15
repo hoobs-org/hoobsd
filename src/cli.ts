@@ -23,7 +23,7 @@ import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
 
-import Instance from "./services/instance";
+import State from "./state";
 import Instances from "./services/instances";
 import Users from "./services/users";
 import Server from "./server";
@@ -33,58 +33,56 @@ import API from "./api";
 import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
-const runtime: string = (process.version || "").replace(/v/gi, "");
-
 export = function Daemon(): void {
-    Program.version(`${Instance.version}${runtime !== "" ? ` (runtime ${runtime})` : ""}`, "-v, --version", "output the current version");
+    Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
 
-    Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { Instance.mode = mode; })
-        .option("-d, --debug", "turn on debug level logging", () => { Instance.debug = true; })
-        .option("--container", "run in a container", () => { Instance.container = true; })
-        .option("--orphans", "keep cached accessories for orphaned plugins", () => { Instance.orphans = false; })
-        .option("--verbose", "turn on verbose logging", () => { Instance.verbose = true; });
+    Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { State.mode = mode; })
+        .option("-d, --debug", "turn on debug level logging", () => { State.debug = true; })
+        .option("--container", "run in a container", () => { State.container = true; })
+        .option("--orphans", "keep cached accessories for orphaned plugins", () => { State.orphans = false; })
+        .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 
     Program.command("start", { isDefault: true })
         .description("start the api service")
         .option("-p, --port <port>", "change the port the api runs on")
         .action((command) => {
-            Instance.enviornment = Enviornment.config({ path: join(__dirname, `../var/.env.${Instance.mode || "production"}`) }).parsed;
+            State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            Instance.id = sanitize("api");
-            Instance.display = "API";
+            State.id = sanitize("api");
+            State.display = "API";
 
             Console.load();
 
-            Instance.instances = Instances.list();
-            Instance.users = Users.list();
-            Instance.cache = new Cache();
-            Instance.cache.load(join(Paths.storagePath(Instance.id), "cache"));
+            State.instances = Instances.list();
+            State.users = Users.list();
+            State.cache = new Cache();
+            State.cache.load(join(Paths.storagePath(State.id), "cache"));
 
-            const instance = Instance.instances.find((n) => n.id === Instance.id);
+            const instance = State.instances.find((n) => n.id === State.id);
 
             if (instance) {
-                Instance.api = API.createServer(command.port || instance.port);
+                State.api = API.createServer(command.port || instance.port);
 
                 Watcher.watch(Paths.instancesPath()).on("change", () => {
-                    Instance.instances = Instances.list();
-                    Instance.api?.sync();
+                    State.instances = Instances.list();
+                    State.api?.sync();
                 });
 
                 Watcher.watch(join(Paths.storagePath(), "access")).on("change", () => {
-                    Instance.users = Users.list();
+                    State.users = Users.list();
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", () => {
-                    Instance.api?.stop().then(() => {
-                        Instance.api = API.createServer(command.port || instance.port);
-                        Instance.api.start();
+                    State.api?.stop().then(() => {
+                        State.api = API.createServer(command.port || instance.port);
+                        State.api.start();
                     });
                 });
 
-                Instance.api.start();
+                State.api.start();
             } else {
-                Console.error(`${Instance.id} is not created, please run 'sudo hoobs initilize' to create`);
+                Console.error(`${State.id} is not created, please run 'sudo hoobs initilize' to create`);
             }
         });
 
@@ -93,44 +91,44 @@ export = function Daemon(): void {
         .option("-i, --instance <name>", "set the instance name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .action(async (command) => {
-            Instance.enviornment = Enviornment.config({ path: join(__dirname, `../.env.${Instance.mode || "production"}`) }).parsed;
+            State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            Instance.id = sanitize(command.instance, "api");
-            Instance.instances = Instances.list();
-            Instance.users = Users.list();
-            Instance.cache = new Cache();
-            Instance.cache.load(join(Paths.storagePath(Instance.id), "cache"));
+            State.id = sanitize(command.instance, "api");
+            State.instances = Instances.list();
+            State.users = Users.list();
+            State.cache = new Cache();
+            State.cache.load(join(Paths.storagePath(State.id), "cache"));
 
-            const instance = Instance.instances.find((n) => n.id === Instance.id);
+            const instance = State.instances.find((n) => n.id === State.id);
 
             if (instance) {
-                Instance.server = new Server(command.port || instance.port);
+                State.server = new Server(command.port || instance.port);
 
                 Watcher.watch(Paths.instancesPath()).on("change", () => {
-                    const current = cloneJson(Instance.instances.find((n: any) => n.id === Instance.id));
+                    const current = cloneJson(State.instances.find((n: any) => n.id === State.id));
 
                     if (current) {
-                        Instance.instances = Instances.list();
+                        State.instances = Instances.list();
 
-                        const modified = Instance.instances.find((n: any) => n.id === Instance.id);
+                        const modified = State.instances.find((n: any) => n.id === State.id);
 
                         if (modified && !jsonEquals(current, modified)) {
-                            Instance.server?.stop().then(() => {
-                                Instance.server?.start();
+                            State.server?.stop().then(() => {
+                                State.server?.start();
                             });
                         }
                     }
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", () => {
-                    Instance.server?.stop().then(() => {
-                        Instance.server?.start();
+                    State.server?.stop().then(() => {
+                        State.server?.start();
                     });
                 });
 
-                Instance.server.start();
+                State.server.start();
             } else {
-                Console.error(`${Instance.id} is not created, please run 'sudo hoobs instance add' to create`);
+                Console.error(`${State.id} is not created, please run 'sudo hoobs instance add' to create`);
             }
         });
 
@@ -138,9 +136,9 @@ export = function Daemon(): void {
         .description("manage server instances")
         .option("-i, --instance <name>", "set the instance name")
         .action((action, command) => {
-            Instance.enviornment = Enviornment.config({ path: join(__dirname, `../.env.${Instance.mode || "production"}`) }).parsed;
+            State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            Instance.id = sanitize(command.instance);
+            State.id = sanitize(command.instance);
 
             Instances.controlInstance(action).then((success) => {
                 if (success) {
@@ -176,13 +174,13 @@ export = function Daemon(): void {
 
     Object.keys(signals).forEach((signal) => {
         process.on(signal, async () => {
-            if (Instance.terminating) return;
+            if (State.terminating) return;
 
-            Instance.terminating = true;
+            State.terminating = true;
 
-            if (Instance.cache) Instance.cache.save(join(Paths.storagePath(Instance.id), "cache"), ["hap/accessories"]);
-            if (Instance.server) await Instance.server.stop();
-            if (Instance.api) await Instance.api.stop();
+            if (State.cache) State.cache.save(join(Paths.storagePath(State.id), "cache"), ["hap/accessories"]);
+            if (State.server) await State.server.stop();
+            if (State.api) await State.api.stop();
 
             process.exit();
         });
@@ -191,7 +189,7 @@ export = function Daemon(): void {
     process.on("uncaughtException", (error) => {
         Console.error(`${error.stack}`);
 
-        if (!Instance.terminating) process.kill(process.pid, "SIGTERM");
+        if (!State.terminating) process.kill(process.pid, "SIGTERM");
     });
 
     process.on("unhandledRejection", (_reason, promise) => {

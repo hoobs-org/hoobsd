@@ -36,7 +36,7 @@ import {
 
 import { execSync } from "child_process";
 import { join, basename } from "path";
-import Instance from "./instance";
+import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
 import { Console, NotificationType } from "./logger";
@@ -86,7 +86,7 @@ export default class Instances {
     }
 
     static initSystem() {
-        if (Instance.mode === "production") {
+        if (State.mode === "production") {
             if (existsSync("/etc/systemd/system")) return "systemd";
             if (existsSync("/Library/LaunchDaemons/")) return "launchd";
         }
@@ -212,15 +212,15 @@ export default class Instances {
             if (!name) return resolve(false);
 
             const id = sanitize(name);
-            const index = Instance.instances.findIndex((n) => n.id === id);
+            const index = State.instances.findIndex((n) => n.id === id);
 
             if (index >= 0) {
-                Instance.instances[index].display = display;
-                Instance.instances[index].pin = pin || Instance.instances[index].pin || "031-45-154";
-                Instance.instances[index].username = username || Instance.instances[index].username || Config.generateUsername();
-                Instance.instances[index].autostart = autostart || Instance.instances[index].autostart || 0;
+                State.instances[index].display = display;
+                State.instances[index].pin = pin || State.instances[index].pin || "031-45-154";
+                State.instances[index].username = username || State.instances[index].username || Config.generateUsername();
+                State.instances[index].autostart = autostart || State.instances[index].autostart || 0;
 
-                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
                 return resolve(true);
             }
@@ -234,15 +234,15 @@ export default class Instances {
             if (!name) return resolve(false);
 
             const id = sanitize(name);
-            const index = Instance.instances.findIndex((n) => n.id === id);
+            const index = State.instances.findIndex((n) => n.id === id);
 
             if (index >= 0) {
-                Instance.instances[index].ports = {
+                State.instances[index].ports = {
                     start,
                     end,
                 };
 
-                writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
                 return resolve(true);
             }
@@ -255,12 +255,12 @@ export default class Instances {
         if (!name) return false;
 
         const id = sanitize(name);
-        const index = Instance.instances.findIndex((n: InstanceRecord) => n.id === id);
+        const index = State.instances.findIndex((n: InstanceRecord) => n.id === id);
 
         if (index >= 0) {
-            Instance.instances.splice(index, 1);
+            State.instances.splice(index, 1);
 
-            writeFileSync(Paths.instancesPath(), formatJson(Instance.instances));
+            writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
             removeSync(join(Paths.storagePath(), id));
             removeSync(join(Paths.storagePath(), `${id}.accessories`));
@@ -269,8 +269,8 @@ export default class Instances {
 
             Console.notify(
                 "api",
-                "Instance Removed",
-                `Instance "${name}" removed.`,
+                "State Removed",
+                `State "${name}" removed.`,
                 NotificationType.WARN,
                 "layers",
             );
@@ -369,8 +369,8 @@ export default class Instances {
     static appendInstance(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
         const instances: InstanceRecord[] = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            const { ...instance } = Instance.instances[i];
+        for (let i = 0; i < State.instances.length; i += 1) {
+            const { ...instance } = State.instances[i];
 
             if (instance.id === "api") {
                 instances.unshift({
@@ -429,24 +429,24 @@ export default class Instances {
 
         Console.notify(
             "api",
-            "Instance Added",
-            `Instance "${name}" added.`,
+            "State Added",
+            `State "${name}" added.`,
             NotificationType.SUCCESS,
             "layers",
         );
     }
 
     static purge(): void {
-        if (existsSync(join(Paths.storagePath(), `${Instance.id}.persist`))) removeSync(join(Paths.storagePath(), `${Instance.id}.persist`));
+        if (existsSync(join(Paths.storagePath(), `${State.id}.persist`))) removeSync(join(Paths.storagePath(), `${State.id}.persist`));
 
-        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
+        ensureDirSync(join(Paths.storagePath(), `${State.id}.persist`));
 
-        if (existsSync(join(Paths.storagePath(), `${Instance.id}.accessories`))) removeSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+        if (existsSync(join(Paths.storagePath(), `${State.id}.accessories`))) removeSync(join(Paths.storagePath(), `${State.id}.accessories`));
 
-        ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+        ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
 
         Console.notify(
-            Instance.id,
+            State.id,
             "Caches Purged",
             "Accessory and connection cache purged.",
             NotificationType.SUCCESS,
@@ -455,7 +455,7 @@ export default class Instances {
     }
 
     static async reset(): Promise<void> {
-        await Instance.api?.stop();
+        await State.api?.stop();
         await Instances.backup();
 
         const bridges = Instances.list().filter((item) => item.type === "bridge");
@@ -469,14 +469,14 @@ export default class Instances {
         removeSync(join(Paths.storagePath(), "hoobs.log"));
         removeSync(join(Paths.storagePath(), "access"));
 
-        Instance.users = [];
+        State.users = [];
     }
 
     static export(id: string): Promise<string> {
         return new Promise((resolve, reject) => {
             id = sanitize(id);
 
-            const instance = Instance.instances.find((item) => item.id === id);
+            const instance = State.instances.find((item) => item.id === id);
 
             writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
                 date: (new Date()).getTime(),
@@ -489,7 +489,7 @@ export default class Instances {
                 },
                 product: "hoobs",
                 generator: "hoobsd",
-                version: Instance.version,
+                version: State.version,
             }));
 
             if (!instance) reject(new Error("instance does not exist"));
@@ -527,7 +527,7 @@ export default class Instances {
                 type: "full",
                 product: "hoobs",
                 generator: "hoobsd",
-                version: Instance.version,
+                version: State.version,
             }));
 
             const filename = `${new Date().getTime()}`;

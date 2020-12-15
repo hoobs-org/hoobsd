@@ -17,13 +17,13 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import { Console } from "../../services/logger";
 
 export default class LogController {
     constructor() {
-        Instance.app?.get("/api/log", (request, response) => this.cache(request, response));
-        Instance.app?.get("/api/log/:tail", (request, response) => this.cache(request, response));
+        State.app?.get("/api/log", (request, response) => this.cache(request, response));
+        State.app?.get("/api/log/:tail", (request, response) => this.cache(request, response));
     }
 
     cache(request: Request, response: Response): Response {

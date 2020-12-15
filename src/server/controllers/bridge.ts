@@ -16,21 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../../services/instance";
+import State from "../../state";
 import Instances from "../../services/instances";
 import Config from "../../services/config";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class BridgeController {
     constructor() {
-        Instance.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
-        Instance.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
-        Instance.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
-        Instance.socket?.route("bridge:purge", (request: SocketRequest, response: SocketResponse) => this.purge(request, response));
+        State.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
+        State.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
+        State.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
+        State.socket?.route("bridge:purge", (request: SocketRequest, response: SocketResponse) => this.purge(request, response));
     }
 
     async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (!Instance.bridge?.running) await Instance.bridge?.start();
+        if (!State.bridge?.running) await State.bridge?.start();
 
         response.send({
             success: true,
@@ -38,7 +38,7 @@ export default class BridgeController {
     }
 
     async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (Instance.bridge?.running) await Instance.bridge.stop();
+        if (State.bridge?.running) await State.bridge.stop();
 
         response.send({
             success: true,

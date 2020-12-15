@@ -17,15 +17,15 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Instances from "../../services/instances";
 import FFMPEG from "../../extentions/ffmpeg";
 
 export default class ExtentionsController {
     constructor() {
-        Instance.app?.get("/api/extentions", (request, response) => this.list(request, response));
-        Instance.app?.put("/api/extentions/:name", (request, response) => this.enable(request, response));
-        Instance.app?.delete("/api/extentions/:name", (request, response) => this.disable(request, response));
+        State.app?.get("/api/extentions", (request, response) => this.list(request, response));
+        State.app?.put("/api/extentions/:name", (request, response) => this.enable(request, response));
+        State.app?.delete("/api/extentions/:name", (request, response) => this.disable(request, response));
     }
 
     list(request: Request, response: Response): Response {

@@ -17,16 +17,16 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Users from "../../services/users";
 
 export default class UsersController {
     constructor() {
-        Instance.app?.get("/api/users", (request, response) => this.list(request, response));
-        Instance.app?.put("/api/users", (request, response) => this.create(request, response));
-        Instance.app?.get("/api/users/:id", (request, response) => this.get(request, response));
-        Instance.app?.post("/api/users/:id", (request, response) => this.update(request, response));
-        Instance.app?.delete("/api/users/:id", (request, response) => this.delete(request, response));
+        State.app?.get("/api/users", (request, response) => this.list(request, response));
+        State.app?.put("/api/users", (request, response) => this.create(request, response));
+        State.app?.get("/api/users/:id", (request, response) => this.get(request, response));
+        State.app?.post("/api/users/:id", (request, response) => this.update(request, response));
+        State.app?.delete("/api/users/:id", (request, response) => this.delete(request, response));
     }
 
     list(request: Request, response: Response): Response {

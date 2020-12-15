@@ -60,7 +60,7 @@ import { MacAddress } from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
 import Paths from "../services/paths";
-import Instance from "../services/instance";
+import State from "../state";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
 import Client from "./client";
@@ -112,7 +112,7 @@ export default class Server extends EventEmitter {
 
         Logger.setTimestampEnabled(false);
 
-        if (Instance.debug) Logger.setDebugEnabled(true);
+        if (State.debug) Logger.setDebugEnabled(true);
 
         // @ts-ignore
         Logger.internal = Console;
@@ -124,7 +124,7 @@ export default class Server extends EventEmitter {
         })();
 
         this.running = false;
-        this.instance = Instance.instances.find((n: any) => n.id === Instance.id);
+        this.instance = State.instances.find((n: any) => n.id === State.id);
 
         this.config = {
             bridge: {
@@ -169,7 +169,7 @@ export default class Server extends EventEmitter {
 
         const pluginManagerOptions: PluginManagerOptions = {
             activePlugins: this.config.plugins,
-            customPluginPath: join(Paths.storagePath(Instance.id), "node_modules"),
+            customPluginPath: join(Paths.storagePath(State.id), "node_modules"),
         };
 
         this.pluginManager = new PluginManager(this.api, pluginManagerOptions);
@@ -183,7 +183,7 @@ export default class Server extends EventEmitter {
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
-        Plugins.load(Instance.id, (identifier, name, scope, directory, pjson, library) => {
+        Plugins.load(State.id, (identifier, name, scope, directory, pjson, library) => {
             if ((this.config.plugins || []).indexOf(identifier) >= 0 && existsSync(join(directory, library))) {
                 // @ts-ignore
                 if (!this.pluginManager.plugins.get(identifier)) {
@@ -281,7 +281,7 @@ export default class Server extends EventEmitter {
         info.setCharacteristic(Characteristic.Manufacturer, this.settings.manufacturer || "HOOBS");
         info.setCharacteristic(Characteristic.Model, this.settings.model || "HOOBS");
         info.setCharacteristic(Characteristic.SerialNumber, this.settings.username);
-        info.setCharacteristic(Characteristic.FirmwareRevision, Instance.version);
+        info.setCharacteristic(Characteristic.FirmwareRevision, State.version);
 
         this.bridge.on(AccessoryEventTypes.LISTENING, (port: number) => {
             Console.info("Homebridge is running on port %s.", port);

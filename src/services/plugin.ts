@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "./instance";
+import State from "../state";
 import Config from "./config";
 import { Prefixed, PluginLogger } from "./logger";
 import { SocketRequest, SocketResponse } from "../server/services/socket";
@@ -43,7 +43,7 @@ export default class Plugin {
 
     registerRoute(action: string, controller: (request: SocketRequest, response: SocketResponse) => any) {
         if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            Instance.socket?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: SocketRequest, response: SocketResponse) => {
+            State.socket?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: SocketRequest, response: SocketResponse) => {
                 try {
                     controller(request, response);
                 } catch (error) {

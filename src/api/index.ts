@@ -32,7 +32,7 @@ import { LogLevel } from "homebridge/lib/logger";
 
 import Paths from "../services/paths";
 import Config from "../services/config";
-import Instance from "../services/instance";
+import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
@@ -85,22 +85,22 @@ export default class API extends EventEmitter {
         this.port = port || 80;
         this.processes = {};
 
-        Instance.app = Express();
+        State.app = Express();
 
-        this.listner = HTTP.createServer(Instance.app);
+        this.listner = HTTP.createServer(State.app);
 
         this.terminator = createHttpTerminator({
             gracefulTerminationTimeout: 500,
             server: this.listner,
         });
 
-        Instance.io = IO(this.listner);
+        State.io = IO(this.listner);
 
         const paths = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].plugins && existsSync(join(<string>Instance.instances[i].plugins, ".bin"))) {
-                paths.push(join(<string>Instance.instances[i].plugins, ".bin"));
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].plugins && existsSync(join(<string>State.instances[i].plugins, ".bin"))) {
+                paths.push(join(<string>State.instances[i].plugins, ".bin"));
             }
         }
 
@@ -111,7 +111,7 @@ export default class API extends EventEmitter {
 
         if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
 
-        Instance.io?.on("connection", (socket: IO.Socket): void => {
+        State.io?.on("connection", (socket: IO.Socket): void => {
             socket.on(Events.SHELL_CONNECT, () => {
                 Console.debug("terminal connect");
 
@@ -164,21 +164,21 @@ export default class API extends EventEmitter {
             });
         });
 
-        Instance.app?.use(CORS({
+        State.app?.use(CORS({
             origin: this.settings.origin || "*",
         }));
 
-        Instance.app?.use(Parser.json());
+        State.app?.use(Parser.json());
 
-        if (Instance.debug) {
-            Instance.app?.use((request, _response, next) => {
+        if (State.debug) {
+            State.app?.use((request, _response, next) => {
                 this.emit("request", request.method, request.url);
 
                 next();
             });
         }
 
-        Instance.app?.use(async (request, response, next) => {
+        State.app?.use(async (request, response, next) => {
             request.user = Users.decodeToken(request.headers.authorization);
 
             if (this.settings.disable_auth) {
@@ -208,7 +208,7 @@ export default class API extends EventEmitter {
             next();
         });
 
-        Instance.app?.get("/api", (_request, response) => response.send({ version: Instance.version }));
+        State.app?.get("/api", (_request, response) => response.send({ version: State.version }));
 
         new AuthController();
         new UsersController();
@@ -234,11 +234,11 @@ export default class API extends EventEmitter {
 
         if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
 
-        Instance.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../../var")));
-        Instance.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../../var")));
-        Instance.app?.use("/themes", Express.static(Paths.themePath()));
+        State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
+        State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));
+        State.app?.use("/themes", Express.static(Paths.themePath()));
 
-        Instance.app?.use("/backups", Express.static(Paths.backupPath(), {
+        State.app?.use("/backups", Express.static(Paths.backupPath(), {
             setHeaders: (response, path) => {
                 if (extname(path) === ".instance") response.set("content-disposition", `attachment; filename="${basename(path).split("_")[0]}.instance"`);
                 if (extname(path) === ".backup") response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
@@ -247,13 +247,13 @@ export default class API extends EventEmitter {
 
         const defined: string[] = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                Plugins.load(Instance.instances[i].id, (_identifier, name, _scope, directory) => {
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                Plugins.load(State.instances[i].id, (_identifier, name, _scope, directory) => {
                     const route = `/plugin/${name.replace(/[^a-zA-Z0-9-_]/, "")}`;
 
                     if (defined.indexOf(route) === -1 && existsSync(join(directory, "static"))) {
-                        Instance.app?.use(route, Express.static(join(directory, "static")));
+                        State.app?.use(route, Express.static(join(directory, "static")));
 
                         defined.push(route);
                     }
@@ -275,17 +275,17 @@ export default class API extends EventEmitter {
     launch(id: string, port: number): void {
         const flags: string[] = [
             "instance",
-            "--mode", Instance.mode,
+            "--mode", State.mode,
             "--instance", id,
             "--port", `${port}`,
         ];
 
-        if (Instance.debug) flags.push("--debug");
-        if (Instance.verbose) flags.push("--verbose");
-        if (Instance.container) flags.push("--container");
-        if (!Instance.orphans) flags.push("--orphans");
+        if (State.debug) flags.push("--debug");
+        if (State.verbose) flags.push("--verbose");
+        if (State.container) flags.push("--container");
+        if (!State.orphans) flags.push("--orphans");
 
-        this.processes[id] = Process.spawn(join(__dirname, "../../bin/hoobsd"), flags).on("exit", () => {
+        this.processes[id] = Process.spawn(join(__dirname, "../../../bin/hoobsd"), flags).on("exit", () => {
             this.launch(id, port);
         });
     }
@@ -314,12 +314,12 @@ export default class API extends EventEmitter {
             const current = Object.keys(this.processes);
 
             for (let i = 0; i < current.length; i += 1) {
-                if (!Instance.instances.find((item) => item.id === current[i])) {
+                if (!State.instances.find((item) => item.id === current[i])) {
                     waiters.push(this.teardown(current[i]));
                 }
             }
 
-            const instances = Instance.instances.filter((item) => item.type === "bridge");
+            const instances = State.instances.filter((item) => item.type === "bridge");
 
             for (let i = 0; i < instances.length; i += 1) {
                 if (!this.processes[instances[i].id] || this.processes[instances[i].id].killed) {
@@ -337,13 +337,13 @@ export default class API extends EventEmitter {
         this.socket = new Socket();
 
         this.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
-        this.socket.on(Events.NOTIFICATION, (data: any) => Instance.io?.sockets.emit(Events.NOTIFICATION, data));
-        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => Instance.io?.sockets.emit(Events.ACCESSORY_CHANGE, data));
+        this.socket.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
+        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data));
 
         this.socket.start();
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") Console.import((await Socket.fetch(Instance.instances[i].id, "cache:log")) || []);
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") Console.import((await Socket.fetch(State.instances[i].id, "cache:log")) || []);
         }
 
         this.listner?.listen(this.port, () => {
@@ -353,7 +353,7 @@ export default class API extends EventEmitter {
             this.emit(Events.LISTENING, this.port);
         });
 
-        const instances = Instance.instances.filter((item) => item.type === "bridge");
+        const instances = State.instances.filter((item) => item.type === "bridge");
 
         for (let i = 0; i < instances.length; i += 1) {
             this.launch(instances[i].id, instances[i].port);
@@ -369,7 +369,7 @@ export default class API extends EventEmitter {
 
                 this.running = false;
 
-                const instances = Instance.instances.filter((item) => item.type === "bridge");
+                const instances = State.instances.filter((item) => item.type === "bridge");
                 const waiters: Promise<void>[] = [];
 
                 for (let i = 0; i < instances.length; i += 1) {

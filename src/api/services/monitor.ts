@@ -17,27 +17,27 @@
  **************************************************************************************************/
 
 import System from "systeminformation";
-import Instance from "../../services/instance";
+import State from "../../state";
 import { Console, Events } from "../../services/logger";
 import Socket from "./socket";
 
 export default async function Monitor() {
     const results: { [key: string]: any } = {};
 
-    for (let i = 0; i < Instance.instances.length; i += 1) {
-        if (Instance.instances[i].type === "bridge") {
-            const status = await Socket.fetch(Instance.instances[i].id, "status:get");
+    for (let i = 0; i < State.instances.length; i += 1) {
+        if (State.instances[i].type === "bridge") {
+            const status = await Socket.fetch(State.instances[i].id, "status:get");
 
             if (status) {
-                results[Instance.instances[i].id] = {
+                results[State.instances[i].id] = {
                     version: status.version,
                     running: status.running,
                     status: status.status,
-                    display: Instance.instances[i].display,
+                    display: State.instances[i].display,
                     uptime: status.uptime,
                 };
             } else {
-                results[Instance.instances[i].id] = {
+                results[State.instances[i].id] = {
                     running: false,
                     status: "unavailable",
                     display: "Unavailable",
@@ -56,5 +56,5 @@ export default async function Monitor() {
 
     setTimeout(() => {
         Monitor();
-    }, (Instance.api?.settings?.polling_seconds || 5) * 1000);
+    }, (State.api?.settings?.polling_seconds || 5) * 1000);
 }

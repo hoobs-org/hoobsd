@@ -19,7 +19,7 @@
 import { Request, Response } from "express-serve-static-core";
 import { existsSync } from "fs-extra";
 import { join } from "path";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Socket from "./socket";
 import Plugins from "../../services/plugins";
 import { InstanceRecord } from "../../services/instances";
@@ -28,13 +28,13 @@ export default class PluginController {
     constructor() {
         const defined: string[] = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                Plugins.load(Instance.instances[i].id, (_identifier, name, _scope, directory, _pjson, library) => {
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                Plugins.load(State.instances[i].id, (_identifier, name, _scope, directory, _pjson, library) => {
                     const route = `/api/plugin/${name.replace(/[^a-zA-Z0-9-_]/, "")}/:action`;
 
                     if (defined.indexOf(route) === -1 && existsSync(join(directory, library, "routes.js"))) {
-                        Instance.app?.post(route, (request, response) => this.execute(Instance.instances[i], name, request, response));
+                        State.app?.post(route, (request, response) => this.execute(State.instances[i], name, request, response));
 
                         defined.push(route);
                     }

@@ -22,7 +22,7 @@ import { spawn, IPty } from "node-pty";
 import { existsSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../../services/paths";
-import Instance from "../../services/instance";
+import State from "../../state";
 import { Console } from "../../services/logger";
 
 export default class Cockpit {
@@ -81,9 +81,9 @@ export default class Cockpit {
 
                 const paths = [];
 
-                for (let i = 0; i < Instance.instances.length; i += 1) {
-                    if (Instance.instances[i].plugins && existsSync(join(<string>Instance.instances[i].plugins, "node_modules", ".bin"))) {
-                        paths.push(join(<string>Instance.instances[i].plugins, "node_modules", ".bin"));
+                for (let i = 0; i < State.instances.length; i += 1) {
+                    if (State.instances[i].plugins && existsSync(join(<string>State.instances[i].plugins, "node_modules", ".bin"))) {
+                        paths.push(join(<string>State.instances[i].plugins, "node_modules", ".bin"));
                     }
                 }
 

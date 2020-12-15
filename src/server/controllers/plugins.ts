@@ -18,17 +18,17 @@
 
 import Request from "axios";
 import { PluginManager } from "homebridge/lib/pluginManager";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Plugins from "../../services/plugins";
 import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class PluginsController {
     constructor() {
-        Instance.socket?.route("plugins:get", (request: SocketRequest, response: SocketResponse) => this.installed(request, response));
-        Instance.socket?.route("plugins:install", (request: SocketRequest, response: SocketResponse) => this.install(request, response));
-        Instance.socket?.route("plugins:upgrade", (request: SocketRequest, response: SocketResponse) => this.upgrade(request, response));
-        Instance.socket?.route("plugins:uninstall", (request: SocketRequest, response: SocketResponse) => this.uninstall(request, response));
+        State.socket?.route("plugins:get", (request: SocketRequest, response: SocketResponse) => this.installed(request, response));
+        State.socket?.route("plugins:install", (request: SocketRequest, response: SocketResponse) => this.install(request, response));
+        State.socket?.route("plugins:upgrade", (request: SocketRequest, response: SocketResponse) => this.upgrade(request, response));
+        State.socket?.route("plugins:uninstall", (request: SocketRequest, response: SocketResponse) => this.uninstall(request, response));
     }
 
     async installed(_request: SocketRequest, response: SocketResponse): Promise<void> {
@@ -95,7 +95,7 @@ export default class PluginsController {
         }
 
         Plugins.install((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            if (Instance.bridge) await Instance.bridge.restart();
+            if (State.bridge) await State.bridge.restart();
 
             response.send({
                 success: true,
@@ -123,7 +123,7 @@ export default class PluginsController {
         }
 
         Plugins.upgrade((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            if (Instance.bridge) await Instance.bridge.restart();
+            if (State.bridge) await State.bridge.restart();
 
             response.send({
                 success: true,
@@ -146,7 +146,7 @@ export default class PluginsController {
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
         Plugins.uninstall((scope || "") !== "" ? `@${scope}/${name}` : (name || "")).then(async () => {
-            if (Instance.bridge) await Instance.bridge.restart();
+            if (State.bridge) await State.bridge.restart();
 
             response.send({
                 success: true,

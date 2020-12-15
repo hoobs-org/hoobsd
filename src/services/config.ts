@@ -20,7 +20,7 @@ import _ from "lodash";
 import { HomebridgeConfig } from "homebridge/lib/server";
 import { join } from "path";
 import { existsSync, writeFileSync } from "fs-extra";
-import Instance from "./instance";
+import State from "../state";
 import { InstanceRecord } from "./instances";
 import Paths from "./paths";
 
@@ -68,13 +68,13 @@ export default class Config {
             dependencies: {},
         };
 
-        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {}));
+        if (existsSync(join(Paths.storagePath(State.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.storagePath(State.id), "package.json"), {}));
 
         Config.savePackage(pjson);
 
         let config: any = {};
 
-        if (Instance.id === "api") {
+        if (State.id === "api") {
             config = {
                 api: {
                     origin: "*",
@@ -90,14 +90,14 @@ export default class Config {
 
         if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
-        if (Instance.id !== "api") {
+        if (State.id !== "api") {
             let instances: any = [];
 
             if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
 
-            const index = instances.findIndex((n: any) => n.id === Instance.id);
+            const index = instances.findIndex((n: any) => n.id === State.id);
 
-            if (index >= 0) Instance.display = instances[index].display;
+            if (index >= 0) State.display = instances[index].display;
         }
 
         Config.saveConfig(config);
@@ -110,7 +110,7 @@ export default class Config {
 
         if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        if (Instance.id !== "api") {
+        if (State.id !== "api") {
             config.accessories = config?.accessories || [];
             config.platforms = config?.platforms || [];
 
@@ -154,12 +154,12 @@ export default class Config {
     static savePackage(pjson: any): void {
         let current: any = {};
 
-        if (existsSync(join(Paths.storagePath(Instance.id), "package.json"))) {
-            current = loadJson<any>(join(Paths.storagePath(Instance.id), "package.json"), {});
+        if (existsSync(join(Paths.storagePath(State.id), "package.json"))) {
+            current = loadJson<any>(join(Paths.storagePath(State.id), "package.json"), {});
         }
 
         if (!jsonEquals(current, pjson)) {
-            writeFileSync(join(Paths.storagePath(Instance.id), "package.json"), formatJson(pjson));
+            writeFileSync(join(Paths.storagePath(State.id), "package.json"), formatJson(pjson));
         }
     }
 

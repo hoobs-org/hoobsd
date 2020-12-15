@@ -19,10 +19,19 @@
  **************************************************************************************************/
 
 const Program = require("commander");
-const Prompt = require("prompts");
-const { existsSync, mkdirSync, readFileSync } = require("fs-extra");
 const { join } = require("path");
 const { execSync } = require("child_process");
+
+const {
+    existsSync,
+    mkdirSync,
+    unlinkSync,
+    readFileSync,
+    writeFileSync,
+    copyFileSync,
+    moveSync,
+    copySync,
+} = require("fs-extra");
 
 const root = join(__dirname, "../");
 const pjson = JSON.parse(readFileSync(join(root, "package.json")).toString());
@@ -36,37 +45,43 @@ Program.command("server", { isDefault: true })
     .option("-p, --pack", "create pack file for offline testing")
     .action((command) => {
         if (command.lint) execSync(`${join(root, "node_modules", ".bin", "eslint")} 'src/**/*.ts'`, { cwd: root, stdio: "inherit" });
-        if (!existsSync(join(root, "lib"))) mkdirSync(join(root, "lib"));
+        if (existsSync(join(root, "lib"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
 
-        execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "lib")}`, { cwd: root, stdio: "inherit" });
+        mkdirSync(join(root, "lib"));
+        mkdirSync(join(root, "lib/hoobsd"));
+
         execSync(`${join(root, "node_modules", ".bin", "tsc")}`, { cwd: root, stdio: "inherit" });
 
+        if (existsSync(join(root, ".env.development"))) copyFileSync(join(root, ".env.development"), join(root, "lib/hoobsd", ".env.development"));
+        if (existsSync(join(root, ".env.production"))) copyFileSync(join(root, ".env.production"), join(root, "lib/hoobsd", ".env.production"));
+
+        copySync(join(root, "var"), join(root, "lib/hoobsd/static"));
+
         if (command.pack) {
-            execSync("yarn pack", { cwd: root, stdio: "inherit" });
-            execSync(`mv ${join(root, `hoobs-hoobsd-v${pjson.version}.tgz`)} ${join(root, "lib", "package.tgz")}`, { cwd: root, stdio: "inherit" });
-            execSync(`chmod 755 ${join(root, "lib", "package.tgz")}`, { cwd: root, stdio: "inherit" });
+            if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
+
+            mkdirSync(join(root, "dist"));
+            mkdirSync(join(root, "dist/bin"));
+
+            copyFileSync(join(root, "bin", "hoobsd"), join(root, "dist/bin", "hoobsd"));
+            copySync(join(root, "lib"), join(root, "dist/lib"));
+
+            delete pjson.scripts;
+            delete pjson.devDependencies;
+
+            pjson.main = "cli.js";
+
+            writeFileSync(join(root, "dist/lib/hoobsd", "package.json"), JSON.stringify(pjson, null, 4));
+
+            execSync(`chmod 755 ${join(root, "dist/bin", "hoobsd")}`, { cwd: root, stdio: "inherit" });
+            execSync(`tar -zcf ../hoobsd-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
+
+            if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
+            if (!existsSync(join(root, "../builds")))  mkdirSync(join(root, "../builds"));
+            if (existsSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`))
+
+            moveSync(join(root, `hoobsd-${pjson.version}.tar.gz`), join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`));
         }
-    });
-
-Program.command("publish")
-    .description("publish the server to npm")
-    .action(() => {
-        const questions = [
-            {
-                type: "text",
-                name: "confirm",
-                initial: "no",
-                message: "type yes to confirm",
-                format: (value) => value.toLowerCase(),
-            },
-        ];
-
-        Prompt(questions).then((result) => {
-            if (result && result.confirm === "yes") {
-                execSync(`${join(root, "bin", "build")} server`, { cwd: root, stdio: ["inherit", "inherit", "inherit"] });
-                execSync("yarn publish --access public", { cwd: root, stdio: ["inherit", "inherit", "inherit"] });
-            }
-        });
     });
 
 Program.parse(process.argv);

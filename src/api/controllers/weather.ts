@@ -17,14 +17,14 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Weather from "../services/weather";
 
 export default class ThemesController {
     constructor() {
-        Instance.app?.get("/api/weather/location", (request, response) => this.search(request, response));
-        Instance.app?.get("/api/weather/current", (request, response) => this.current(request, response));
-        Instance.app?.get("/api/weather/forecast", (request, response) => this.forecast(request, response));
+        State.app?.get("/api/weather/location", (request, response) => this.search(request, response));
+        State.app?.get("/api/weather/current", (request, response) => this.current(request, response));
+        State.app?.get("/api/weather/forecast", (request, response) => this.forecast(request, response));
     }
 
     async search(request: Request, response: Response): Promise<void> {

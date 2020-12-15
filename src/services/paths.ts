@@ -18,7 +18,7 @@
 
 import File from "fs-extra";
 import { join } from "path";
-import Instance from "./instance";
+import State from "../state";
 
 export default class Paths {
     static tryCommand(command: string): boolean {
@@ -60,7 +60,7 @@ export default class Paths {
     }
 
     static applicationPath(): string {
-        return join(__dirname, "../../");
+        return File.existsSync(join(__dirname, "../package.json")) ? join(__dirname, "../") : join(__dirname, "../../../");
     }
 
     static yarn(): string {
@@ -70,7 +70,7 @@ export default class Paths {
     static storagePath(instance?: string): string {
         let path = "/var/lib/hoobs";
 
-        if (Instance.container) {
+        if (State.container) {
             path = "/hoobs";
         } else if (process.env.USER !== "root") {
             path = join(process.env.HOME || "", ".hoobs");
@@ -88,9 +88,9 @@ export default class Paths {
     }
 
     static themePath(): string {
-        File.ensureDirSync(join(Paths.storagePath(Instance.id), "themes"));
+        File.ensureDirSync(join(Paths.storagePath(State.id), "themes"));
 
-        return join(Paths.storagePath(Instance.id), "themes");
+        return join(Paths.storagePath(State.id), "themes");
     }
 
     static instancesPath(): string {
@@ -98,7 +98,7 @@ export default class Paths {
     }
 
     static configPath(): string {
-        return join(Paths.storagePath(), `${Instance.id}.conf`);
+        return join(Paths.storagePath(), `${State.id}.conf`);
     }
 
     static staticPath(): string {
@@ -114,14 +114,14 @@ export default class Paths {
     }
 
     static persistPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), `${Instance.id}.persist`));
+        File.ensureDirSync(join(Paths.storagePath(), `${State.id}.persist`));
 
-        return join(Paths.storagePath(), `${Instance.id}.persist`);
+        return join(Paths.storagePath(), `${State.id}.persist`);
     }
 
     static cachedAccessoryPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), `${Instance.id}.accessories`));
+        File.ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
 
-        return join(Paths.storagePath(), `${Instance.id}.accessories`);
+        return join(Paths.storagePath(), `${State.id}.accessories`);
     }
 }

@@ -17,28 +17,28 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Config from "../../services/config";
 import Socket from "../services/socket";
 import { Console, Events, NotificationType } from "../../services/logger";
 
 export default class ConfigController {
     constructor() {
-        Instance.app?.get("/api/config", (request, response) => this.getConsole(request, response));
-        Instance.app?.post("/api/config", (request, response) => this.saveConsole(request, response));
-        Instance.app?.get("/api/config/:instance", (request, response) => this.getInstance(request, response));
-        Instance.app?.post("/api/config/:instance", (request, response) => this.saveInstance(request, response));
+        State.app?.get("/api/config", (request, response) => this.getConsole(request, response));
+        State.app?.post("/api/config", (request, response) => this.saveConsole(request, response));
+        State.app?.get("/api/config/:instance", (request, response) => this.getInstance(request, response));
+        State.app?.post("/api/config/:instance", (request, response) => this.saveInstance(request, response));
     }
 
     async getConsole(_request: Request, response: Response): Promise<Response> {
-        return response.send(Instance.api?.config);
+        return response.send(State.api?.config);
     }
 
     async saveConsole(request: Request, response: Response): Promise<Response> {
         Console.emit(Events.CONFIG_CHANGE, "api", Config.configuration());
 
         Console.notify(
-            Instance.id,
+            State.id,
             "Configuration Changed",
             "The configuration for the API has changed.",
             NotificationType.WARN,
@@ -47,7 +47,7 @@ export default class ConfigController {
 
         Config.saveConfig(request.body);
 
-        if (Instance.bridge) await Instance.bridge.restart();
+        if (State.bridge) await State.bridge.restart();
 
         return response.send({
             success: true,
@@ -74,9 +74,9 @@ export default class ConfigController {
         }
 
         Console.notify(
-            Instance.id,
+            State.id,
             "Configuration Changed",
-            `The configuration for "${Instance.display}" has changed.`,
+            `The configuration for "${State.display}" has changed.`,
             NotificationType.WARN,
             "settings",
         );

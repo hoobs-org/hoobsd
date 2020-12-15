@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../../services/instance";
+import State from "../../state";
 import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
@@ -29,9 +29,9 @@ export default class AccessoriesController {
         this.rooms = [];
         this.accessories = [];
 
-        Instance.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
-        Instance.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
-        Instance.socket?.route("accessory:service", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
+        State.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
+        State.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
+        State.socket?.route("accessory:service", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
     }
 
     list(_request: SocketRequest, response: SocketResponse): void {
@@ -66,7 +66,7 @@ export default class AccessoriesController {
 
     service(id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            Instance.bridge?.client.accessory(id).then((response: any) => {
+            State.bridge?.client.accessory(id).then((response: any) => {
                 const service = response;
 
                 service.refresh((results: any) => {
@@ -100,7 +100,7 @@ export default class AccessoriesController {
         return new Promise((resolve, reject) => {
             let services: any[] = [];
 
-            Instance.bridge?.client.accessories().then((results: any) => {
+            State.bridge?.client.accessories().then((results: any) => {
                 services = results;
             }).finally(() => {
                 if (!services) resolve([]);

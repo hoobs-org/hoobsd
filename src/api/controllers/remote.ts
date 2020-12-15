@@ -17,16 +17,16 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Cockpit from "../services/cockpit";
 
 export default class RemoteController {
     declare client: Cockpit;
 
     constructor() {
-        Instance.app?.get("/api/remote", (request, response) => this.status(request, response));
-        Instance.app?.get("/api/remote/start", (request, response) => this.start(request, response));
-        Instance.app?.get("/api/remote/disconnect", (request, response) => this.disconnect(request, response));
+        State.app?.get("/api/remote", (request, response) => this.status(request, response));
+        State.app?.get("/api/remote/start", (request, response) => this.start(request, response));
+        State.app?.get("/api/remote/disconnect", (request, response) => this.disconnect(request, response));
     }
 
     status(_request: Request, response: Response): Response {

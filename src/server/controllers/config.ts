@@ -16,24 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Instance from "../../services/instance";
+import State from "../../state";
 import Config from "../../services/config";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class ConfigController {
     constructor() {
-        Instance.socket?.route("config:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
-        Instance.socket?.route("config:save", (request: SocketRequest, response: SocketResponse) => this.save(request, response));
+        State.socket?.route("config:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
+        State.socket?.route("config:save", (request: SocketRequest, response: SocketResponse) => this.save(request, response));
     }
 
     get(_request: SocketRequest, response: SocketResponse): void {
-        response.send(Instance.server?.config);
+        response.send(State.server?.config);
     }
 
     async save(request: SocketRequest, response: SocketResponse): Promise<void> {
         Config.saveConfig(request.body);
 
-        if (Instance.bridge) await Instance.bridge.restart();
+        if (State.bridge) await State.bridge.restart();
 
         response.send({
             success: true,

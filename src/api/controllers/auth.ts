@@ -17,21 +17,21 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Config from "../../services/config";
 import Users, { UserRecord } from "../../services/users";
 
 export default class AuthController {
     constructor() {
-        Instance.app?.get("/api/auth", (request, response) => this.state(request, response));
-        Instance.app?.post("/api/auth/disable", (request, response) => this.disable(request, response));
-        Instance.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
-        Instance.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
-        Instance.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
+        State.app?.get("/api/auth", (request, response) => this.state(request, response));
+        State.app?.post("/api/auth/disable", (request, response) => this.disable(request, response));
+        State.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
+        State.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
+        State.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
     }
 
     state(_request: Request, response: Response): Response {
-        if (Instance.api?.settings.disable_auth) {
+        if (State.api?.settings.disable_auth) {
             return response.send({
                 state: "disabled",
             });
@@ -49,7 +49,7 @@ export default class AuthController {
     }
 
     async validate(request: Request, response: Response): Promise<Response> {
-        if (Instance.api?.settings.disable_auth) {
+        if (State.api?.settings.disable_auth) {
             return response.send({
                 valid: true,
             });
@@ -100,7 +100,7 @@ export default class AuthController {
     }
 
     logout(request: Request, response: Response): Response {
-        if (Instance.api?.settings.disable_auth) {
+        if (State.api?.settings.disable_auth) {
             return response.send({
                 success: true,
             });
@@ -112,7 +112,7 @@ export default class AuthController {
             });
         }
 
-        Instance.cache?.remove(request.headers.authorization);
+        State.cache?.remove(request.headers.authorization);
 
         return response.send({
             success: true,

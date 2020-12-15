@@ -36,7 +36,7 @@ import {
 
 import { Plugin } from "homebridge/lib/plugin";
 import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
-import Instance from "./instance";
+import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
 import { Console, NotificationType } from "./logger";
@@ -44,13 +44,13 @@ import { loadJson } from "./formatters";
 
 export default class Plugins {
     static get directory(): string {
-        return join(Paths.storagePath(Instance.id), "node_modules");
+        return join(Paths.storagePath(State.id), "node_modules");
     }
 
     static installed(instance?: string): Plugin[] {
         const results: Plugin[] = [];
 
-        Plugins.load(instance || Instance.id, (_identifier, name, scope, directory, pjson) => {
+        Plugins.load(instance || State.id, (_identifier, name, scope, directory, pjson) => {
             results.push(new Plugin(name, directory, pjson, scope));
         });
 
@@ -81,7 +81,7 @@ export default class Plugins {
 
     static linkLibs(): Promise<void> {
         return new Promise((resolve) => {
-            if (!existsSync(join(Paths.storagePath(Instance.id), "node_modules", "hap-nodejs"))) {
+            if (!existsSync(join(Paths.storagePath(State.id), "node_modules", "hap-nodejs"))) {
                 const flags = [];
 
                 flags.push("add");
@@ -90,7 +90,7 @@ export default class Plugins {
                 flags.push("hap-nodejs");
 
                 const proc = spawn(Paths.yarn(), flags, {
-                    cwd: Paths.storagePath(Instance.id),
+                    cwd: Paths.storagePath(State.id),
                     stdio: "ignore",
                 });
 
@@ -115,7 +115,7 @@ export default class Plugins {
             flags.push(`${name}@${tag}`);
 
             const proc = spawn(Paths.yarn(), flags, {
-                cwd: Paths.storagePath(Instance.id),
+                cwd: Paths.storagePath(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
@@ -166,7 +166,7 @@ export default class Plugins {
                     Config.saveConfig(config);
 
                     Console.notify(
-                        Instance.id,
+                        State.id,
                         "Plugin Installed",
                         `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
                         NotificationType.SUCCESS,
@@ -177,7 +177,7 @@ export default class Plugins {
                 }
 
                 Console.notify(
-                    Instance.id,
+                    State.id,
                     "Plugin Not Installed",
                     `Unable to install ${PluginManager.extractPluginName(name)}.`,
                     NotificationType.ERROR,
@@ -188,7 +188,7 @@ export default class Plugins {
         });
     }
 
-    static uninstall(name: string) {
+    static uninstall(name: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const flags = [];
 
@@ -196,7 +196,7 @@ export default class Plugins {
             flags.push(name);
 
             const proc = spawn(Paths.yarn(), flags, {
-                cwd: Paths.storagePath(Instance.id),
+                cwd: Paths.storagePath(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
@@ -226,7 +226,7 @@ export default class Plugins {
                     Config.saveConfig(config);
 
                     Console.notify(
-                        Instance.id,
+                        State.id,
                         "Plugin Uninstalled",
                         `${PluginManager.extractPluginName(name)} has been removed.`,
                         NotificationType.WARN,
@@ -237,7 +237,7 @@ export default class Plugins {
                 }
 
                 Console.notify(
-                    Instance.id,
+                    State.id,
                     "Plugin Not Uninstalled",
                     `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
                     NotificationType.ERROR,
@@ -248,7 +248,7 @@ export default class Plugins {
         });
     }
 
-    static upgrade(name?: string, version?: string) {
+    static upgrade(name?: string, version?: string): Promise<void> {
         const tag = version || "latest";
 
         return new Promise((resolve) => {
@@ -260,7 +260,7 @@ export default class Plugins {
             if (name) flags.push(`${name}@${tag}`);
 
             const proc = spawn(Paths.yarn(), flags, {
-                cwd: Paths.storagePath(Instance.id),
+                cwd: Paths.storagePath(State.id),
                 stdio: ["inherit", "inherit", "inherit"],
             });
 
@@ -269,7 +269,7 @@ export default class Plugins {
                 Config.touchConfig();
 
                 Console.notify(
-                    Instance.id,
+                    State.id,
                     name ? "Plugin Upgraded" : "Plugins Upgraded",
                     name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
                     NotificationType.SUCCESS,
@@ -283,11 +283,11 @@ export default class Plugins {
 
     static async getPluginType(name: string, path: string, pjson: any): Promise<any[]> {
         if (
-            Instance.plugins[name]
-         && Array.isArray(Instance.plugins[name])
-         && Instance.plugins[name].length > 0
+            State.plugins[name]
+         && Array.isArray(State.plugins[name])
+         && State.plugins[name].length > 0
         ) {
-            return Instance.plugins[name];
+            return State.plugins[name];
         }
 
         const registered: any[] = [];
@@ -324,7 +324,7 @@ export default class Plugins {
                     },
                     platformAccessory: {},
                     version: 2.4,
-                    serverVersion: Instance.version,
+                    serverVersion: State.version,
 
                     registerPlatform: (_p: string, a: string) => {
                         const idx = registered.findIndex((p) => p.alias === a && p.type === "platform");
@@ -362,7 +362,7 @@ export default class Plugins {
             delete require.cache[require.resolve(join(Plugins.directory, main))];
         }
 
-        if (registered.length > 0) Instance.plugins[name] = registered;
+        if (registered.length > 0) State.plugins[name] = registered;
 
         return registered;
     }

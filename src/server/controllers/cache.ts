@@ -18,16 +18,16 @@
 
 import { existsSync, readdirSync, readJsonSync } from "fs-extra";
 import { join } from "path";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Paths from "../../services/paths";
 import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class CacheController {
     constructor() {
-        Instance.socket?.route("cache:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
-        Instance.socket?.route("cache:parings", (request: SocketRequest, response: SocketResponse) => this.parings(request, response));
-        Instance.socket?.route("cache:accessories", (request: SocketRequest, response: SocketResponse) => this.accessories(request, response));
+        State.socket?.route("cache:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
+        State.socket?.route("cache:parings", (request: SocketRequest, response: SocketResponse) => this.parings(request, response));
+        State.socket?.route("cache:accessories", (request: SocketRequest, response: SocketResponse) => this.accessories(request, response));
     }
 
     log(_request: SocketRequest, response: SocketResponse): void {

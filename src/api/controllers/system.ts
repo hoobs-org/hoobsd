@@ -23,34 +23,34 @@ import { join } from "path";
 import { existsSync, readdirSync } from "fs-extra";
 import { exec } from "child_process";
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Paths from "../../services/paths";
 import Instances from "../../services/instances";
 import { Console } from "../../services/logger";
 
 export default class SystemController {
     constructor() {
-        Instance.app?.get("/api/system", (request, response) => this.info(request, response));
-        Instance.app?.get("/api/system/cpu", (request, response) => this.cpu(request, response));
-        Instance.app?.get("/api/system/memory", (request, response) => this.memory(request, response));
-        Instance.app?.get("/api/system/network", (request, response) => this.network(request, response));
-        Instance.app?.get("/api/system/filesystem", (request, response) => this.filesystem(request, response));
-        Instance.app?.get("/api/system/activity", (request, response) => this.activity(request, response));
-        Instance.app?.get("/api/system/temp", (request, response) => this.temp(request, response));
-        Instance.app?.get("/api/system/backup", (request, response) => this.backup(request, response));
-        Instance.app?.get("/api/system/backup/catalog", (request, response) => this.catalog(request, response));
-        Instance.app?.get("/api/system/restore", (request, response) => this.restore(request, response));
-        Instance.app?.post("/api/system/restore", (request, response) => this.upload(request, response));
-        Instance.app?.post("/api/system/upgrade", (request, response) => this.upgrade(request, response));
-        Instance.app?.put("/api/system/reboot", (request, response) => this.reboot(request, response));
-        Instance.app?.put("/api/system/reset", (request, response) => this.reset(request, response));
+        State.app?.get("/api/system", (request, response) => this.info(request, response));
+        State.app?.get("/api/system/cpu", (request, response) => this.cpu(request, response));
+        State.app?.get("/api/system/memory", (request, response) => this.memory(request, response));
+        State.app?.get("/api/system/network", (request, response) => this.network(request, response));
+        State.app?.get("/api/system/filesystem", (request, response) => this.filesystem(request, response));
+        State.app?.get("/api/system/activity", (request, response) => this.activity(request, response));
+        State.app?.get("/api/system/temp", (request, response) => this.temp(request, response));
+        State.app?.get("/api/system/backup", (request, response) => this.backup(request, response));
+        State.app?.get("/api/system/backup/catalog", (request, response) => this.catalog(request, response));
+        State.app?.get("/api/system/restore", (request, response) => this.restore(request, response));
+        State.app?.post("/api/system/restore", (request, response) => this.upload(request, response));
+        State.app?.post("/api/system/upgrade", (request, response) => this.upgrade(request, response));
+        State.app?.put("/api/system/reboot", (request, response) => this.reboot(request, response));
+        State.app?.put("/api/system/reset", (request, response) => this.reset(request, response));
     }
 
     async info(_request: Request, response: Response): Promise<Response> {
         const operating: { [key: string]: any } = await System.osInfo();
         const system: { [key: string]: any } = await System.system();
 
-        if (Instance.api?.config.system === "hoobs-box") {
+        if (State.api?.config.system === "hoobs-box") {
             system.manufacturer = "HOOBS.org";
             system.model = "HSLF-1";
             system.sku = "7-45114-12419-7";

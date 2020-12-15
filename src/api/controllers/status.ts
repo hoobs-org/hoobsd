@@ -18,23 +18,23 @@
 
 import System from "systeminformation";
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Socket from "../services/socket";
 
 export default class StatusController {
     constructor() {
-        Instance.app?.get("/api/status", (request, response) => this.status(request, response));
+        State.app?.get("/api/status", (request, response) => this.status(request, response));
     }
 
     async status(_request: Request, response: Response): Promise<Response> {
         const results: { [key: string]: any } = {};
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                const status = await Socket.fetch(Instance.instances[i].id, "status:get");
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                const status = await Socket.fetch(State.instances[i].id, "status:get");
 
                 if (status) {
-                    results[Instance.instances[i].id] = {
+                    results[State.instances[i].id] = {
                         version: status.version,
                         running: status.running,
                         status: status.status,
@@ -48,7 +48,7 @@ export default class StatusController {
                         instance_path: status.instance_path,
                     };
                 } else {
-                    results[Instance.instances[i].id] = {
+                    results[State.instances[i].id] = {
                         running: false,
                         status: "unavailable",
                         uptime: 0,
@@ -58,7 +58,7 @@ export default class StatusController {
         }
 
         return response.send({
-            version: Instance.version,
+            version: State.version,
             node_version: (process.version || "").replace(/v/gi, ""),
             instances: results,
             cpu: await System.currentLoad(),

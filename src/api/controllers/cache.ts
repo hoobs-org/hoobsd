@@ -17,15 +17,15 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Socket from "../services/socket";
 
 export default class CacheController {
     constructor() {
-        Instance.app?.get("/api/cache", (request, response) => this.all(request, response));
-        Instance.app?.get("/api/cache/:instance", (request, response) => this.list(request, response));
-        Instance.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
-        Instance.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
+        State.app?.get("/api/cache", (request, response) => this.all(request, response));
+        State.app?.get("/api/cache/:instance", (request, response) => this.list(request, response));
+        State.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
+        State.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
     }
 
     async all(request: Request, response: Response): Promise<Response> {
@@ -38,14 +38,14 @@ export default class CacheController {
 
         const results = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                const parings = await Socket.fetch(Instance.instances[i].id, "cache:parings");
-                const accessories = await Socket.fetch(Instance.instances[i].id, "cache:accessories");
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                const parings = await Socket.fetch(State.instances[i].id, "cache:parings");
+                const accessories = await Socket.fetch(State.instances[i].id, "cache:accessories");
 
                 if (parings || accessories) {
                     results.push({
-                        instance: Instance.instances[i].id,
+                        instance: State.instances[i].id,
                         parings,
                         accessories,
                     });

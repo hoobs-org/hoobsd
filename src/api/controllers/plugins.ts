@@ -17,33 +17,33 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Socket from "../services/socket";
 
 export default class PluginsController {
     constructor() {
-        Instance.app?.get("/api/plugins", (request, response) => this.all(request, response));
-        Instance.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
-        Instance.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
-        Instance.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
-        Instance.app?.post("/api/plugins/:instance/:name", (request, response) => this.upgrade(request, response));
-        Instance.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
-        Instance.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
-        Instance.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
+        State.app?.get("/api/plugins", (request, response) => this.all(request, response));
+        State.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
+        State.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
+        State.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
+        State.app?.post("/api/plugins/:instance/:name", (request, response) => this.upgrade(request, response));
+        State.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
+        State.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
+        State.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<Response> {
         const results = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                const plugins = await Socket.fetch(Instance.instances[i].id, "plugins:get");
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                const plugins = await Socket.fetch(State.instances[i].id, "plugins:get");
 
                 if (plugins) {
                     for (let j = 0; j < plugins.length; j += 1) {
                         const { ...plugin } = plugins[j];
 
-                        plugin.instance = Instance.instances[i].id;
+                        plugin.instance = State.instances[i].id;
 
                         results.push(plugin);
                     }

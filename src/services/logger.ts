@@ -21,7 +21,7 @@ import Chalk from "chalk";
 import { gzipSync, gunzipSync } from "zlib";
 import { readFileSync, writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
-import Instance from "./instance";
+import State from "../state";
 import Paths from "./paths";
 import Socket from "../server/services/socket";
 
@@ -117,7 +117,7 @@ class Logger {
             results.splice(0, results.length - tail);
         }
 
-        if (Instance.id !== "api") {
+        if (State.id !== "api") {
             CACHE = [];
         }
 
@@ -125,7 +125,7 @@ class Logger {
     }
 
     load() {
-        if (Instance.id === "api") {
+        if (State.id === "api") {
             try {
                 CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), []);
             } catch (_error) {
@@ -152,8 +152,8 @@ class Logger {
         if (typeof message === "string") {
             data = {
                 level,
-                instance: Instance.id,
-                display: Instance.display,
+                instance: State.id,
+                display: State.display,
                 timestamp: new Date().getTime(),
                 plugin: this.plugin,
                 prefix: this.prefix,
@@ -165,34 +165,34 @@ class Logger {
 
         data.message = data.message || "";
 
-        if (data.message === "" && (data.instance !== Instance.id || (data.prefix && data.prefix !== ""))) return;
+        if (data.message === "" && (data.instance !== State.id || (data.prefix && data.prefix !== ""))) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
-        if ((Instance.api || Instance.server) && (Instance.id === "api" || !Socket.up())) {
+        if ((State.api || State.server) && (State.id === "api" || !Socket.up())) {
             CACHE.push(data);
 
             if (CACHE.length > 5000) {
                 CACHE.splice(0, CACHE.length - 5000);
             }
 
-            if (Instance.id === "api") {
+            if (State.id === "api") {
                 writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
             }
         }
 
-        if (Instance.api && Instance.api.running) Instance.io?.sockets.emit(Events.LOG, data);
-        if (Instance.server) Socket.fetch(Events.LOG, data);
+        if (State.api && State.api.running) State.io?.sockets.emit(Events.LOG, data);
+        if (State.server) Socket.fetch(Events.LOG, data);
 
-        if (Instance.id === "api" || Instance.debug) {
+        if (State.id === "api" || State.debug) {
             const prefixes = [];
 
-            if (Instance.timestamps && data.message && data.message !== "") {
+            if (State.timestamps && data.message && data.message !== "") {
                 prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
             }
 
-            if (data.instance && data.instance !== "" && data.instance !== Instance.id) {
-                prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data.instance), true)(data.display || data.instance));
+            if (data.instance && data.instance !== "" && data.instance !== State.id) {
+                prefixes.push(colorize(State.instances.findIndex((instance) => instance.id === data.instance), true)(data.display || data.instance));
             }
 
             if (data.prefix && data.prefix !== "") {
@@ -227,18 +227,18 @@ class Logger {
                     break;
 
                 case LogLevel.DEBUG:
-                    if (Instance.debug) CONSOLE_LOG(formatted);
+                    if (State.debug) CONSOLE_LOG(formatted);
                     break;
 
                 default:
-                    if (Instance.id === "api" || Instance.debug) CONSOLE_LOG(formatted);
+                    if (State.id === "api" || State.debug) CONSOLE_LOG(formatted);
                     break;
             }
         }
     }
 
     import(data: Message[]) {
-        if (Instance.api && Instance.api.running && Instance.id === "api") {
+        if (State.api && State.api.running && State.id === "api") {
             CACHE.push(...(data.filter((m) => (m.message !== ""))));
 
             CACHE.sort((a, b) => {
@@ -254,17 +254,17 @@ class Logger {
             writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
 
             for (let i = 0; i < data.length; i += 1) {
-                Instance.io?.sockets.emit(Events.LOG, data[i]);
+                State.io?.sockets.emit(Events.LOG, data[i]);
 
-                if (Instance.id === "api" || Instance.debug) {
+                if (State.id === "api" || State.debug) {
                     const prefixes = [];
 
-                    if (Instance.timestamps && data[i].message && data[i].message !== "") {
+                    if (State.timestamps && data[i].message && data[i].message !== "") {
                         prefixes.push(Chalk.gray.dim(new Date(data[i].timestamp).toLocaleString()));
                     }
 
-                    if (data[i].instance && data[i].instance !== "" && data[i].instance !== Instance.id) {
-                        prefixes.push(colorize(Instance.instances.findIndex((instance) => instance.id === data[i].instance), true)(data[i].display || data[i].instance));
+                    if (data[i].instance && data[i].instance !== "" && data[i].instance !== State.id) {
+                        prefixes.push(colorize(State.instances.findIndex((instance) => instance.id === data[i].instance), true)(data[i].display || data[i].instance));
                     }
 
                     if (data[i].prefix && data[i].prefix !== "") {
@@ -299,11 +299,11 @@ class Logger {
                             break;
 
                         case LogLevel.DEBUG:
-                            if (Instance.debug) CONSOLE_LOG(formatted);
+                            if (State.debug) CONSOLE_LOG(formatted);
                             break;
 
                         default:
-                            if (Instance.id === "api" || Instance.debug) CONSOLE_LOG(formatted);
+                            if (State.id === "api" || State.debug) CONSOLE_LOG(formatted);
                             break;
                     }
                 }
@@ -348,8 +348,8 @@ class Logger {
             }
         }
 
-        if (Instance.api && Instance.api.running) {
-            Instance.io?.sockets.emit(Events.NOTIFICATION, {
+        if (State.api && State.api.running) {
+            State.io?.sockets.emit(Events.NOTIFICATION, {
                 instance,
                 data: {
                     title,
@@ -360,7 +360,7 @@ class Logger {
             });
         }
 
-        if (Instance.server) {
+        if (State.server) {
             Socket.fetch(Events.NOTIFICATION, {
                 instance,
                 data: {
@@ -374,14 +374,14 @@ class Logger {
     }
 
     emit(event: Events, instance: string, data: any): void {
-        if (Instance.api && Instance.api.running) {
-            Instance.io?.sockets.emit(event, {
+        if (State.api && State.api.running) {
+            State.io?.sockets.emit(event, {
                 instance,
                 data,
             });
         }
 
-        if (Instance.server) {
+        if (State.server) {
             Socket.fetch(event, {
                 instance,
                 data,
@@ -397,11 +397,11 @@ console.debug = function debug(message: string, ...parameters: any[]) {
 };
 
 console.log = function log(message: string, ...parameters: any[]) {
-    if (Instance.debug) system.info(message, ...parameters);
+    if (State.debug) system.info(message, ...parameters);
 };
 
 console.warn = function warn(message: string, ...parameters: any[]) {
-    if (Instance.debug) system.warn(message, ...parameters);
+    if (State.debug) system.warn(message, ...parameters);
 };
 
 console.error = function error(message: string, ...parameters: any[]) {
@@ -409,13 +409,13 @@ console.error = function error(message: string, ...parameters: any[]) {
 };
 
 export function Print(...parameters: any[]) {
-    if (Instance.verbose) CONSOLE_LOG(...parameters);
+    if (State.verbose) CONSOLE_LOG(...parameters);
 }
 
 export const Console: Logger = system;
 
 export function Prefixed(plugin: string, prefix: string) {
-    if (!Instance.loggers[prefix]) {
+    if (!State.loggers[prefix]) {
         const logger = new Logger(plugin, prefix);
         const prefixed: IntermediateLogger = logger.info.bind(logger);
 
@@ -428,8 +428,8 @@ export function Prefixed(plugin: string, prefix: string) {
         prefixed.error = logger.error;
         prefixed.log = logger.log;
 
-        Instance.loggers[prefix] = <PluginLogger>prefixed;
+        State.loggers[prefix] = <PluginLogger>prefixed;
     }
 
-    return Instance.loggers[prefix];
+    return State.loggers[prefix];
 }

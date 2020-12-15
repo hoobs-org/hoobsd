@@ -17,29 +17,29 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Socket from "../services/socket";
 
 export default class BridgeController {
     constructor() {
-        Instance.app?.get("/api/bridge", (request, response) => this.all(request, response));
-        Instance.app?.get("/api/bridge/:instance", (request, response) => this.status(request, response));
-        Instance.app?.post("/api/bridge/:instance/start", (request, response) => this.start(request, response));
-        Instance.app?.post("/api/bridge/:instance/stop", (request, response) => this.stop(request, response));
-        Instance.app?.post("/api/bridge/:instance/restart", (request, response) => this.restart(request, response));
-        Instance.app?.post("/api/bridge/:instance/purge", (request, response) => this.purge(request, response));
+        State.app?.get("/api/bridge", (request, response) => this.all(request, response));
+        State.app?.get("/api/bridge/:instance", (request, response) => this.status(request, response));
+        State.app?.post("/api/bridge/:instance/start", (request, response) => this.start(request, response));
+        State.app?.post("/api/bridge/:instance/stop", (request, response) => this.stop(request, response));
+        State.app?.post("/api/bridge/:instance/restart", (request, response) => this.restart(request, response));
+        State.app?.post("/api/bridge/:instance/purge", (request, response) => this.purge(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<Response> {
         const results = [];
 
-        for (let i = 0; i < Instance.instances.length; i += 1) {
-            if (Instance.instances[i].type === "bridge") {
-                const status = await Socket.fetch(Instance.instances[i].id, "status:get");
+        for (let i = 0; i < State.instances.length; i += 1) {
+            if (State.instances[i].type === "bridge") {
+                const status = await Socket.fetch(State.instances[i].id, "status:get");
 
                 if (status) {
                     results.push({
-                        instance: Instance.instances[i].id,
+                        instance: State.instances[i].id,
                         status,
                     });
                 }

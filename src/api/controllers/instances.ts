@@ -18,34 +18,34 @@
 
 import { Request, Response } from "express-serve-static-core";
 import Forms from "formidable";
-import Instance from "../../services/instance";
+import State from "../../state";
 import Instances from "../../services/instances";
 import Config from "../../services/config";
 
 export default class InstancesController {
     constructor() {
-        Instance.app?.get("/api/instances", (request, response) => this.list(request, response));
-        Instance.app?.put("/api/instances", (request, response) => this.create(request, response));
-        Instance.app?.get("/api/instances/count", (request, response) => this.count(request, response));
-        Instance.app?.post("/api/instances/import", (request, response) => this.import(request, response));
-        Instance.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
-        Instance.app?.post("/api/instance/:id/ports", (request, response) => this.ports(request, response));
-        Instance.app?.get("/api/instance/:id/export", (request, response) => this.export(request, response));
-        Instance.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
+        State.app?.get("/api/instances", (request, response) => this.list(request, response));
+        State.app?.put("/api/instances", (request, response) => this.create(request, response));
+        State.app?.get("/api/instances/count", (request, response) => this.count(request, response));
+        State.app?.post("/api/instances/import", (request, response) => this.import(request, response));
+        State.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
+        State.app?.post("/api/instance/:id/ports", (request, response) => this.ports(request, response));
+        State.app?.get("/api/instance/:id/export", (request, response) => this.export(request, response));
+        State.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send(Instance.instances.filter((item) => item.type === "bridge"));
+        return response.send(State.instances.filter((item) => item.type === "bridge"));
     }
 
     count(_request: Request, response: Response): Response {
         return response.send({
-            instances: (Instance.instances.filter((item) => item.type === "bridge")).length,
+            instances: (State.instances.filter((item) => item.type === "bridge")).length,
         });
     }
 
     create(request: Request, response: Response): Response {
-        if (Instance.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instances) {
+        if (State.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instances) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
