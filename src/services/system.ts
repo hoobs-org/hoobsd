@@ -185,12 +185,10 @@ export default class System {
 
             release: (): { [key: string]: string } => {
                 const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hbs/latest", true), {});
-                const release = (data.results || {}).version || "";
-                const download = (data.results || {}).download || "";
 
                 return {
-                    release,
-                    download,
+                    release: (data.results || {}).version || "",
+                    download: (data.results || {}).download || "",
                 };
             },
 
@@ -276,12 +274,10 @@ export default class System {
 
             release: (): { [key: string]: string } => {
                 const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hoobsd/latest", true), {});
-                const release = (data.results || {}).version || "";
-                const download = (data.results || {}).download || "";
 
                 return {
-                    release,
-                    download,
+                    release: (data.results || {}).version || "",
+                    download: (data.results || {}).download || "",
                 };
             },
 
