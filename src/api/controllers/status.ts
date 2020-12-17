@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import System from "systeminformation";
+import SystemInfo from "systeminformation";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Socket from "../services/socket";
+import System from "../../services/system";
 
 export default class StatusController {
     constructor() {
@@ -57,13 +58,24 @@ export default class StatusController {
             }
         }
 
+        const cli = System.cli.info();
+        const hoobsd = System.hoobsd.info();
+        const runtime = System.runtime.info();
+
         return response.send({
-            version: State.version,
-            node_version: (process.version || "").replace(/v/gi, ""),
+            version: hoobsd.hoobsd_version,
+            release: hoobsd.hoobsd_release,
+            upgraded: hoobsd.hoobsd_upgraded,
+            cli_version: cli.cli_version,
+            cli_release: cli.cli_release,
+            cli_upgraded: cli.cli_upgraded,
+            node_version: runtime.node_version,
+            node_release: runtime.node_release,
+            node_upgraded: runtime.node_upgraded,
             instances: results,
-            cpu: await System.currentLoad(),
-            memory: await System.mem(),
-            temp: await System.cpuTemperature(),
+            cpu: await SystemInfo.currentLoad(),
+            memory: await SystemInfo.mem(),
+            temp: await SystemInfo.cpuTemperature(),
         });
     }
 }

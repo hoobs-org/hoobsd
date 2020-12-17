@@ -1,5 +1,5 @@
 {
-    "name": "@hoobs/hoobsd",
+    "name": "hoobsd",
     "version": "4.0.4",
     "description": "Server component for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
@@ -40,6 +40,7 @@
         "node-pty": "^0.9.0",
         "node-uname": "^3.0.4",
         "sanitize-filename": "^1.6.3",
+        "semver": "^7.3.4",
         "socket.io": "^2.3.0",
         "source-map-support": "^0.5.19",
         "systeminformation": "^4.27.11",
@@ -63,6 +64,7 @@
         "@types/node-ipc": "^9.1.3",
         "@types/node-persist": "^3.1.0",
         "@types/prompts": "^2.0.9",
+        "@types/semver": "^7.3.4",
         "@types/socket.io": "^2.1.11",
         "@types/unzipper": "^0.10.3",
         "@types/ws": "^7.2.6",

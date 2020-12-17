@@ -22,16 +22,20 @@ import * as Enviornment from "dotenv";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
-
 import State from "./state";
 import Instances from "./services/instances";
 import Users from "./services/users";
 import Server from "./server";
 import Cache from "./services/cache";
 import Paths from "./services/paths";
+import System from "./services/system";
 import API from "./api";
 import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
+
+if (System.command("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+    State.container = true;
+}
 
 export = function Daemon(): void {
     Program.version(State.version, "-v, --version", "output the current version");

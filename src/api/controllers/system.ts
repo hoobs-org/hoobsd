@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import System from "systeminformation";
+import SystemInfo from "systeminformation";
 import Forms from "formidable";
 import Mac from "macaddress";
 import { join } from "path";
@@ -25,6 +25,7 @@ import { exec } from "child_process";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Paths from "../../services/paths";
+import System from "../../services/system";
 import Instances from "../../services/instances";
 import { Console } from "../../services/logger";
 
@@ -47,8 +48,9 @@ export default class SystemController {
     }
 
     async info(_request: Request, response: Response): Promise<Response> {
-        const operating: { [key: string]: any } = await System.osInfo();
-        const system: { [key: string]: any } = await System.system();
+        const operating: { [key: string]: any } = await SystemInfo.osInfo();
+        const system: { [key: string]: any } = await SystemInfo.system();
+        const distro: { [key: string]: any } = System.info();
 
         if (State.api?.config.system === "hoobs-box") {
             system.manufacturer = "HOOBS.org";
@@ -58,7 +60,8 @@ export default class SystemController {
 
         system.manufacturer = system.manufacturer || operating.distro || operating.hostname;
         system.model = system.model || operating.platform;
-        system.version = system.version || operating.release;
+        system.distribution = distro.distribution;
+        system.version = distro.version || system.version || operating.release;
         system.hostname = operating.hostname;
         system.serial = system.serial !== "" && system.serial !== "-" ? system.serial : undefined;
         system.uuid = system.uuid !== "" && system.uuid !== "-" ? system.uuid : undefined;
@@ -86,22 +89,22 @@ export default class SystemController {
     }
 
     async temp(_request: Request, response: Response): Promise<Response> {
-        return response.send(await System.cpuTemperature());
+        return response.send(await SystemInfo.cpuTemperature());
     }
 
     async cpu(_request: Request, response: Response): Promise<Response> {
         return response.send({
-            information: await System.cpu(),
-            speed: await System.cpuCurrentspeed(),
-            load: await System.currentLoad(),
-            cache: await System.cpuCache(),
+            information: await SystemInfo.cpu(),
+            speed: await SystemInfo.cpuCurrentspeed(),
+            load: await SystemInfo.currentLoad(),
+            cache: await SystemInfo.cpuCache(),
         });
     }
 
     async memory(_request: Request, response: Response): Promise<Response> {
         return response.send({
-            information: await System.memLayout(),
-            load: await System.mem(),
+            information: await SystemInfo.memLayout(),
+            load: await SystemInfo.mem(),
         });
     }
 
@@ -110,11 +113,11 @@ export default class SystemController {
     }
 
     async activity(_request: Request, response: Response): Promise<Response> {
-        return response.send(await System.currentLoad());
+        return response.send(await SystemInfo.currentLoad());
     }
 
     async filesystem(_request: Request, response: Response): Promise<Response> {
-        return response.send(await System.fsSize());
+        return response.send(await SystemInfo.fsSize());
     }
 
     catalog(_request: Request, response: Response): void {
@@ -204,11 +207,36 @@ export default class SystemController {
 
         await Instances.backup();
 
-        Console.info("system upgrade not implimented");
+        let reboot = false;
+        let data = System.runtime.info();
 
-        // UPGRADE BINARY
+        if (!data.node_upgraded) {
+            Console.info("syncing repositories");
+            System.sync();
+            Console.info("upgrading node");
+            System.runtime.upgrade();
+        }
 
-        return this.reboot(request, response);
+        data = System.cli.info();
+
+        if (!data.cli_upgraded) {
+            Console.info("upgrading cli");
+            System.cli.upgrade();
+        }
+
+        data = System.hoobsd.info();
+
+        if (!data.hoobsd_upgraded) {
+            Console.info("upgrading hoobsd");
+            System.hoobsd.upgrade();
+            reboot = true;
+        }
+
+        if (reboot && !State.container) return this.reboot(request, response);
+
+        return response.send({
+            success: true,
+        });
     }
 
     reboot(request: Request, response: Response): Response {

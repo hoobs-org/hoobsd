@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import System from "systeminformation";
+import SystemInfo from "systeminformation";
 import State from "../../state";
 import { Console, Events } from "../../services/logger";
 import Socket from "./socket";
+import System from "../../services/system";
 
 export default async function Monitor() {
     const results: { [key: string]: any } = {};
@@ -47,11 +48,16 @@ export default async function Monitor() {
         }
     }
 
+    const cli = System.cli.info();
+    const hoobsd = System.hoobsd.info();
+    const runtime = System.runtime.info();
+
     Console.emit(Events.MONITOR, "api", {
         instances: results,
-        cpu: await System.currentLoad(),
-        memory: await System.mem(),
-        temp: await System.cpuTemperature(),
+        upgraded: hoobsd.hoobsd_upgraded && cli.cli_upgraded && runtime.node_upgraded,
+        cpu: await SystemInfo.currentLoad(),
+        memory: await SystemInfo.mem(),
+        temp: await SystemInfo.cpuTemperature(),
     });
 
     setTimeout(() => {
