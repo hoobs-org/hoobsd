@@ -232,7 +232,7 @@ export default class SystemController {
             reboot = true;
         }
 
-        if (reboot && !State.container) return this.reboot(request, response);
+        if (reboot && !State.container && State.mode === "production") exec(`${join(__dirname, "../../../../bin/hoobsd")} service restart`);
 
         return response.send({
             success: true,
@@ -247,7 +247,7 @@ export default class SystemController {
             });
         }
 
-        exec("shutdown -r now");
+        if (State.mode === "production") exec("shutdown -r now");
 
         return response.send({
             success: true,
