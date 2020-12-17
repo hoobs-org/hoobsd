@@ -109,7 +109,7 @@ export default class Server extends EventEmitter {
         State.bridge?.on(Events.LISTENING, () => {
             Console.notify(
                 State.id,
-                "State Started",
+                "Bridge Started",
                 `${State.display || State.id} has been started.`,
                 NotificationType.SUCCESS,
                 "router",
@@ -119,7 +119,7 @@ export default class Server extends EventEmitter {
         State.bridge?.on(Events.SHUTDOWN, () => {
             Console.notify(
                 State.id,
-                "State Stopped",
+                "Bridge Stopped",
                 `${State.display || State.id} has been stopped.`,
                 NotificationType.WARN,
                 "router",

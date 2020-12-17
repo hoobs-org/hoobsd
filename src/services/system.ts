@@ -305,7 +305,7 @@ export default class System {
     static get runtime(): { [key: string]: any } {
         return {
             info: (): { [key: string]: any } => {
-                const key = "system/hoobsd";
+                const key = "system/node";
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
                 if (cached && cached.node_version === (process.version || "").replace(/v/gi, "")) return cached;

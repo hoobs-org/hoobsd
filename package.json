@@ -17,7 +17,7 @@
     "scripts": {
         "build": "bin/build --lint --pack",
         "lint": "eslint 'src/**/*.ts'",
-        "hoobsd": "bin/debug build --debug"
+        "serve": "bin/debug build --debug"
     },
     "dependencies": {
         "archiver": "^5.0.2",

@@ -269,8 +269,8 @@ export default class Instances {
 
             Console.notify(
                 "api",
-                "State Removed",
-                `State "${name}" removed.`,
+                "Bridge Removed",
+                `Bridge "${name}" removed.`,
                 NotificationType.WARN,
                 "layers",
             );
@@ -429,8 +429,8 @@ export default class Instances {
 
         Console.notify(
             "api",
-            "State Added",
-            `State "${name}" added.`,
+            "Bridge Added",
+            `Bridge "${name}" added.`,
             NotificationType.SUCCESS,
             "layers",
         );
