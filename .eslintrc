@@ -54,6 +54,7 @@
         "no-console": "off",
         "default-case": "off",
         "no-new": "off",
+        "@typescript-eslint/no-loop-func": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/explicit-module-boundary-types": "off",
         "@typescript-eslint/no-non-null-assertion": "off",

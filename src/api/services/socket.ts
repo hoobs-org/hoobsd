@@ -127,7 +127,7 @@ export default class Socket extends EventEmitter {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
             if (!existsSync(join(Paths.storagePath(), `${instance}.sock`))) {
-                resolve();
+                resolve(null);
 
                 return;
             }
@@ -155,7 +155,7 @@ export default class Socket extends EventEmitter {
                     sockets[`${instance}.sock`].of[`${instance}.sock`].off(session, "*");
                     sockets[`${instance}.sock`].disconnect();
 
-                    resolve();
+                    resolve(null);
                 });
 
                 sockets[`${instance}.sock`].of[`${instance}.sock`].emit(Events.REQUEST, {

@@ -87,6 +87,11 @@ export default class API extends EventEmitter {
 
         State.app = Express();
 
+        State.app?.use(CORS({
+            origin: this.settings.origin || "*",
+            credentials: false,
+        }));
+
         this.listner = HTTP.createServer(State.app);
 
         this.terminator = createHttpTerminator({
@@ -94,7 +99,12 @@ export default class API extends EventEmitter {
             server: this.listner,
         });
 
-        State.io = IO(this.listner);
+        State.io = new IO.Server(this.listner, {
+            cors: {
+                origin: this.settings.origin || "*",
+                credentials: false,
+            },
+        });
 
         const paths = [];
 
@@ -163,10 +173,6 @@ export default class API extends EventEmitter {
                 });
             });
         });
-
-        State.app?.use(CORS({
-            origin: this.settings.origin || "*",
-        }));
 
         State.app?.use(Parser.json());
 

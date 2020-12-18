@@ -140,7 +140,7 @@ export default class Socket {
         return existsSync(join(Paths.storagePath(), "api.sock"));
     }
 
-    static fetch(event: Events, body: any): Promise<any> {
+    static fetch(event: Events, body: any): Promise<void> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
