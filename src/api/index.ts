@@ -37,6 +37,7 @@ import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
 import Plugins from "../services/plugins";
+import System from "../services/system";
 import { Console, Events } from "../services/logger";
 
 import AuthController from "./controllers/auth";
@@ -214,7 +215,21 @@ export default class API extends EventEmitter {
             next();
         });
 
-        State.app?.get("/api", (_request, response) => response.send({ version: State.version }));
+        const system = System.info();
+
+        State.app?.get("/api", (_request, response) => {
+            if ((system.product === "box" || system.product === "card") && system.init_system === "systemd" && system.mdns) {
+                return response.send({
+                    version: State.version,
+                    product: system.product,
+                    broadcast: system.mdns_broadcast,
+                });
+            }
+
+            return response.send({
+                version: State.version,
+            });
+        });
 
         new AuthController();
         new UsersController();

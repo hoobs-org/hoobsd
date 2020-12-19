@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 /* eslint-disable no-template-curly-in-string */
+/* eslint-disable prefer-destructuring */
 
 import { join } from "path";
 import { execSync } from "child_process";
@@ -24,7 +25,6 @@ import { existsSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
 import Instances from "./instances";
-import { Console } from "./logger";
 import { parseJson } from "./formatters";
 
 export default class System {
@@ -80,6 +80,37 @@ export default class System {
                 results.package_manager = "";
         }
 
+        results.mdns = false;
+        results.mdns_broadcast = "";
+        results.product = "";
+        results.model = "";
+        results.sku = "";
+
+        if (existsSync("/etc/hoobs")) {
+            const data = System.command("cat /etc/hoobs", true).split("\n");
+
+            for (let i = 0; i < data.length; i += 1) {
+                const field = data[i].split("=");
+
+                if (field[0] === "ID") results.product = field[1];
+                if (field[0] === "MODEL") results.model = field[1];
+                if (field[0] === "SKU") results.sku = field[1];
+            }
+        }
+
+        if ((results.product === "box" || results.product === "card") && results.init_system === "systemd" && existsSync("/etc/avahi/avahi-daemon.conf")) {
+            let broadcast = System.command("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+
+            if (broadcast.indexOf("#") >= 0) {
+                broadcast = (System.command("hostname").split(".")[0] || "").toLowerCase();
+            } else {
+                broadcast = (broadcast.split("=")[1] || "").toLowerCase();
+            }
+
+            results.mdns = true;
+            results.mdns_broadcast = broadcast;
+        }
+
         State.cache?.set(key, results, 60);
 
         return results;
@@ -102,26 +133,7 @@ export default class System {
     static sync(): void {
         const system = System.info();
 
-        if (system.package_manager) {
-            switch (system.distribution) {
-                case "alpine":
-                    execSync("sed -i -e 's/v[[:digit:]]\\..*\\//edge\\//g' /etc/apk/repositories");
-                    execSync("apk upgrade --update-cache --available");
-                    break;
-
-                case "ubuntu":
-                case "debian":
-                case "raspbian":
-                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash");
-                    break;
-
-                case "fedora":
-                case "rhel":
-                case "centos":
-                    execSync("curl -sL https://rpm.nodesource.com/setup_lts.x | bash");
-                    break;
-            }
-        }
+        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash");
     }
 
     static get cli(): { [key: string]: any } {
@@ -178,7 +190,7 @@ export default class System {
                     cli_mode: mode,
                 };
 
-                State.cache?.set(key, results, 720);
+                State.cache?.set(key, results, 60);
 
                 return results;
             },
@@ -261,7 +273,7 @@ export default class System {
                     hoobsd_running: System.hoobsd.running(),
                 };
 
-                State.cache?.set(key, results, 720);
+                State.cache?.set(key, results, 60);
 
                 return results;
             },
@@ -336,7 +348,7 @@ export default class System {
                     node_upgraded: installed === release || release === "" || installed === "" ? true : !Semver.gt(release, installed),
                 };
 
-                State.cache?.set(key, results, 720);
+                State.cache?.set(key, results, 60);
 
                 return results;
             },
@@ -344,39 +356,15 @@ export default class System {
             release: (): string => {
                 const system = System.info();
 
-                let data: any = "";
+                if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                    let data: any = "";
 
-                if (system.package_manager) {
-                    switch (system.distribution) {
-                        case "alpine":
-                            data = System.command("apk version nodejs");
-                            data = data.split("\n");
-                            data = data[data.length - 1];
-                            data = data.split("=");
-                            data = (data[data.length - 1] || "").trim();
-                            data = data.split("-")[0] || "";
+                    data = System.command("apt-cache show nodejs | grep Version");
+                    data = data.split("\n")[0] || "";
+                    data = (data.split(":")[1] || "").trim();
+                    data = (data.split(/[-~]+/)[0] || "").trim();
 
-                            return data || "";
-
-                        case "ubuntu":
-                        case "debian":
-                        case "raspbian":
-                            data = System.command("apt-cache show nodejs | grep Version");
-                            data = data.split("\n")[0] || "";
-                            data = (data.split(":")[1] || "").trim();
-                            data = (data.split(/[-~]+/)[0] || "").trim();
-
-                            return data || "";
-
-                        case "fedora":
-                        case "rhel":
-                        case "centos":
-                            data = System.command(`${system.package_manager} info nodejs | grep Version`);
-                            data = data.split("\n")[1] || "";
-                            data = (data.split(":")[1] || "").trim();
-
-                            return data || "";
-                    }
+                    return data || "";
                 }
 
                 return (parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/node/latest", true), {}).results || {}).version || "";
@@ -384,40 +372,10 @@ export default class System {
 
             upgrade: (): void => {
                 const system = System.info();
-                const release = System.runtime.release();
 
-                if (system.package_manager) {
-                    switch (system.distribution) {
-                        case "alpine":
-                            execSync("apk update");
-                            execSync("apk add curl tar git python3 make gcc g++ nodejs yarn");
-                            break;
-
-                        case "ubuntu":
-                        case "debian":
-                        case "raspbian":
-                            execSync("apt-get update");
-                            execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs yarn");
-                            break;
-
-                        case "fedora":
-                        case "rhel":
-                        case "centos":
-                            execSync(`${system.package_manager} update -y curl tar git policycoreutils python3 make gcc gcc-c++ nodejs yarnpkg`);
-                            break;
-
-                        case "macos":
-                            execSync(`curl -sL https://nodejs.org/dist/v${release}/node-v${release}.pkg --output ./node.pkg`);
-                            execSync("installer -pkg ./node.pkg -target /");
-                            execSync("rm -f ./node.pkg");
-                            break;
-
-                        default:
-                            Console.error(`unsupported distribution "${system.distribution}", node must be installed manually.`);
-                            break;
-                    }
-                } else {
-                    Console.error("unknown package manager, node must be installed manually.");
+                if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                    execSync("apt-get update");
+                    execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs yarn");
                 }
             },
         };

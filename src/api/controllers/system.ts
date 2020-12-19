@@ -52,10 +52,10 @@ export default class SystemController {
         const system: { [key: string]: any } = await SystemInfo.system();
         const distro: { [key: string]: any } = System.info();
 
-        if (State.api?.config.system === "hoobs-box") {
+        if (distro.product === "box" || distro.product === "card") {
             system.manufacturer = "HOOBS.org";
-            system.model = "HSLF-1";
-            system.sku = "7-45114-12419-7";
+            system.model = distro.model;
+            system.sku = distro.sku;
         }
 
         system.manufacturer = system.manufacturer || operating.distro || operating.hostname;
@@ -63,9 +63,9 @@ export default class SystemController {
         system.distribution = distro.distribution;
         system.version = distro.version || system.version || operating.release;
         system.hostname = operating.hostname;
-        system.serial = system.serial !== "" && system.serial !== "-" ? system.serial : undefined;
-        system.uuid = system.uuid !== "" && system.uuid !== "-" ? system.uuid : undefined;
-        system.sku = system.sku !== "" && system.sku !== "-" ? system.sku : undefined;
+
+        delete system.serial;
+        delete system.uuid;
 
         const data = {
             mac: await this.mac(),
@@ -207,10 +207,12 @@ export default class SystemController {
 
         await Instances.backup();
 
+        const system = System.info();
+
         let reboot = false;
         let data = System.runtime.info();
 
-        if (!data.node_upgraded) {
+        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !data.node_upgraded) {
             Console.info("syncing repositories");
             System.sync();
             Console.info("upgrading node");

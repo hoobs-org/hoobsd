@@ -58,6 +58,8 @@ export default class StatusController {
             }
         }
 
+        const system = System.info();
+
         const cli = System.cli.info();
         const hoobsd = System.hoobsd.info();
         const runtime = System.runtime.info();
@@ -71,7 +73,7 @@ export default class StatusController {
             cli_upgraded: cli.cli_upgraded,
             node_version: runtime.node_version,
             node_release: runtime.node_release,
-            node_upgraded: runtime.node_upgraded,
+            node_upgraded: (system.product === "box" || system.product === "card") && system.package_manager === "apt-get" ? runtime.node_upgraded : true,
             instances: results,
             cpu: await SystemInfo.currentLoad(),
             memory: await SystemInfo.mem(),
