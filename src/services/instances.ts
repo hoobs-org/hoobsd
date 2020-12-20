@@ -85,15 +85,6 @@ export default class Instances {
         return results;
     }
 
-    static initSystem() {
-        if (State.mode === "production") {
-            if (existsSync("/etc/systemd/system")) return "systemd";
-            if (existsSync("/Library/LaunchDaemons/")) return "launchd";
-        }
-
-        return null;
-    }
-
     static extentions(): { [key: string]: string | boolean }[] {
         return [{
             feature: "ffmpeg",
@@ -118,140 +109,127 @@ export default class Instances {
         return instances;
     }
 
-    static controlInstance(action: string) {
+    static manage(action: string) {
         return new Promise((resolve) => {
-            const type = Instances.initSystem();
+            if (existsSync("/etc/systemd/system/hoobsd.service")) {
+                switch (action) {
+                    case "start":
+                        try {
+                            execSync("systemctl start hoobsd.service");
 
-            switch (type) {
-                case "systemd":
-                    if (existsSync("/etc/systemd/system/hoobsd.service")) {
-                        switch (action) {
-                            case "start":
-                                try {
-                                    execSync("systemctl start hoobsd.service");
-
-                                    return resolve(true);
-                                } catch (_error) {
-                                    return resolve(false);
-                                }
-
-                            case "stop":
-                                try {
-                                    execSync("systemctl stop hoobsd.service");
-
-                                    return resolve(true);
-                                } catch (_error) {
-                                    return resolve(false);
-                                }
-
-                            case "restart":
-                                try {
-                                    execSync("systemctl stop hoobsd.service");
-                                    execSync("systemctl start hoobsd.service");
-
-                                    return resolve(true);
-                                } catch (_error) {
-                                    return resolve(false);
-                                }
-
-                            default:
-                                break;
+                            return resolve(true);
+                        } catch (_error) {
+                            return resolve(false);
                         }
-                    }
 
-                    break;
+                    case "stop":
+                        try {
+                            execSync("systemctl stop hoobsd.service");
 
-                case "launchd":
-                    if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
-                        switch (action) {
-                            case "start":
-                                try {
-                                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
-
-                                    return resolve(true);
-                                } catch (_error) {
-                                    return resolve(false);
-                                }
-
-                            case "stop":
-                                try {
-                                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
-
-                                    return resolve(true);
-                                } catch (_error) {
-                                    return resolve(false);
-                                }
-
-                            case "restart":
-                                try {
-                                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
-                                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
-
-                                    return resolve(true);
-                                } catch (_error) {
-                                    return resolve(false);
-                                }
-
-                            default:
-                                break;
+                            return resolve(true);
+                        } catch (_error) {
+                            return resolve(false);
                         }
-                    }
 
-                    break;
+                    case "restart":
+                        try {
+                            execSync("systemctl stop hoobsd.service");
+                            execSync("systemctl start hoobsd.service");
 
-                default:
-                    break;
+                            return resolve(true);
+                        } catch (_error) {
+                            return resolve(false);
+                        }
+
+                    default:
+                        break;
+                }
+            }
+
+            if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
+                switch (action) {
+                    case "start":
+                        try {
+                            execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+
+                            return resolve(true);
+                        } catch (_error) {
+                            return resolve(false);
+                        }
+
+                    case "stop":
+                        try {
+                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
+
+                            return resolve(true);
+                        } catch (_error) {
+                            return resolve(false);
+                        }
+
+                    case "restart":
+                        try {
+                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
+                            execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+
+                            return resolve(true);
+                        } catch (_error) {
+                            return resolve(false);
+                        }
+
+                    default:
+                        break;
+                }
             }
 
             return resolve(false);
         });
     }
 
-    static updateInstance(name: string, display: string, pin?: string, username?: string, autostart?: number) {
-        return new Promise((resolve) => {
-            if (!name) return resolve(false);
+    static update(name: string): { [key: string]: any } {
+        return {
+            info: (display: string, pin?: string, username?: string, autostart?: number): Promise<boolean> => new Promise((resolve) => {
+                if (!name) return resolve(false);
 
-            const id = sanitize(name);
-            const index = State.instances.findIndex((n) => n.id === id);
+                const id = sanitize(name);
+                const index = State.instances.findIndex((n) => n.id === id);
 
-            if (index >= 0) {
-                State.instances[index].display = display;
-                State.instances[index].pin = pin || State.instances[index].pin || "031-45-154";
-                State.instances[index].username = username || State.instances[index].username || Config.generateUsername();
-                State.instances[index].autostart = autostart || State.instances[index].autostart || 0;
+                if (index >= 0) {
+                    State.instances[index].display = display;
+                    State.instances[index].pin = pin || State.instances[index].pin || "031-45-154";
+                    State.instances[index].username = username || State.instances[index].username || Config.generateUsername();
+                    State.instances[index].autostart = autostart || State.instances[index].autostart || 0;
 
-                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+                    writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
-                return resolve(true);
-            }
+                    return resolve(true);
+                }
 
-            return resolve(false);
-        });
+                return resolve(false);
+            }),
+
+            ports: (start: number, end: number): Promise<boolean> => new Promise((resolve) => {
+                if (!name) return resolve(false);
+
+                const id = sanitize(name);
+                const index = State.instances.findIndex((n) => n.id === id);
+
+                if (index >= 0) {
+                    State.instances[index].ports = {
+                        start,
+                        end,
+                    };
+
+                    writeFileSync(Paths.instancesPath(), formatJson(State.instances));
+
+                    return resolve(true);
+                }
+
+                return resolve(false);
+            }),
+        };
     }
 
-    static updatePorts(name: string, start: number, end: number) {
-        return new Promise((resolve) => {
-            if (!name) return resolve(false);
-
-            const id = sanitize(name);
-            const index = State.instances.findIndex((n) => n.id === id);
-
-            if (index >= 0) {
-                State.instances[index].ports = {
-                    start,
-                    end,
-                };
-
-                writeFileSync(Paths.instancesPath(), formatJson(State.instances));
-
-                return resolve(true);
-            }
-
-            return resolve(false);
-        });
-    }
-
-    static removeService(name: string): boolean {
+    static uninstall(name: string): boolean {
         if (!name) return false;
 
         const id = sanitize(name);
@@ -281,92 +259,93 @@ export default class Instances {
         return false;
     }
 
-    static launchService(): boolean {
-        const type = Instances.initSystem() || "";
+    static install(): boolean {
+        if (existsSync("/etc/systemd/system")) {
+            try {
+                if (existsSync("/etc/systemd/system/hoobsd.service")) {
+                    execSync("systemctl stop hoobsd.service");
+                    execSync("systemctl start hoobsd.service");
+                } else {
+                    execSync("touch /etc/systemd/system/hoobsd.service");
+                    execSync("truncate -s 0 /etc/systemd/system/hoobsd.service");
 
-        try {
-            switch (type) {
-                case "systemd":
-                    if (existsSync("/etc/systemd/system/hoobsd.service")) {
-                        execSync("systemctl stop hoobsd.service");
-                        execSync("systemctl start hoobsd.service");
-                    } else {
-                        execSync("touch /etc/systemd/system/hoobsd.service");
-                        execSync("truncate -s 0 /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"[Unit]\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"Description=HOOBS API\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"After=network-online.target\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
+                    execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api" >> /etc/systemd/system/hoobsd.service`);
+                    execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"[Install]\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"WantedBy=multi-user.target\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
 
-                        execSync("echo \"[Unit]\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"Description=HOOBS API\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"After=network-online.target\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
-                        execSync(`echo "ExecStart=${join(Instances.locate(), "hoobsd")} api" >> /etc/systemd/system/hoobsd.service`);
-                        execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"[Install]\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"WantedBy=multi-user.target\" >> /etc/systemd/system/hoobsd.service");
-                        execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("systemctl daemon-reload");
+                    execSync("systemctl enable hoobsd.service");
+                    execSync("systemctl start hoobsd.service");
+                }
 
-                        execSync("systemctl daemon-reload");
-                        execSync("systemctl enable hoobsd.service");
-                        execSync("systemctl start hoobsd.service");
-                    }
-
-                    return true;
-
-                case "launchd":
-                    if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
-                        execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
-                    } else {
-                        execSync("touch /Library/LaunchDaemons/org.hoobsd.plist");
-
-                        execSync("echo \"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"<plist version=\"1.0\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"    <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <key>Label</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <string>org.hoobsd.api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <key>EnvironmentVariables</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"            <key>PATH</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"            <string><![CDATA[/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin]]></string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"            <key>HOME</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"            <string>/var/root</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <key>Program</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync(`echo "        <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
-                        execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
-                        execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <key>KeepAlive</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <key>SessionCreate</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"    </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                        execSync("echo \"</plist>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-
-                        execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
-                    }
-
-                    return true;
-
-                default:
-                    return true;
+                return true;
+            } catch (_error) {
+                return false;
             }
-        } catch (_error) {
-            return false;
         }
+
+        if (existsSync("/Library/LaunchDaemons")) {
+            try {
+                if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
+                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+                } else {
+                    execSync("touch /Library/LaunchDaemons/org.hoobsd.plist");
+
+                    execSync("echo \"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"<plist version=\"1.0\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"    <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <key>Label</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <string>org.hoobsd.api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <key>EnvironmentVariables</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"            <key>PATH</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"            <string><![CDATA[/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin]]></string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"            <key>HOME</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"            <string>/var/root</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <key>Program</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync(`echo "        <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
+                    execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync(`echo "            <string>${join(Instances.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
+                    execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <key>KeepAlive</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <key>SessionCreate</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"    </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"</plist>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+
+                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+                }
+            } catch (_error) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return true;
     }
 
-    static appendInstance(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
+    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
         const instances: InstanceRecord[] = [];
 
         for (let i = 0; i < State.instances.length; i += 1) {
@@ -421,11 +400,11 @@ export default class Instances {
         writeFileSync(Paths.instancesPath(), formatJson(instances));
     }
 
-    static createService(name: string, port: number, pin: string, username: string): void {
-        if (sanitize(name) === "api") Instances.launchService();
+    static create(name: string, port: number, pin: string, username: string): void {
+        if (sanitize(name) === "api") Instances.install();
         if (!existsSync(Paths.instancesPath())) writeFileSync(Paths.instancesPath(), "[]");
 
-        Instances.appendInstance(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, username, 0);
+        Instances.append(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, username, 0);
 
         Console.notify(
             "api",
@@ -460,7 +439,7 @@ export default class Instances {
 
         const bridges = Instances.list().filter((item) => item.type === "bridge");
 
-        for (let i = 0; i < bridges.length; i += 1) Instances.removeService(bridges[i].id);
+        for (let i = 0; i < bridges.length; i += 1) Instances.uninstall(bridges[i].id);
 
         removeSync(join(Paths.storagePath(), "api"));
         removeSync(join(Paths.storagePath(), "api.accessories"));
@@ -626,7 +605,7 @@ export default class Instances {
                             copySync(join(Paths.backupPath(), "stage", `${metadata.data.name}.conf`), join(Paths.storagePath(), `${id}.conf`));
                             copySync(join(Paths.backupPath(), "stage", metadata.data.name), join(Paths.storagePath(), id));
 
-                            Instances.createService(name, port, pin, username);
+                            Instances.create(name, port, pin, username);
 
                             const instances = Instances.list();
                             const index = instances.findIndex((n) => n.id === id);
@@ -693,7 +672,7 @@ export default class Instances {
                                 });
                             }
 
-                            if (instances.find((item) => item.type === "api")) Instances.launchService();
+                            if (instances.find((item) => item.type === "api")) Instances.install();
 
                             resolve();
                         }, 1000);

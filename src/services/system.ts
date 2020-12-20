@@ -20,55 +20,57 @@
 /* eslint-disable prefer-destructuring */
 
 import { join } from "path";
-import { execSync } from "child_process";
+import { exec, execSync } from "child_process";
 import { existsSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
-import Instances from "./instances";
-import { parseJson } from "./formatters";
+import Releases from "./releases";
 
 export default class System {
-    static info(): { [key: string]: any } {
+    static async info(): Promise<{ [key: string]: any }> {
         const key = "system/info";
         const cached = State.cache?.get<{ [key: string]: any }>(key);
 
         if (cached) return cached;
 
         const results: { [key: string]: any } = {};
-        const release = System.command("uname").toLowerCase();
+        const release = (await System.shell("uname")).toLowerCase();
 
         switch (release) {
             case "darwin":
-                results.distribution = ((System.command("sw_vers", true).split("\n").find((item) => item.startsWith("ProductName:")) || "").split(":")[1] || "").trim();
-                results.version = ((System.command("sw_vers", true).split("\n").find((item) => item.startsWith("ProductVersion:")) || "").split(":")[1] || "").trim();
+                results.distribution = (((await System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductName:")) || "").split(":")[1] || "").trim();
+                results.version = (((await System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductVersion:")) || "").split(":")[1] || "").trim();
                 break;
 
             case "linux":
-                results.distribution = ((System.command("cat /etc/*-release", true).split("\n").find((item) => item.startsWith("ID=")) || "").split("=")[1] || "").replace(/"/g, "");
-                results.version = ((System.command("cat /etc/*-release", true).split("\n").find((item) => item.startsWith("VERSION_ID=")) || "").split("=")[1] || "").replace(/"/g, "");
+                results.distribution = (((await System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("ID=")) || "").split("=")[1] || "").replace(/"/g, "");
+                results.version = (((await System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("VERSION_ID=")) || "").split("=")[1] || "").replace(/"/g, "");
                 break;
         }
 
-        results.arch = System.command("uname -m");
-        results.init_system = Instances.initSystem() || "";
+        results.arch = await System.shell("uname -m");
+        results.init_system = "";
+
+        if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
+        if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
 
         switch (results.distribution) {
             case "alpine":
-                results.package_manager = System.command("command -v apk") !== "" ? "apk" : "";
+                results.package_manager = (await System.shell("command -v apk")) !== "" ? "apk" : "";
                 break;
 
             case "ubuntu":
             case "debian":
             case "raspbian":
-                results.package_manager = System.command("command -v apt-get") !== "" ? "apt-get" : "";
+                results.package_manager = (await System.shell("command -v apt-get")) !== "" ? "apt-get" : "";
                 break;
 
             case "fedora":
             case "rhel":
             case "centos":
-                if (System.command("command -v dnf") !== "") {
+                if ((await System.shell("command -v dnf")) !== "") {
                     results.package_manager = "dnf";
-                } else if (System.command("command -v yum") !== "") {
+                } else if ((await System.shell("command -v yum")) !== "") {
                     results.package_manager = "yum";
                 } else {
                     results.package_manager = "";
@@ -87,7 +89,7 @@ export default class System {
         results.sku = "";
 
         if (existsSync("/etc/hoobs")) {
-            const data = System.command("cat /etc/hoobs", true).split("\n");
+            const data = (await System.shell("cat /etc/hoobs", true)).split("\n");
 
             for (let i = 0; i < data.length; i += 1) {
                 const field = data[i].split("=");
@@ -99,10 +101,10 @@ export default class System {
         }
 
         if ((results.product === "box" || results.product === "card") && results.init_system === "systemd" && existsSync("/etc/avahi/avahi-daemon.conf")) {
-            let broadcast = System.command("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+            let broadcast = await System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
 
             if (broadcast.indexOf("#") >= 0) {
-                broadcast = (System.command("hostname").split(".")[0] || "").toLowerCase();
+                broadcast = ((await System.shell("hostname")).split(".")[0] || "").toLowerCase();
             } else {
                 broadcast = (broadcast.split("=")[1] || "").toLowerCase();
             }
@@ -116,11 +118,25 @@ export default class System {
         return results;
     }
 
-    static command(value: string, multiline?: boolean): string {
+    static shell(command: string, multiline?: boolean): Promise<string> {
+        return new Promise((resolve) => {
+            exec(command, (error, stdout) => {
+                if (error) {
+                    resolve("");
+                } else if (!multiline) {
+                    resolve((stdout || "").replace(/\n/g, ""));
+                } else {
+                    resolve(stdout || "");
+                }
+            });
+        });
+    }
+
+    static shellSync(command: string, multiline?: boolean): string {
         let results = "";
 
         try {
-            results = execSync(value).toString() || "";
+            results = execSync(command).toString() || "";
         } catch (_error) {
             results = "";
         }
@@ -130,16 +146,19 @@ export default class System {
         return results;
     }
 
-    static sync(): void {
-        const system = System.info();
+    static restart(): void {
+        if (!State.container && State.mode === "production") exec(`${join(__dirname, "../../../bin/hoobsd")} service restart`);
+    }
 
-        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash");
+    static reboot(): void {
+        if (!State.container && State.mode === "production") exec("shutdown -r now");
     }
 
     static get cli(): { [key: string]: any } {
+        const key = "system/cli";
+
         return {
-            info: (): { [key: string]: any } => {
-                const key = "system/hbs";
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
                 if (cached) return cached;
@@ -161,19 +180,17 @@ export default class System {
                 if (path !== "") prefix = path.replace("bin/hbs", "");
 
                 let installed = "";
-                let release = "";
-                let download = "";
 
-                if (path !== "") installed = System.command(`${path} -v`);
+                if (path !== "") installed = await System.shell(`${path} -v`);
                 if (!Semver.valid(installed)) installed = "";
 
-                const data = System.cli.release();
+                const release = await System.cli.release(beta);
+                const download = release.download || "";
 
-                release = data.release || "";
-                download = data.download || "";
+                let current = release.version || "";
 
-                if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
-                    release = installed;
+                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
+                    current = installed;
                 }
 
                 let mode = "none";
@@ -181,11 +198,11 @@ export default class System {
                 if (existsSync(`${prefix}lib/hbs/package.json`)) mode = "production";
                 if (existsSync(`${prefix}/package.json`)) mode = "development";
 
-                const results: { [key: string]: any } = {
+                const results = {
                     cli_prefix: prefix,
                     cli_version: installed,
-                    cli_release: release,
-                    cli_upgraded: installed === release ? true : !Semver.gt(release, installed),
+                    cli_current: current,
+                    cli_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
                     cli_download: download,
                     cli_mode: mode,
                 };
@@ -195,17 +212,19 @@ export default class System {
                 return results;
             },
 
-            release: (): { [key: string]: string } => {
-                const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hbs/latest", true), {});
+            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
+                const release = await Releases.fetch("hbs", beta) || {};
 
                 return {
-                    release: (data.results || {}).version || "",
-                    download: (data.results || {}).download || "",
+                    version: release.version || "",
+                    download: release.download || "",
                 };
             },
 
-            upgrade: (): void => {
-                const data = System.cli.info();
+            upgrade: async (beta: boolean): Promise<void> => {
+                const data = await System.cli.info(beta);
+
+                State.cache?.remove(key);
 
                 execSync(`curl -sL ${data.cli_download} --output ./hbs.tar.gz`);
                 execSync(`tar -xzf ./hbs.tar.gz -C ${data.cli_prefix} --strip-components=1 --no-same-owner`);
@@ -219,12 +238,13 @@ export default class System {
     }
 
     static get hoobsd(): { [key: string]: any } {
+        const key = "system/hoobsd";
+
         return {
-            info: (): { [key: string]: any } => {
-                const key = "system/hoobsd";
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
-                if (cached && cached.hoobsd_version === State.version) return cached;
+                if (cached) return cached;
 
                 let path = "/usr/bin/hoobsd";
                 let prefix = "/usr/";
@@ -243,19 +263,17 @@ export default class System {
                 if (path !== "") prefix = path.replace("bin/hoobsd", "");
 
                 let installed = "";
-                let release = "";
-                let download = "";
 
-                if (path !== "") installed = System.command(`${path} -v`);
+                if (path !== "") installed = await System.shell(`${path} -v`);
                 if (!Semver.valid(installed)) installed = "";
 
-                const data = System.hoobsd.release();
+                const release = await System.hoobsd.release(beta);
+                const download = release.download || "";
 
-                release = data.release || "";
-                download = data.download || "";
+                let current = release.version || "";
 
-                if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
-                    release = installed;
+                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
+                    current = installed;
                 }
 
                 let mode = "none";
@@ -263,14 +281,14 @@ export default class System {
                 if (existsSync(`${prefix}lib/hoobsd/package.json`)) mode = "production";
                 if (existsSync(`${prefix}/package.json`)) mode = "development";
 
-                const results: { [key: string]: any } = {
+                const results = {
                     hoobsd_prefix: prefix,
                     hoobsd_version: installed,
-                    hoobsd_release: release,
-                    hoobsd_upgraded: installed === release ? true : !Semver.gt(release, installed),
+                    hoobsd_current: current,
+                    hoobsd_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
                     hoobsd_download: download,
                     hoobsd_mode: mode,
-                    hoobsd_running: System.hoobsd.running(),
+                    hoobsd_running: (await System.shell("pidof hoobsd")) !== "",
                 };
 
                 State.cache?.set(key, results, 60);
@@ -278,42 +296,39 @@ export default class System {
                 return results;
             },
 
-            running: (): boolean => {
-                if (System.command("pidof hoobsd") !== "") return true;
-
-                return false;
-            },
-
-            release: (): { [key: string]: string } => {
-                const data = parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/hoobsd/latest", true), {});
+            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
+                const release = await Releases.fetch("hoobsd", beta) || {};
 
                 return {
-                    release: (data.results || {}).version || "",
-                    download: (data.results || {}).download || "",
+                    version: release.version || "",
+                    download: release.download || "",
                 };
             },
 
-            upgrade: (): void => {
-                const data = System.hoobsd.info();
+            upgrade: async (beta: boolean): Promise<void> => {
+                const version = await System.hoobsd.info(beta);
 
-                execSync(`curl -sL ${data.hoobsd_download} --output ./hoobsd.tar.gz`);
-                execSync(`tar -xzf ./hoobsd.tar.gz -C ${data.hoobsd_prefix} --strip-components=1 --no-same-owner`);
+                State.cache?.remove(key);
+
+                execSync(`curl -sL ${version.hoobsd_download} --output ./hoobsd.tar.gz`);
+                execSync(`tar -xzf ./hoobsd.tar.gz -C ${version.hoobsd_prefix} --strip-components=1 --no-same-owner`);
                 execSync("rm -f ./hoobsd.tar.gz");
 
-                if (data.hoobsd_mode === "production") {
-                    execSync("yarn install --force --production", { cwd: join(data.hoobsd_prefix, "lib/hoobsd") });
+                if (version.hoobsd_mode === "production") {
+                    execSync("yarn install --force --production", { cwd: join(version.hoobsd_prefix, "lib/hoobsd") });
                 }
             },
         };
     }
 
     static get runtime(): { [key: string]: any } {
+        const key = "system/node";
+
         return {
-            info: (): { [key: string]: any } => {
-                const key = "system/node";
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
-                if (cached && cached.node_version === (process.version || "").replace(/v/gi, "")) return cached;
+                if (cached) return cached;
 
                 let path = "/usr/bin/node";
 
@@ -330,22 +345,20 @@ export default class System {
                 if (!existsSync(path)) path = "";
 
                 let installed = "";
-                let release = "";
+                let current = await System.runtime.release(beta);
 
-                if (path !== "") installed = System.command(`${path} -v`).replace("v", "");
+                if (path !== "") installed = (await System.shell(`${path} -v`)).replace("v", "");
                 if (!Semver.valid(installed)) installed = "";
 
-                release = System.runtime.release();
-
-                if ((Semver.valid(installed) && Semver.valid(release) && Semver.gt(installed, release)) || !Semver.valid(release)) {
-                    release = installed;
+                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
+                    current = installed;
                 }
 
-                const results: { [key: string]: any } = {
+                const results = {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
                     node_version: installed,
-                    node_release: release,
-                    node_upgraded: installed === release || release === "" || installed === "" ? true : !Semver.gt(release, installed),
+                    node_current: current,
+                    node_upgraded: installed === current || current === "" || installed === "" ? true : !Semver.gt(current, installed),
                 };
 
                 State.cache?.set(key, results, 60);
@@ -353,13 +366,15 @@ export default class System {
                 return results;
             },
 
-            release: (): string => {
-                const system = System.info();
+            release: async (beta: boolean): Promise<string> => {
+                const system = await System.info();
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
+                    execSync(`curl -sL https://deb.nodesource.com/setup_${beta ? "current" : "lts"}.x | bash`);
+
                     let data: any = "";
 
-                    data = System.command("apt-cache show nodejs | grep Version");
+                    data = await System.shell("apt-cache show nodejs | grep Version");
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
                     data = (data.split(/[-~]+/)[0] || "").trim();
@@ -367,11 +382,15 @@ export default class System {
                     return data || "";
                 }
 
-                return (parseJson<{ [key: string]: any }>(System.command("curl -sL https://support.hoobs.org/api/releases/node/latest", true), {}).results || {}).version || "";
+                const release = await Releases.fetch("node", beta) || {};
+
+                return release.version || "";
             },
 
-            upgrade: (): void => {
-                const system = System.info();
+            upgrade: async (): Promise<void> => {
+                const system = await System.info();
+
+                State.cache?.remove(key);
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
                     execSync("apt-get update");

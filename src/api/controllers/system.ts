@@ -50,7 +50,7 @@ export default class SystemController {
     async info(_request: Request, response: Response): Promise<Response> {
         const operating: { [key: string]: any } = await SystemInfo.osInfo();
         const system: { [key: string]: any } = await SystemInfo.system();
-        const distro: { [key: string]: any } = System.info();
+        const distro: { [key: string]: any } = await System.info();
 
         if (distro.product === "box" || distro.product === "card") {
             system.manufacturer = "HOOBS.org";
@@ -207,34 +207,36 @@ export default class SystemController {
 
         await Instances.backup();
 
-        const system = System.info();
+        const system = await System.info();
 
         let reboot = false;
-        let data = System.runtime.info();
+        let data = await System.runtime.info();
 
         if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !data.node_upgraded) {
-            Console.info("syncing repositories");
-            System.sync();
             Console.info("upgrading node");
-            System.runtime.upgrade();
+
+            await System.runtime.upgrade();
         }
 
-        data = System.cli.info();
+        data = await System.cli.info();
 
         if (!data.cli_upgraded) {
             Console.info("upgrading cli");
-            System.cli.upgrade();
+
+            await System.cli.upgrade();
         }
 
-        data = System.hoobsd.info();
+        data = await System.hoobsd.info();
 
         if (!data.hoobsd_upgraded) {
             Console.info("upgrading hoobsd");
-            System.hoobsd.upgrade();
+
+            await System.hoobsd.upgrade();
+
             reboot = true;
         }
 
-        if (reboot && !State.container && State.mode === "production") exec(`${join(__dirname, "../../../../bin/hoobsd")} service restart`);
+        if (reboot) System.restart();
 
         return response.send({
             success: true,
@@ -249,7 +251,7 @@ export default class SystemController {
             });
         }
 
-        if (State.mode === "production") exec("shutdown -r now");
+        System.reboot();
 
         return response.send({
             success: true,

@@ -33,7 +33,7 @@ import API from "./api";
 import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
-if (System.command("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (System.shellSync("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
@@ -144,7 +144,7 @@ export = function Daemon(): void {
 
             State.id = sanitize(command.instance);
 
-            Instances.controlInstance(action).then((success) => {
+            Instances.manage(action).then((success) => {
                 if (success) {
                     switch (action) {
                         case "start":

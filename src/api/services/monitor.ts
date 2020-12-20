@@ -48,13 +48,21 @@ export default async function Monitor() {
         }
     }
 
-    const cli = System.cli.info();
-    const hoobsd = System.hoobsd.info();
-    const runtime = System.runtime.info();
+    const system = await System.info();
+
+    const cli = await System.cli.info();
+    const hoobsd = await System.hoobsd.info();
+    const runtime = await System.runtime.info();
+
+    let upgraded = true;
+
+    if (!hoobsd.hoobsd_upgraded) upgraded = false;
+    if (!cli.cli_upgraded) upgraded = false;
+    if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !runtime.node_upgraded) upgraded = false;
 
     Console.emit(Events.MONITOR, "api", {
         instances: results,
-        upgraded: hoobsd.hoobsd_upgraded && cli.cli_upgraded && runtime.node_upgraded,
+        upgraded,
         cpu: await SystemInfo.currentLoad(),
         memory: await SystemInfo.mem(),
         temp: await SystemInfo.cpuTemperature(),

@@ -58,21 +58,21 @@ export default class StatusController {
             }
         }
 
-        const system = System.info();
+        const system = await System.info();
 
-        const cli = System.cli.info();
-        const hoobsd = System.hoobsd.info();
-        const runtime = System.runtime.info();
+        const cli = await System.cli.info();
+        const hoobsd = await System.hoobsd.info();
+        const runtime = await System.runtime.info();
 
         return response.send({
             version: hoobsd.hoobsd_version,
-            release: hoobsd.hoobsd_release,
+            current: hoobsd.hoobsd_current,
             upgraded: hoobsd.hoobsd_upgraded,
             cli_version: cli.cli_version,
-            cli_release: cli.cli_release,
+            cli_current: cli.cli_current,
             cli_upgraded: cli.cli_upgraded,
             node_version: runtime.node_version,
-            node_release: runtime.node_release,
+            node_current: runtime.node_current,
             node_upgraded: (system.product === "box" || system.product === "card") && system.package_manager === "apt-get" ? runtime.node_upgraded : true,
             instances: results,
             cpu: await SystemInfo.currentLoad(),

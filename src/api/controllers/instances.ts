@@ -52,7 +52,7 @@ export default class InstancesController {
             });
         }
 
-        Instances.createService(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
+        Instances.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
 
         return this.list(request, response);
     }
@@ -65,7 +65,7 @@ export default class InstancesController {
             });
         }
 
-        await Instances.updateInstance(request.params.id, request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
+        await Instances.update(request.params.id).info(request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
 
         return this.list(request, response);
     }
@@ -78,7 +78,7 @@ export default class InstancesController {
             });
         }
 
-        await Instances.updatePorts(request.params.id, request.body.start, request.body.end);
+        await Instances.update(request.params.id).ports(request.body.start, request.body.end);
 
         return this.list(request, response);
     }
@@ -130,7 +130,7 @@ export default class InstancesController {
             });
         }
 
-        Instances.removeService(request.params.id);
+        Instances.uninstall(request.params.id);
 
         return this.list(request, response);
     }
