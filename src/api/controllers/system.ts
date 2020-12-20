@@ -21,7 +21,6 @@ import Forms from "formidable";
 import Mac from "macaddress";
 import { join } from "path";
 import { existsSync, readdirSync } from "fs-extra";
-import { exec } from "child_process";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Paths from "../../services/paths";
