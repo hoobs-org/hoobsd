@@ -64,7 +64,16 @@ export default class StatusController {
         const hoobsd = await System.hoobsd.info();
         const runtime = await System.runtime.info();
 
+        let product = "custom";
+        let upgraded = true;
+
+        if (system.product === "box" || system.product === "card") product = system.product;
+        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = runtime.node_upgraded;
+
         return response.send({
+            product,
+            mdns: system.mdns,
+            broadcast: system.mdns_broadcast,
             version: hoobsd.hoobsd_version,
             current: hoobsd.hoobsd_current,
             upgraded: hoobsd.hoobsd_upgraded,
@@ -73,7 +82,7 @@ export default class StatusController {
             cli_upgraded: cli.cli_upgraded,
             node_version: runtime.node_version,
             node_current: runtime.node_current,
-            node_upgraded: (system.product === "box" || system.product === "card") && system.package_manager === "apt-get" ? runtime.node_upgraded : true,
+            node_upgraded: upgraded,
             instances: results,
             cpu: await SystemInfo.currentLoad(),
             memory: await SystemInfo.mem(),

@@ -31,6 +31,8 @@ import { Console } from "../../services/logger";
 export default class SystemController {
     constructor() {
         State.app?.get("/api/system", (request, response) => this.info(request, response));
+        State.app?.get("/api/system/hostname", (request, response) => this.hostname("get", request, response));
+        State.app?.post("/api/system/hostname", (request, response) => this.hostname("post", request, response));
         State.app?.get("/api/system/cpu", (request, response) => this.cpu(request, response));
         State.app?.get("/api/system/memory", (request, response) => this.memory(request, response));
         State.app?.get("/api/system/network", (request, response) => this.network(request, response));
@@ -61,7 +63,12 @@ export default class SystemController {
         system.model = system.model || operating.platform;
         system.distribution = distro.distribution;
         system.version = distro.version || system.version || operating.release;
-        system.hostname = operating.hostname;
+
+        if (distro.mdns) {
+            system.hostname = distro.mdns_broadcast || operating.hostname;
+        } else {
+            system.hostname = operating.hostname;
+        }
 
         delete system.serial;
         delete system.uuid;
@@ -73,6 +80,38 @@ export default class SystemController {
         };
 
         return response.send(data);
+    }
+
+    async hostname(method: string, request: Request, response: Response): Promise<Response> {
+        const operating: { [key: string]: any } = await SystemInfo.osInfo();
+        const distro: { [key: string]: any } = await System.info();
+
+        switch (method) {
+            case "post":
+                if (((request.body || {}).hostname || "") !== "") {
+                    await System.hostname((request.body || {}).hostname || "");
+
+                    return response.send({
+                        success: true,
+                    });
+                }
+
+                return response.send({
+                    error: "invalid hostname",
+                    success: false,
+                });
+
+            default:
+                if (distro.mdns) {
+                    return response.send({
+                        hostname: distro.mdns_broadcast || operating.hostname,
+                    });
+                }
+
+                return response.send({
+                    hostname: operating.hostname,
+                });
+        }
     }
 
     mac(): Promise<string | undefined> {

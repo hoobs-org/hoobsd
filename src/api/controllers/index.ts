@@ -18,7 +18,6 @@
 
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
-import System from "../../services/system";
 
 export default class IndexController {
     constructor() {
@@ -26,16 +25,6 @@ export default class IndexController {
     }
 
     async info(_request: Request, response: Response): Promise<Response> {
-        const system = await System.info();
-
-        if ((system.product === "box" || system.product === "card") && system.init_system === "systemd" && system.mdns) {
-            return response.send({
-                version: State.version,
-                product: system.product,
-                broadcast: system.mdns_broadcast,
-            });
-        }
-
         return response.send({
             version: State.version,
         });
