@@ -131,7 +131,7 @@ export const DarkTheme: Theme = {
         highlight: "#feb400",
         accent: "#f5ff66",
         dark: "#252525",
-        drawer: "#1414149d",
+        drawer: "#111111d2",
         input: {
             background: "#262626",
             accent: "#444",
@@ -141,7 +141,7 @@ export const DarkTheme: Theme = {
     button: {
         background: "#1a1a1a",
         text: "#fff",
-        border: "#1a1a1a",
+        border: "#252525",
         primary: {
             background: "#feb400",
             text: "#fff",
@@ -219,7 +219,7 @@ export const LightTheme: Theme = {
         highlight: "#feb400",
         accent: "#21005c",
         dark: "#e7e7e7",
-        drawer: "#f8f8f89d",
+        drawer: "#ffffffc2",
         input: {
             background: "#f8f8f8",
             accent: "#f1f1f1",
