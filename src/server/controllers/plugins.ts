@@ -47,15 +47,22 @@ export default class PluginsController {
             const scope = PluginManager.extractPluginScope(identifier);
 
             let latest = (plugin.version || "").replace(/v/gi, "");
+            let certified = false;
+            let rating = 0;
+            let icon = "";
 
             try {
                 const definition = (await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {};
 
                 if ((definition.tags || {}).latest) {
                     latest = (definition.tags.latest || "").replace(/v/gi, "");
-                } if (definition.versions) {
+                } else if (definition.versions) {
                     latest = (Object.keys(definition.versions).pop() || "").replace(/v/gi, "");
                 }
+
+                certified = definition.certified;
+                rating = definition.rating;
+                icon = definition.icon;
             } catch (_error) {
                 Console.warn("plugin site unavailable");
             }
@@ -64,9 +71,12 @@ export default class PluginsController {
                 identifier,
                 scope,
                 name,
+                icon,
                 alias: schema.plugin_alias || schema.pluginAlias || details[0].alias || name,
                 version: (plugin.version || "").replace(/v/gi, ""),
                 latest,
+                certified,
+                rating,
                 keywords: pjson.keywords || [],
                 details,
                 schema,
