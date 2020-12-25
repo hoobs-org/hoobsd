@@ -116,16 +116,6 @@ export default class Server extends EventEmitter {
             );
         });
 
-        State.bridge?.on(Events.SHUTDOWN, () => {
-            Console.notify(
-                State.id,
-                "Bridge Stopped",
-                `${State.display || State.id} has been stopped.`,
-                NotificationType.WARN,
-                "router",
-            );
-        });
-
         State.bridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
             Console.emit(Events.ACCESSORY_CHANGE, State.id, {
                 accessory,
@@ -144,6 +134,14 @@ export default class Server extends EventEmitter {
 
     async stop(): Promise<void> {
         Console.debug("Shutting down");
+
+        Console.notify(
+            State.id,
+            "Bridge Stopped",
+            `${State.display || State.id} has been stopped.`,
+            NotificationType.WARN,
+            "router",
+        );
 
         if (State.bridge) await State.bridge.stop();
         if (State.socket) State.socket.stop();

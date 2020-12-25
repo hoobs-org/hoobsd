@@ -52,7 +52,7 @@ export default class PluginsController {
             let icon = "";
 
             try {
-                const definition = (await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {};
+                const definition = ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
 
                 if ((definition.tags || {}).latest) {
                     latest = (definition.tags.latest || "").replace(/v/gi, "");

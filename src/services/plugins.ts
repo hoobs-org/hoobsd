@@ -112,6 +112,7 @@ export default class Plugins {
             flags.push("add");
             flags.push("--unsafe-perm");
             flags.push("--ignore-engines");
+            flags.push("--exact");
             flags.push(`${name}@${tag}`);
 
             const proc = spawn(Paths.yarn(), flags, {
@@ -256,6 +257,7 @@ export default class Plugins {
 
             flags.push("upgrade");
             flags.push("--ignore-engines");
+            flags.push("--exact");
 
             if (name) flags.push(`${name}@${tag}`);
 
