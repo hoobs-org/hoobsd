@@ -97,7 +97,7 @@ export default class Server extends EventEmitter {
         });
     }
 
-    start(bridge?: boolean): void {
+    start(override?: boolean): void {
         const instance = State.instances.find((n: any) => n.id === State.id);
 
         State.bridge = new Bridge(this.port || undefined);
@@ -123,16 +123,16 @@ export default class Server extends EventEmitter {
             });
         });
 
-        if ((instance?.autostart || 0) >= 0) {
+        if (override || (instance?.autostart || 0) >= 0) {
             setTimeout(() => {
                 State.bridge?.start();
-            }, (instance?.autostart || 0) * 1000);
+            }, override ? 0 : (instance?.autostart || 0) * 1000);
         }
 
-        if (!bridge) State.socket?.start();
+        if (!override) State.socket?.start();
     }
 
-    async stop(bridge?: boolean): Promise<void> {
+    async stop(override?: boolean): Promise<void> {
         Console.debug("Shutting down");
 
         Console.notify(
@@ -144,7 +144,7 @@ export default class Server extends EventEmitter {
         );
 
         if (State.bridge) await State.bridge.stop();
-        if (State.socket && !bridge) State.socket.stop();
+        if (State.socket && !override) State.socket.stop();
 
         Console.debug("Stopped");
 

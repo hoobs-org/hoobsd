@@ -44,11 +44,14 @@ export default class Socket {
 
     declare private defined: boolean;
 
+    declare public running: boolean;
+
     constructor(name: string) {
         this.name = name;
         this.routes = {};
         this.defined = false;
 
+        this.running = false;
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = true;
         this.pipe.config.logger = Print;
@@ -125,15 +128,21 @@ export default class Socket {
     }
 
     start(): void {
-        Print("Starting IPC Socket");
+        if (!this.running) {
+            Print("Starting IPC Socket");
 
-        this.pipe.server.start();
+            this.pipe.server.start();
+            this.running = true;
+        }
     }
 
     stop() {
-        this.pipe.server.stop();
+        if (this.running) {
+            this.running = false;
+            this.pipe.server.stop();
 
-        if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
+            if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
+        }
     }
 
     static up() {

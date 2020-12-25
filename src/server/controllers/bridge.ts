@@ -18,7 +18,6 @@
 
 import State from "../../state";
 import Instances from "../../services/instances";
-import Config from "../../services/config";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class BridgeController {
