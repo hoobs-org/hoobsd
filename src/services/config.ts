@@ -105,7 +105,7 @@ export default class Config {
         return config;
     }
 
-    static saveConfig(config: any): void {
+    static saveConfig(config: any, touch?: boolean): void {
         let current: any = {};
 
         if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
@@ -120,6 +120,8 @@ export default class Config {
 
         if (!jsonEquals(current, config)) {
             writeFileSync(Paths.configPath(), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        } else if (touch) {
+            Config.touchConfig();
         }
     }
 

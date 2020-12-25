@@ -164,7 +164,7 @@ export default class Plugins {
                         }
                     }
 
-                    Config.saveConfig(config);
+                    Config.saveConfig(config, true);
 
                     Console.notify(
                         State.id,
