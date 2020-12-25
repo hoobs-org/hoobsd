@@ -22,13 +22,19 @@ import Express from "express";
 import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
+import Process from "child_process";
 import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
-import Process from "child_process";
 import { EventEmitter } from "events";
-import { existsSync } from "fs-extra";
 import { join, extname, basename } from "path";
 import { LogLevel } from "homebridge/lib/logger";
+
+import {
+    existsSync,
+    lstatSync,
+    readdirSync,
+    removeSync,
+} from "fs-extra";
 
 import Paths from "../services/paths";
 import Config from "../services/config";
@@ -326,6 +332,12 @@ export default class API extends EventEmitter {
             }
 
             const instances = State.instances.filter((item) => item.type === "bridge");
+            const directories = readdirSync(Paths.storagePath()).filter((item) => item !== "api" && item !== "backups" && lstatSync(join(Paths.storagePath(), item)).isDirectory());
+            const remove = directories.filter((item) => instances.findIndex((instance) => instance.id === item) === -1);
+
+            for (let i = 0; i < remove.length; i += 1) {
+                removeSync(join(Paths.storagePath(), remove[i]));
+            }
 
             for (let i = 0; i < instances.length; i += 1) {
                 if (!this.processes[instances[i].id] || this.processes[instances[i].id].killed) {

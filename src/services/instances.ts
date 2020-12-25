@@ -54,7 +54,7 @@ export interface InstanceRecord {
     port: number;
     pin?: string;
     username?: string;
-    ports?: { [key: string]: number};
+    ports?: { [key: string]: number };
     autostart?: number;
     host?: string;
     plugins?: string;

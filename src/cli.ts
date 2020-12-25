@@ -61,7 +61,7 @@ export = function Daemon(): void {
             State.instances = Instances.list();
             State.users = Users.list();
             State.cache = new Cache();
-            State.cache.load(join(Paths.storagePath(State.id), "cache"));
+            State.cache.load(Paths.storagePath(State.id));
 
             const instance = State.instances.find((n) => n.id === State.id);
 
@@ -86,7 +86,7 @@ export = function Daemon(): void {
 
                 State.api.start();
             } else {
-                Console.error(`${State.id} is not created, please run 'sudo hoobs initilize' to create`);
+                Console.error(`${State.id} is not created, please run 'sudo hbs install' to create`);
             }
         });
 
@@ -101,7 +101,7 @@ export = function Daemon(): void {
             State.instances = Instances.list();
             State.users = Users.list();
             State.cache = new Cache();
-            State.cache.load(join(Paths.storagePath(State.id), "cache"));
+            State.cache.load(Paths.storagePath(State.id));
 
             const instance = State.instances.find((n) => n.id === State.id);
 
@@ -182,7 +182,7 @@ export = function Daemon(): void {
 
             State.terminating = true;
 
-            if (State.cache) State.cache.save(join(Paths.storagePath(State.id), "cache"), ["hap/accessories"]);
+            if (State.cache) State.cache.save(Paths.storagePath(State.id), ["hap/accessories"]);
             if (State.server) await State.server.stop();
             if (State.api) await State.api.stop();
 
