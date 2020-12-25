@@ -97,7 +97,7 @@ export default class Server extends EventEmitter {
         });
     }
 
-    start(): void {
+    start(bridge?: boolean): void {
         const instance = State.instances.find((n: any) => n.id === State.id);
 
         State.bridge = new Bridge(this.port || undefined);
@@ -129,10 +129,10 @@ export default class Server extends EventEmitter {
             }, (instance?.autostart || 0) * 1000);
         }
 
-        State.socket?.start();
+        if (!bridge) State.socket?.start();
     }
 
-    async stop(): Promise<void> {
+    async stop(bridge?: boolean): Promise<void> {
         Console.debug("Shutting down");
 
         Console.notify(
@@ -144,7 +144,7 @@ export default class Server extends EventEmitter {
         );
 
         if (State.bridge) await State.bridge.stop();
-        if (State.socket) State.socket.stop();
+        if (State.socket && !bridge) State.socket.stop();
 
         Console.debug("Stopped");
 

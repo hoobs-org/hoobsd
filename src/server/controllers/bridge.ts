@@ -30,7 +30,7 @@ export default class BridgeController {
     }
 
     async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (!State.bridge?.running) await State.bridge?.start();
+        if (!State.bridge?.running) State.server?.start(true);
 
         response.send({
             success: true,
@@ -38,7 +38,7 @@ export default class BridgeController {
     }
 
     async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (State.bridge?.running) await State.bridge.stop();
+        if (State.bridge?.running) await State.server?.stop(true);
 
         response.send({
             success: true,
@@ -46,7 +46,8 @@ export default class BridgeController {
     }
 
     async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        Config.touchConfig();
+        if (State.bridge?.running) await State.server?.stop(true);
+        if (!State.bridge?.running) State.server?.start(true);
 
         response.send({
             success: true,
@@ -56,7 +57,8 @@ export default class BridgeController {
     async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
         Instances.purge();
 
-        Config.touchConfig();
+        if (State.bridge?.running) await State.server?.stop(true);
+        if (!State.bridge?.running) State.server?.start(true);
 
         response.send({
             success: true,

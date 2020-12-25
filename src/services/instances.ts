@@ -197,7 +197,7 @@ export default class Instances {
                     State.instances[index].display = display;
                     State.instances[index].pin = pin || State.instances[index].pin || "031-45-154";
                     State.instances[index].username = username || State.instances[index].username || Config.generateUsername();
-                    State.instances[index].autostart = autostart || State.instances[index].autostart || 0;
+                    State.instances[index].autostart = autostart || 0;
 
                     writeFileSync(Paths.instancesPath(), formatJson(State.instances));
 
