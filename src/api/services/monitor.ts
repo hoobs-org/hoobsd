@@ -22,6 +22,8 @@ import { Console, Events } from "../../services/logger";
 import Socket from "./socket";
 import System from "../../services/system";
 
+const DEFAULT_POLLING = 5;
+
 export default async function Monitor() {
     const results: { [key: string]: any } = {};
 
@@ -70,5 +72,5 @@ export default async function Monitor() {
 
     setTimeout(() => {
         Monitor();
-    }, (State.api?.settings?.polling_seconds || 5) * 1000);
+    }, (State.api?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
 }

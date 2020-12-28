@@ -67,7 +67,8 @@ import Client from "./client";
 import { InstanceRecord } from "../services/instances";
 import { Console, Prefixed, Events } from "../services/logger";
 
-const accessoryStorage: LocalStorage = storage.create();
+const INSTANCE_KILL_DELAY = 3000;
+const PERSISTED_CACHE: LocalStorage = storage.create();
 
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
@@ -118,7 +119,7 @@ export default class Server extends EventEmitter {
         Logger.internal = Console;
 
         (async () => {
-            await accessoryStorage.init({
+            await PERSISTED_CACHE.init({
                 dir: Paths.cachedAccessoryPath(),
             });
         })();
@@ -262,7 +263,7 @@ export default class Server extends EventEmitter {
                 this.emit(Events.SHUTDOWN);
 
                 resolve();
-            }, 3000);
+            }, INSTANCE_KILL_DELAY);
         });
     }
 
@@ -302,7 +303,7 @@ export default class Server extends EventEmitter {
     }
 
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
-        const cachedAccessories: SerializedPlatformAccessory[] = await accessoryStorage.getItem("cachedAccessories");
+        const cachedAccessories: SerializedPlatformAccessory[] = await PERSISTED_CACHE.getItem("cachedAccessories");
 
         if (cachedAccessories) {
             this.cachedPlatformAccessories = cachedAccessories.map((serialized) => PlatformAccessory.deserialize(serialized));
@@ -348,11 +349,11 @@ export default class Server extends EventEmitter {
 
             const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
 
-            await accessoryStorage.setItem("cachedAccessories", serializedAccessories);
+            await PERSISTED_CACHE.setItem("cachedAccessories", serializedAccessories);
         } else if (this.cachedAccessoriesFileCreated) {
             this.cachedAccessoriesFileCreated = false;
 
-            await accessoryStorage.removeItem("cachedAccessories");
+            await PERSISTED_CACHE.removeItem("cachedAccessories");
         }
     }
 

@@ -62,6 +62,8 @@ import SystemController from "./controllers/system";
 import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
+const INSTANCE_LAUNCH_DELAY = 1000;
+
 export default class API extends EventEmitter {
     declare time: number;
 
@@ -371,13 +373,15 @@ export default class API extends EventEmitter {
             this.emit(Events.LISTENING, this.port);
         });
 
-        const instances = State.instances.filter((item) => item.type === "bridge");
-
-        for (let i = 0; i < instances.length; i += 1) {
-            this.launch(instances[i].id, instances[i].port);
-        }
-
         Monitor();
+
+        setTimeout(() => {
+            const instances = State.instances.filter((item) => item.type === "bridge");
+
+            for (let i = 0; i < instances.length; i += 1) {
+                this.launch(instances[i].id, instances[i].port);
+            }
+        }, INSTANCE_LAUNCH_DELAY);
     }
 
     stop(): Promise<void> {

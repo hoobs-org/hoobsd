@@ -33,6 +33,8 @@ import API from "./api";
 import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
+const PROCESS_KILL_DELAY = 1000;
+
 if (System.shellSync("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
@@ -186,7 +188,9 @@ export = function Daemon(): void {
             if (State.server) await State.server.stop();
             if (State.api) await State.api.stop();
 
-            process.exit();
+            setTimeout(() => {
+                process.exit();
+            }, PROCESS_KILL_DELAY);
         });
     });
 

@@ -42,6 +42,8 @@ import BridgeController from "./controllers/bridge";
 import PluginsController from "./controllers/plugins";
 import AccessoriesController from "./controllers/accessories";
 
+const INSTANCE_START_DELAY = 0;
+
 export default class Server extends EventEmitter {
     declare time: number;
 
@@ -126,7 +128,7 @@ export default class Server extends EventEmitter {
         if (override || (instance?.autostart || 0) >= 0) {
             setTimeout(() => {
                 State.bridge?.start();
-            }, override ? 0 : (instance?.autostart || 0) * 1000);
+            }, override ? 0 : (instance?.autostart || INSTANCE_START_DELAY) * 1000);
         }
 
         if (!override) State.socket?.start();

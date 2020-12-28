@@ -25,7 +25,7 @@ export function sanitize(value: string, prevent?: string): string {
     if (!value || value === "") return "default";
     if (prevent && prevent !== "" && prevent.toLowerCase() === value.toLowerCase()) return "default";
 
-    return Sanitize(value).toLowerCase().replace(/ /gi, "-");
+    return Sanitize(value).toLowerCase().replace(/ /gi, "");
 }
 
 export function ordinal(value: number | string): string {

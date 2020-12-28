@@ -47,6 +47,8 @@ import {
     sanitize,
 } from "./formatters";
 
+const INSTANCE_TEARDOWN_DELAY = 1000;
+
 export interface InstanceRecord {
     id: string;
     type: string;
@@ -623,7 +625,7 @@ export default class Instances {
 
                             removeSync(join(Paths.backupPath(), "stage"));
                             resolve();
-                        }, 1000);
+                        }, INSTANCE_TEARDOWN_DELAY);
                     });
                 } else {
                     resolve();
@@ -675,7 +677,7 @@ export default class Instances {
                             if (instances.find((item) => item.type === "api")) Instances.install();
 
                             resolve();
-                        }, 1000);
+                        }, INSTANCE_TEARDOWN_DELAY);
                     });
                 } else {
                     resolve();
