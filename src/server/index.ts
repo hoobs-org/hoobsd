@@ -108,16 +108,6 @@ export default class Server extends EventEmitter {
             Console.debug(`Setup URI '${uri}'`);
         });
 
-        State.bridge?.on(Events.LISTENING, () => {
-            Console.notify(
-                State.id,
-                "Bridge Started",
-                `${State.display || State.id} has been started.`,
-                NotificationType.SUCCESS,
-                "router",
-            );
-        });
-
         State.bridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
             Console.emit(Events.ACCESSORY_CHANGE, State.id, {
                 accessory,
@@ -136,14 +126,6 @@ export default class Server extends EventEmitter {
 
     async stop(override?: boolean): Promise<void> {
         Console.debug("Shutting down");
-
-        Console.notify(
-            State.id,
-            "Bridge Stopped",
-            `${State.display || State.id} has been stopped.`,
-            NotificationType.WARN,
-            "router",
-        );
 
         if (State.bridge) await State.bridge.stop();
         if (State.socket && !override) State.socket.stop();
