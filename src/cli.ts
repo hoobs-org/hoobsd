@@ -22,6 +22,7 @@ import * as Enviornment from "dotenv";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import State from "./state";
 import Instances from "./services/instances";
 import Users from "./services/users";
@@ -128,7 +129,7 @@ export = function Daemon(): void {
 
                 Watcher.watch(Paths.configPath()).on("change", () => {
                     State.server?.stop().then(() => {
-                        State.server?.start();
+                        if (existsSync(Paths.configPath())) State.server?.start();
                     });
                 });
 
