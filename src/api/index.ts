@@ -263,8 +263,8 @@ export default class API extends EventEmitter {
 
         for (let i = 0; i < State.instances.length; i += 1) {
             if (State.instances[i].type === "bridge") {
-                Plugins.load(State.instances[i].id, (_identifier, name, _scope, directory) => {
-                    const route = `/plugin/${name.replace(/[^a-zA-Z0-9-_]/, "")}`;
+                Plugins.load(State.instances[i].id, (identifier, _name, _scope, directory) => {
+                    const route = `/ui/plugin/${identifier.replace(/[^a-zA-Z0-9-_]/, "")}`;
 
                     if (defined.indexOf(route) === -1 && existsSync(join(directory, "static"))) {
                         State.app?.use(route, Express.static(join(directory, "static")));
