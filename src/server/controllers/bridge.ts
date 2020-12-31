@@ -46,7 +46,7 @@ export default class BridgeController {
 
     async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
         if (State.bridge?.running) await State.server?.stop(true);
-        if (!State.bridge?.running) State.server?.start(true);
+        if (!State.bridge?.running) State.server?.start(true, true);
 
         response.send({
             success: true,
@@ -57,7 +57,7 @@ export default class BridgeController {
         Instances.purge();
 
         if (State.bridge?.running) await State.server?.stop(true);
-        if (!State.bridge?.running) State.server?.start(true);
+        if (!State.bridge?.running) State.server?.start(true, true);
 
         response.send({
             success: true,

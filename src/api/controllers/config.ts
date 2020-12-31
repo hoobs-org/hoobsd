@@ -21,6 +21,7 @@ import State from "../../state";
 import Config from "../../services/config";
 import Socket from "../services/socket";
 import { Console, Events, NotificationType } from "../../services/logger";
+import { InstanceRecord } from "../../services/instances";
 
 export default class ConfigController {
     constructor() {
@@ -47,8 +48,6 @@ export default class ConfigController {
 
         Config.saveConfig(request.body);
 
-        if (State.bridge) await State.bridge.restart();
-
         return response.send({
             success: true,
         });
@@ -73,10 +72,12 @@ export default class ConfigController {
             });
         }
 
+        const instance: InstanceRecord | undefined = State.instances.find((item) => item.id === request.params.instance);
+
         Console.notify(
-            State.id,
+            request.params.instance,
             "Configuration Changed",
-            `The configuration for "${State.display}" has changed.`,
+            `The configuration for "${instance?.display || "Undefined"}" has changed.`,
             NotificationType.WARN,
             "settings",
         );

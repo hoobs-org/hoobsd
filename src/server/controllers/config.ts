@@ -33,8 +33,6 @@ export default class ConfigController {
     async save(request: SocketRequest, response: SocketResponse): Promise<void> {
         Config.saveConfig(request.body);
 
-        if (State.bridge) await State.bridge.restart();
-
         response.send({
             success: true,
         });

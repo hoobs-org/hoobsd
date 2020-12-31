@@ -31,7 +31,6 @@ import Plugins from "../services/plugins";
 import {
     Console,
     Prefixed,
-    NotificationType,
     Events,
 } from "../services/logger";
 
@@ -99,9 +98,10 @@ export default class Server extends EventEmitter {
         });
     }
 
-    start(override?: boolean): void {
+    start(soft?: boolean, override?: boolean): void {
         const instance = State.instances.find((n: any) => n.id === State.id);
 
+        this.config = Config.configuration();
         State.bridge = new Bridge(this.port || undefined);
 
         State.bridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
@@ -121,14 +121,14 @@ export default class Server extends EventEmitter {
             }, override ? 0 : (instance?.autostart || INSTANCE_START_DELAY) * 1000);
         }
 
-        if (!override) State.socket?.start();
+        if (!soft) State.socket?.start();
     }
 
-    async stop(override?: boolean): Promise<void> {
+    async stop(soft?: boolean): Promise<void> {
         Console.debug("Shutting down");
 
         if (State.bridge) await State.bridge.stop();
-        if (State.socket && !override) State.socket.stop();
+        if (State.socket && !soft) State.socket.stop();
 
         Console.debug("Stopped");
 

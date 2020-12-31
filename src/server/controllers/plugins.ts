@@ -105,8 +105,6 @@ export default class PluginsController {
         }
 
         Plugins.install((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            if (State.bridge) await State.bridge.restart();
-
             response.send({
                 success: true,
             });
@@ -133,8 +131,6 @@ export default class PluginsController {
         }
 
         Plugins.upgrade((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            if (State.bridge) await State.bridge.restart();
-
             response.send({
                 success: true,
             });
@@ -156,8 +152,6 @@ export default class PluginsController {
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
         Plugins.uninstall((scope || "") !== "" ? `@${scope}/${name}` : (name || "")).then(async () => {
-            if (State.bridge) await State.bridge.restart();
-
             response.send({
                 success: true,
             });

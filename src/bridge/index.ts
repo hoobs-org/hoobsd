@@ -267,11 +267,6 @@ export default class Server extends EventEmitter {
         });
     }
 
-    public async restart(): Promise<void> {
-        await this.stop();
-        await this.start();
-    }
-
     public setupURI(): string {
         return this.bridge.setupURI();
     }
