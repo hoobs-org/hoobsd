@@ -20,9 +20,8 @@ import { Request, Response } from "express-serve-static-core";
 import { existsSync } from "fs-extra";
 import { join } from "path";
 import State from "../../state";
-import Socket from "./socket";
+import Socket from "../services/socket";
 import Plugins from "../../services/plugins";
-import { InstanceRecord } from "../../services/instances";
 
 export default class PluginController {
     constructor() {
@@ -34,7 +33,7 @@ export default class PluginController {
                     const route = `/api/plugin/${name.replace(/[^a-zA-Z0-9-_]/, "")}/:action`;
 
                     if (defined.indexOf(route) === -1 && existsSync(join(directory, library, "routes.js"))) {
-                        State.app?.post(route, (request, response) => this.execute(State.instances[i], name, request, response));
+                        State.app?.post(route, (request, response) => this.execute(request.body.instance, name, request, response));
 
                         defined.push(route);
                     }
@@ -43,7 +42,13 @@ export default class PluginController {
         }
     }
 
-    async execute(instance: InstanceRecord, name: string, request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(instance.id, `plugin:${name}:${request.params.action}`, request.params, request.body));
+    async execute(instance: string, name: string, request: Request, response: Response): Promise<void> {
+        delete request.body.instance;
+
+        if (instance && instance !== "" && instance !== "api") {
+            response.send(await Socket.fetch(instance, `plugin:${name}:${request.params.action}`, request.params, request.body));
+        }
+
+        response.send({});
     }
 }

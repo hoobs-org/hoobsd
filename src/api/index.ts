@@ -28,6 +28,7 @@ import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { join, extname, basename } from "path";
 import { LogLevel } from "homebridge/lib/logger";
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 import {
     existsSync,
@@ -56,6 +57,7 @@ import CacheController from "./controllers/cache";
 import ConfigController from "./controllers/config";
 import ExtentionsController from "./controllers/extentions";
 import InstancesController from "./controllers/instances";
+import PluginController from "./controllers/plugin";
 import PluginsController from "./controllers/plugins";
 import RemoteController from "./controllers/remote";
 import SystemController from "./controllers/system";
@@ -234,6 +236,7 @@ export default class API extends EventEmitter {
         new ConfigController();
         new ExtentionsController();
         new InstancesController();
+        new PluginController();
         new PluginsController();
         new RemoteController();
         new SystemController();
@@ -248,7 +251,12 @@ export default class API extends EventEmitter {
 
         if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
 
-        State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
+        if (State.mode === "development") {
+            State.app?.use("/", createProxyMiddleware({ target: "http://localhost:54826", changeOrigin: true }));
+        } else {
+            State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
+        }
+
         State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));
         State.app?.use("/themes", Express.static(Paths.themePath()));
 
