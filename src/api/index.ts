@@ -28,7 +28,6 @@ import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { join, extname, basename } from "path";
 import { LogLevel } from "homebridge/lib/logger";
-import { createProxyMiddleware } from "http-proxy-middleware";
 
 import {
     existsSync,
@@ -251,12 +250,7 @@ export default class API extends EventEmitter {
 
         if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
 
-        if (State.mode === "development") {
-            State.app?.use("/", createProxyMiddleware({ target: "http://localhost:54826", changeOrigin: true }));
-        } else {
-            State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
-        }
-
+        State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
         State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));
         State.app?.use("/themes", Express.static(Paths.themePath()));
 

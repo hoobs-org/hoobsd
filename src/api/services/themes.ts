@@ -139,9 +139,9 @@ export const DarkTheme: Theme = {
         border: "#252525",
     },
     button: {
-        background: "#1a1a1a",
+        background: "#252525",
         text: "#fff",
-        border: "#252525",
+        border: "#1a1a1a",
         primary: {
             background: "#feb400",
             text: "#fff",
