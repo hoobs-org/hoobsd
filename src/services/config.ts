@@ -74,7 +74,7 @@ export default class Config {
 
         let config: any = {};
 
-        if (State.id === "api") {
+        if (State.id === "hub") {
             config = {
                 api: {
                     origin: "*",
@@ -90,7 +90,7 @@ export default class Config {
 
         if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
-        if (State.id !== "api") {
+        if (State.id !== "hub") {
             let bridges: any = [];
 
             if (existsSync(Paths.bridgesPath())) bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
@@ -110,7 +110,7 @@ export default class Config {
 
         if (existsSync(Paths.configPath())) current = loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        if (State.id !== "api") {
+        if (State.id !== "hub") {
             config.accessories = config?.accessories || [];
             config.platforms = config?.platforms || [];
 

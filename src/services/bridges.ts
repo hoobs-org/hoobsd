@@ -248,7 +248,7 @@ export default class Bridges {
             removeSync(join(Paths.storagePath(), `${id}.conf`));
 
             Console.notify(
-                "api",
+                "hub",
                 "Bridge Removed",
                 `Bridge "${name}" removed.`,
                 NotificationType.WARN,
@@ -278,7 +278,7 @@ export default class Bridges {
                     execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
-                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} api" >> /etc/systemd/system/hoobsd.service`);
+                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
                     execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
@@ -311,7 +311,7 @@ export default class Bridges {
                     execSync("echo \"<plist version=\"1.0\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"    <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>Label</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <string>org.hoobsd.api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"        <string>org.hoobsd.hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>EnvironmentVariables</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"            <key>PATH</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
@@ -324,7 +324,7 @@ export default class Bridges {
                     execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync(`echo "            <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
-                    execSync("echo \"            <string>api</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
+                    execSync("echo \"            <string>hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
                     execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
@@ -353,7 +353,7 @@ export default class Bridges {
         for (let i = 0; i < State.bridges.length; i += 1) {
             const { ...bridge } = State.bridges[i];
 
-            if (bridge.id === "api") {
+            if (bridge.id === "hub") {
                 bridges.unshift({
                     id: bridge.id,
                     type: bridge.type,
@@ -377,7 +377,7 @@ export default class Bridges {
             }
         }
 
-        if (id === "api") {
+        if (id === "hub") {
             bridges.unshift({
                 id,
                 type,
@@ -403,13 +403,13 @@ export default class Bridges {
     }
 
     static create(name: string, port: number, pin: string, username: string): void {
-        if (sanitize(name) === "api") Bridges.install();
+        if (sanitize(name) === "hub") Bridges.install();
         if (!existsSync(Paths.bridgesPath())) writeFileSync(Paths.bridgesPath(), "[]");
 
-        Bridges.append(sanitize(name), name, sanitize(name) === "api" ? "api" : "bridge", port, pin, username, 0);
+        Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0);
 
         Console.notify(
-            "api",
+            "hub",
             "Bridge Added",
             `Bridge "${name}" added.`,
             NotificationType.SUCCESS,
@@ -443,10 +443,10 @@ export default class Bridges {
 
         for (let i = 0; i < bridges.length; i += 1) Bridges.uninstall(bridges[i].id);
 
-        removeSync(join(Paths.storagePath(), "api"));
-        removeSync(join(Paths.storagePath(), "api.accessories"));
-        removeSync(join(Paths.storagePath(), "api.persist"));
-        removeSync(join(Paths.storagePath(), "api.conf"));
+        removeSync(join(Paths.storagePath(), "hub"));
+        removeSync(join(Paths.storagePath(), "hub.accessories"));
+        removeSync(join(Paths.storagePath(), "hub.persist"));
+        removeSync(join(Paths.storagePath(), "hub.conf"));
         removeSync(join(Paths.storagePath(), "hoobs.log"));
         removeSync(join(Paths.storagePath(), "access"));
 
@@ -674,7 +674,7 @@ export default class Bridges {
                                 });
                             }
 
-                            if (bridges.find((item) => item.type === "api")) Bridges.install();
+                            if (bridges.find((item) => item.type === "hub")) Bridges.install();
 
                             resolve();
                         }, BRIDGE_TEARDOWN_DELAY);

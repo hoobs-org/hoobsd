@@ -117,7 +117,7 @@ class Logger {
             results.splice(0, results.length - tail);
         }
 
-        if (State.id !== "api") {
+        if (State.id !== "hub") {
             CACHE = [];
         }
 
@@ -125,7 +125,7 @@ class Logger {
     }
 
     load() {
-        if (State.id === "api") {
+        if (State.id === "hub") {
             try {
                 CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), []);
             } catch (_error) {
@@ -169,14 +169,14 @@ class Logger {
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
-        if ((State.api || State.server) && (State.id === "api" || !Socket.up())) {
+        if ((State.api || State.server) && (State.id === "hub" || !Socket.up())) {
             CACHE.push(data);
 
             if (CACHE.length > 5000) {
                 CACHE.splice(0, CACHE.length - 5000);
             }
 
-            if (State.id === "api") {
+            if (State.id === "hub") {
                 writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
             }
         }
@@ -184,7 +184,7 @@ class Logger {
         if (State.api && State.api.running) State.io?.sockets.emit(Events.LOG, data);
         if (State.server) Socket.fetch(Events.LOG, data);
 
-        if (State.id === "api" || State.debug) {
+        if (State.id === "hub" || State.debug) {
             const prefixes = [];
 
             if (State.timestamps && data.message && data.message !== "") {
@@ -231,14 +231,14 @@ class Logger {
                     break;
 
                 default:
-                    if (State.id === "api" || State.debug) CONSOLE_LOG(formatted);
+                    if (State.id === "hub" || State.debug) CONSOLE_LOG(formatted);
                     break;
             }
         }
     }
 
     import(data: Message[]) {
-        if (State.api && State.api.running && State.id === "api") {
+        if (State.api && State.api.running && State.id === "hub") {
             CACHE.push(...(data.filter((m) => (m.message !== ""))));
 
             CACHE.sort((a, b) => {
@@ -256,7 +256,7 @@ class Logger {
             for (let i = 0; i < data.length; i += 1) {
                 State.io?.sockets.emit(Events.LOG, data[i]);
 
-                if (State.id === "api" || State.debug) {
+                if (State.id === "hub" || State.debug) {
                     const prefixes = [];
 
                     if (State.timestamps && data[i].message && data[i].message !== "") {
@@ -303,7 +303,7 @@ class Logger {
                             break;
 
                         default:
-                            if (State.id === "api" || State.debug) CONSOLE_LOG(formatted);
+                            if (State.id === "hub" || State.debug) CONSOLE_LOG(formatted);
                             break;
                     }
                 }

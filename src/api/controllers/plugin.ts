@@ -45,7 +45,7 @@ export default class PluginController {
     async execute(bridge: string, name: string, request: Request, response: Response): Promise<void> {
         delete request.body.bridge;
 
-        if (bridge && bridge !== "" && bridge !== "api") {
+        if (bridge && bridge !== "" && bridge !== "hub") {
             response.send(await Socket.fetch(bridge, `plugin:${name}:${request.params.action}`, request.params, request.body));
         }
 

@@ -282,7 +282,7 @@ export default class API extends EventEmitter {
         const api = new API(port);
 
         api.on(Events.LISTENING, () => {
-            Console.info(`API is running on port ${port}`);
+            Console.info(`hub is running on port ${port}`);
         });
 
         return api;
@@ -336,7 +336,7 @@ export default class API extends EventEmitter {
             }
 
             const bridges = State.bridges.filter((item) => item.type === "bridge");
-            const directories = readdirSync(Paths.storagePath()).filter((item) => item !== "api" && item !== "backups" && lstatSync(join(Paths.storagePath(), item)).isDirectory());
+            const directories = readdirSync(Paths.storagePath()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(join(Paths.storagePath(), item)).isDirectory());
             const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {

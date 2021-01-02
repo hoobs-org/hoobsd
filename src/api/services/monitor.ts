@@ -62,7 +62,7 @@ export default async function Monitor() {
     if (!cli.cli_upgraded) upgraded = false;
     if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !runtime.node_upgraded) upgraded = false;
 
-    Console.emit(Events.MONITOR, "api", {
+    Console.emit(Events.MONITOR, "hub", {
         bridges: results,
         upgraded,
         cpu: await SystemInfo.currentLoad(),

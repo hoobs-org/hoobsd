@@ -50,14 +50,14 @@ export = function Daemon(): void {
         .option("--orphans", "keep cached accessories for orphaned plugins", () => { State.orphans = false; })
         .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 
-    Program.command("start", { isDefault: true })
-        .description("start the api service")
-        .option("-p, --port <port>", "change the port the api runs on")
+    Program.command("hub", { isDefault: true })
+        .description("start the hub service")
+        .option("-p, --port <port>", "change the port the hub runs on")
         .action((command) => {
             State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            State.id = sanitize("api");
-            State.display = "API";
+            State.id = sanitize("hub");
+            State.display = "Hub";
 
             Console.load();
 
@@ -100,7 +100,7 @@ export = function Daemon(): void {
         .action(async (command) => {
             State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            State.id = sanitize(command.bridge, "api");
+            State.id = sanitize(command.bridge, "hub");
             State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
