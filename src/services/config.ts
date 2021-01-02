@@ -21,7 +21,7 @@ import { HomebridgeConfig } from "homebridge/lib/server";
 import { join } from "path";
 import { existsSync, writeFileSync } from "fs-extra";
 import State from "../state";
-import { InstanceRecord } from "./instances";
+import { BridgeRecord } from "./bridges";
 import Paths from "./paths";
 
 import {
@@ -91,13 +91,13 @@ export default class Config {
         if (existsSync(Paths.configPath())) config = _.extend(config, loadJson<any>(Paths.configPath(), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
         if (State.id !== "api") {
-            let instances: any = [];
+            let bridges: any = [];
 
-            if (existsSync(Paths.instancesPath())) instances = loadJson<InstanceRecord[]>(Paths.instancesPath(), []);
+            if (existsSync(Paths.bridgesPath())) bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
 
-            const index = instances.findIndex((n: any) => n.id === State.id);
+            const index = bridges.findIndex((n: any) => n.id === State.id);
 
-            if (index >= 0) State.display = instances[index].display;
+            if (index >= 0) State.display = bridges[index].display;
         }
 
         Config.saveConfig(config);

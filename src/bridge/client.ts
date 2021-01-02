@@ -67,7 +67,7 @@ export default class Client {
                 if (accessories[i].services[j].type !== "3E" && accessories[i].services[j].type !== "49FB9D4D-0FEA-4BF1-8FA6-E7B18AB86DCE") {
                     const service: { [key: string]: any } = {
                         aid: accessories[i].aid,
-                        instance: State.id,
+                        bridge: State.id,
                         type: Services[accessories[i].services[j].type],
                         linked: accessories[i].services[j].linked,
                         characteristics: [],

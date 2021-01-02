@@ -28,7 +28,7 @@ export default class StatusController {
     status(_request: SocketRequest, response: SocketResponse): void {
         response.send({
             id: State.id,
-            instance: State.display || State.id,
+            bridge: State.display || State.id,
             running: State.bridge?.running,
             status: State.bridge?.running ? "running" : "stopped",
             uptime: new Date().getTime() - (State.server?.time || 0),
@@ -39,7 +39,7 @@ export default class StatusController {
             bridge_port: State.bridge?.port,
             setup_pin: State.bridge?.settings.pin || "",
             setup_id: State.bridge?.setupURI(),
-            instance_path: Paths.storagePath(State.id),
+            bridge_path: Paths.storagePath(State.id),
         });
     }
 }

@@ -27,20 +27,20 @@ const DEFAULT_POLLING = 5;
 export default async function Monitor() {
     const results: { [key: string]: any } = {};
 
-    for (let i = 0; i < State.instances.length; i += 1) {
-        if (State.instances[i].type === "bridge") {
-            const status = await Socket.fetch(State.instances[i].id, "status:get");
+    for (let i = 0; i < State.bridges.length; i += 1) {
+        if (State.bridges[i].type === "bridge") {
+            const status = await Socket.fetch(State.bridges[i].id, "status:get");
 
             if (status) {
-                results[State.instances[i].id] = {
+                results[State.bridges[i].id] = {
                     version: status.version,
                     running: status.running,
                     status: status.status,
-                    display: State.instances[i].display,
+                    display: State.bridges[i].display,
                     uptime: status.uptime,
                 };
             } else {
-                results[State.instances[i].id] = {
+                results[State.bridges[i].id] = {
                     running: false,
                     status: "unavailable",
                     display: "Unavailable",
@@ -63,7 +63,7 @@ export default async function Monitor() {
     if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !runtime.node_upgraded) upgraded = false;
 
     Console.emit(Events.MONITOR, "api", {
-        instances: results,
+        bridges: results,
         upgraded,
         cpu: await SystemInfo.currentLoad(),
         memory: await SystemInfo.mem(),

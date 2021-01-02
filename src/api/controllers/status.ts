@@ -30,12 +30,12 @@ export default class StatusController {
     async status(_request: Request, response: Response): Promise<Response> {
         const results: { [key: string]: any } = {};
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                const status = await Socket.fetch(State.instances[i].id, "status:get");
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                const status = await Socket.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
-                    results[State.instances[i].id] = {
+                    results[State.bridges[i].id] = {
                         version: status.version,
                         running: status.running,
                         status: status.status,
@@ -46,10 +46,10 @@ export default class StatusController {
                         bridge_port: status.bridge_port,
                         setup_pin: status.setup_pin,
                         setup_id: status.setup_id,
-                        instance_path: status.instance_path,
+                        bridge_path: status.bridge_path,
                     };
                 } else {
-                    results[State.instances[i].id] = {
+                    results[State.bridges[i].id] = {
                         running: false,
                         status: "unavailable",
                         uptime: 0,
@@ -83,7 +83,7 @@ export default class StatusController {
             node_version: runtime.node_version,
             node_current: runtime.node_current,
             node_upgraded: upgraded,
-            instances: results,
+            bridges: results,
             cpu: await SystemInfo.currentLoad(),
             memory: await SystemInfo.mem(),
             temp: await SystemInfo.cpuTemperature(),

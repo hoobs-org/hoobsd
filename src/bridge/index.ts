@@ -64,7 +64,7 @@ import State from "../state";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
 import Client from "./client";
-import { InstanceRecord } from "../services/instances";
+import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 
 const INSTANCE_KILL_DELAY = 3000;
@@ -82,7 +82,7 @@ export default class Server extends EventEmitter {
 
     public readonly settings: BridgeConfiguration;
 
-    public readonly instance: InstanceRecord | undefined;
+    public readonly instance: BridgeRecord | undefined;
 
     public readonly client: Client;
 
@@ -125,7 +125,7 @@ export default class Server extends EventEmitter {
         })();
 
         this.running = false;
-        this.instance = State.instances.find((n: any) => n.id === State.id);
+        this.instance = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = {
             bridge: {

@@ -23,17 +23,17 @@ import Socket from "../services/socket";
 export default class AccessoriesController {
     constructor() {
         State.app?.get("/api/accessories", (request, response) => this.all(request, response));
-        State.app?.get("/api/accessories/:instance", (request, response) => this.list(request, response));
-        State.app?.get("/api/accessory/:instance/:id", (request, response) => this.get(request, response));
-        State.app?.put("/api/accessory/:instance/:id/:service", (request, response) => this.set(request, response));
+        State.app?.get("/api/accessories/:bridge", (request, response) => this.list(request, response));
+        State.app?.get("/api/accessory/:bridge/:id", (request, response) => this.get(request, response));
+        State.app?.put("/api/accessory/:bridge/:id/:service", (request, response) => this.set(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<void> {
         let results: any[] = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                const accessories = await Socket.fetch(State.instances[i].id, "accessories:list");
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                const accessories = await Socket.fetch(State.bridges[i].id, "accessories:list");
 
                 if (accessories) {
                     results = [...results, ...accessories];
@@ -45,14 +45,14 @@ export default class AccessoriesController {
     }
 
     async list(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessories:list"));
+        response.send(await Socket.fetch(request.params.bridge, "accessories:list"));
     }
 
     async get(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessory:get", { id: request.params.id }));
+        response.send(await Socket.fetch(request.params.bridge, "accessory:get", { id: request.params.id }));
     }
 
     async set(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.instance, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
+        response.send(await Socket.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
     }
 }

@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
-import Instances from "../../services/instances";
+import Bridges from "../../services/bridges";
 import FFMPEG from "../../extentions/ffmpeg";
 
 export default class ExtentionsController {
@@ -36,7 +36,7 @@ export default class ExtentionsController {
             });
         }
 
-        return response.send(Instances.extentions());
+        return response.send(Bridges.extentions());
     }
 
     enable(request: Request, response: Response): Response {

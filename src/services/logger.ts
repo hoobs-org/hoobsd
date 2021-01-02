@@ -33,7 +33,7 @@ import {
 
 export interface Message {
     level: LogLevel;
-    instance?: string;
+    bridge?: string;
     display?: string;
     timestamp: number;
     plugin?: string;
@@ -110,8 +110,8 @@ class Logger {
         this.prefix = prefix || "";
     }
 
-    cache(tail?: number, instance?: string): Message[] {
-        const results = [...(CACHE.filter((m) => (instance ? m.instance === instance : true)))];
+    cache(tail?: number, bridge?: string): Message[] {
+        const results = [...(CACHE.filter((m) => (bridge ? m.bridge === bridge : true)))];
 
         if (tail && tail > 0 && tail < results.length) {
             results.splice(0, results.length - tail);
@@ -152,7 +152,7 @@ class Logger {
         if (typeof message === "string") {
             data = {
                 level,
-                instance: State.id,
+                bridge: State.id,
                 display: State.display,
                 timestamp: new Date().getTime(),
                 plugin: this.plugin,
@@ -165,7 +165,7 @@ class Logger {
 
         data.message = data.message || "";
 
-        if (data.message === "" && (data.instance !== State.id || (data.prefix && data.prefix !== ""))) return;
+        if (data.message === "" && (data.bridge !== State.id || (data.prefix && data.prefix !== ""))) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
@@ -191,8 +191,8 @@ class Logger {
                 prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
             }
 
-            if (data.instance && data.instance !== "" && data.instance !== State.id) {
-                prefixes.push(colorize(State.instances.findIndex((instance) => instance.id === data.instance), true)(data.display || data.instance));
+            if (data.bridge && data.bridge !== "" && data.bridge !== State.id) {
+                prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
             }
 
             if (data.prefix && data.prefix !== "") {
@@ -263,8 +263,8 @@ class Logger {
                         prefixes.push(Chalk.gray.dim(new Date(data[i].timestamp).toLocaleString()));
                     }
 
-                    if (data[i].instance && data[i].instance !== "" && data[i].instance !== State.id) {
-                        prefixes.push(colorize(State.instances.findIndex((instance) => instance.id === data[i].instance), true)(data[i].display || data[i].instance));
+                    if (data[i].bridge && data[i].bridge !== "" && data[i].bridge !== State.id) {
+                        prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data[i].bridge), true)(data[i].display || data[i].bridge));
                     }
 
                     if (data[i].prefix && data[i].prefix !== "") {
@@ -327,7 +327,7 @@ class Logger {
         this.log(LogLevel.ERROR, message, ...parameters);
     }
 
-    notify(instance: string, title: string, description: string, type: NotificationType, icon?: string): void {
+    notify(bridge: string, title: string, description: string, type: NotificationType, icon?: string): void {
         if (!icon) {
             switch (type) {
                 case NotificationType.ERROR:
@@ -350,7 +350,7 @@ class Logger {
 
         if (State.api && State.api.running) {
             State.io?.sockets.emit(Events.NOTIFICATION, {
-                instance,
+                bridge,
                 data: {
                     title,
                     description,
@@ -362,7 +362,7 @@ class Logger {
 
         if (State.server) {
             Socket.fetch(Events.NOTIFICATION, {
-                instance,
+                bridge,
                 data: {
                     title,
                     description,
@@ -373,17 +373,17 @@ class Logger {
         }
     }
 
-    emit(event: Events, instance: string, data: any): void {
+    emit(event: Events, bridge: string, data: any): void {
         if (State.api && State.api.running) {
             State.io?.sockets.emit(event, {
-                instance,
+                bridge,
                 data,
             });
         }
 
         if (State.server) {
             Socket.fetch(event, {
-                instance,
+                bridge,
                 data,
             });
         }

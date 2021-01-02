@@ -24,7 +24,7 @@ import Watcher from "chokidar";
 import { join } from "path";
 import { existsSync } from "fs-extra";
 import State from "./state";
-import Instances from "./services/instances";
+import Bridges from "./services/bridges";
 import Users from "./services/users";
 import Server from "./server";
 import Cache from "./services/cache";
@@ -61,18 +61,18 @@ export = function Daemon(): void {
 
             Console.load();
 
-            State.instances = Instances.list();
+            State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
             State.cache.load(Paths.storagePath(State.id));
 
-            const instance = State.instances.find((n) => n.id === State.id);
+            const bridge = State.bridges.find((n) => n.id === State.id);
 
-            if (instance) {
-                State.api = API.createServer(command.port || instance.port);
+            if (bridge) {
+                State.api = API.createServer(command.port || bridge.port);
 
-                Watcher.watch(Paths.instancesPath()).on("change", () => {
-                    State.instances = Instances.list();
+                Watcher.watch(Paths.bridgesPath()).on("change", () => {
+                    State.bridges = Bridges.list();
                     State.api?.sync();
                 });
 
@@ -82,7 +82,7 @@ export = function Daemon(): void {
 
                 Watcher.watch(Paths.configPath()).on("change", () => {
                     State.api?.stop().then(() => {
-                        State.api = API.createServer(command.port || instance.port);
+                        State.api = API.createServer(command.port || bridge.port);
                         State.api.start();
                     });
                 });
@@ -93,31 +93,31 @@ export = function Daemon(): void {
             }
         });
 
-    Program.command("instance")
-        .description("start a bridge instance")
-        .option("-i, --instance <name>", "set the instance name")
+    Program.command("bridge")
+        .description("start a bridge bridge")
+        .option("-i, --bridge <name>", "set the bridge name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .action(async (command) => {
             State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            State.id = sanitize(command.instance, "api");
-            State.instances = Instances.list();
+            State.id = sanitize(command.bridge, "api");
+            State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
             State.cache.load(Paths.storagePath(State.id));
 
-            const instance = State.instances.find((n) => n.id === State.id);
+            const bridge = State.bridges.find((n) => n.id === State.id);
 
-            if (instance) {
-                State.server = new Server(command.port || instance.port);
+            if (bridge) {
+                State.server = new Server(command.port || bridge.port);
 
-                Watcher.watch(Paths.instancesPath()).on("change", () => {
-                    const current = cloneJson(State.instances.find((n: any) => n.id === State.id));
+                Watcher.watch(Paths.bridgesPath()).on("change", () => {
+                    const current = cloneJson(State.bridges.find((n: any) => n.id === State.id));
 
                     if (current) {
-                        State.instances = Instances.list();
+                        State.bridges = Bridges.list();
 
-                        const modified = State.instances.find((n: any) => n.id === State.id);
+                        const modified = State.bridges.find((n: any) => n.id === State.id);
 
                         if (modified && !jsonEquals(current, modified)) {
                             State.server?.stop().then(() => {
@@ -135,19 +135,19 @@ export = function Daemon(): void {
 
                 State.server.start();
             } else {
-                Console.error(`${State.id} is not created, please run 'sudo hoobs instance add' to create`);
+                Console.error(`${State.id} is not created, please run 'sudo hoobs bridge add' to create`);
             }
         });
 
     Program.command("service <action>")
-        .description("manage server instances")
-        .option("-i, --instance <name>", "set the instance name")
+        .description("manage server bridges")
+        .option("-i, --bridge <name>", "set the bridge name")
         .action((action, command) => {
             State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
 
-            State.id = sanitize(command.instance);
+            State.id = sanitize(command.bridge);
 
-            Instances.manage(action).then((success) => {
+            Bridges.manage(action).then((success) => {
                 if (success) {
                     switch (action) {
                         case "start":

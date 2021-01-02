@@ -27,13 +27,13 @@ export default class PluginController {
     constructor() {
         const defined: string[] = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                Plugins.load(State.instances[i].id, (_identifier, name, _scope, directory, _pjson, library) => {
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                Plugins.load(State.bridges[i].id, (_identifier, name, _scope, directory, _pjson, library) => {
                     const route = `/api/plugin/${name.replace(/[^a-zA-Z0-9-_]/, "")}/:action`;
 
                     if (defined.indexOf(route) === -1 && existsSync(join(directory, library, "routes.js"))) {
-                        State.app?.post(route, (request, response) => this.execute(request.body.instance, name, request, response));
+                        State.app?.post(route, (request, response) => this.execute(request.body.bridge, name, request, response));
 
                         defined.push(route);
                     }
@@ -42,11 +42,11 @@ export default class PluginController {
         }
     }
 
-    async execute(instance: string, name: string, request: Request, response: Response): Promise<void> {
-        delete request.body.instance;
+    async execute(bridge: string, name: string, request: Request, response: Response): Promise<void> {
+        delete request.body.bridge;
 
-        if (instance && instance !== "" && instance !== "api") {
-            response.send(await Socket.fetch(instance, `plugin:${name}:${request.params.action}`, request.params, request.body));
+        if (bridge && bridge !== "" && bridge !== "api") {
+            response.send(await Socket.fetch(bridge, `plugin:${name}:${request.params.action}`, request.params, request.body));
         }
 
         response.send({});

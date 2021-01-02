@@ -67,7 +67,7 @@ export default class Paths {
         return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
     }
 
-    static storagePath(instance?: string): string {
+    static storagePath(bridge?: string): string {
         let path = "/var/lib/hoobs";
 
         if (State.container) {
@@ -76,7 +76,7 @@ export default class Paths {
             path = join(process.env.HOME || "", ".hoobs");
         }
 
-        if (instance && instance !== "") path = join(path, instance);
+        if (bridge && bridge !== "") path = join(path, bridge);
 
         File.ensureDirSync(path);
 
@@ -93,8 +93,8 @@ export default class Paths {
         return join(Paths.storagePath(State.id), "themes");
     }
 
-    static instancesPath(): string {
-        return join(Paths.storagePath(), "instances.conf");
+    static bridgesPath(): string {
+        return join(Paths.storagePath(), "bridges.conf");
     }
 
     static configPath(): string {

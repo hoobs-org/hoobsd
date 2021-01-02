@@ -27,7 +27,7 @@ import Server from "./server";
 import Bridge from "./bridge";
 import API from "./api";
 import { Loggers } from "./services/logger";
-import { InstanceRecord } from "./services/instances";
+import { BridgeRecord } from "./services/bridges";
 import { UserRecord } from "./services/users";
 import { loadJson } from "./services/formatters";
 
@@ -54,14 +54,14 @@ export interface Application {
     container: boolean;
     terminating: boolean;
 
-    instances: InstanceRecord[];
+    bridges: BridgeRecord[];
     users: UserRecord[];
     loggers: Loggers;
 
     plugins: { [key: string]: any };
 }
 
-const instance: Application = {
+const bridge: Application = {
     version: loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
     mode: "production",
     enviornment: {},
@@ -84,11 +84,11 @@ const instance: Application = {
     container: false,
     terminating: false,
 
-    instances: [],
+    bridges: [],
     users: [],
     loggers: {},
 
     plugins: {},
 };
 
-export default instance;
+export default bridge;

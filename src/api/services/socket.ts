@@ -123,43 +123,43 @@ export default class Socket extends EventEmitter {
         if (existsSync(join(Paths.storagePath(), "api.sock"))) unlinkSync(join(Paths.storagePath(), "api.sock"));
     }
 
-    static fetch(instance: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
+    static fetch(bridge: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
-            if (!existsSync(join(Paths.storagePath(), `${instance}.sock`))) {
+            if (!existsSync(join(Paths.storagePath(), `${bridge}.sock`))) {
                 resolve(null);
 
                 return;
             }
 
-            if (!SOCKETS[`${instance}.sock`]) {
-                SOCKETS[`${instance}.sock`] = new RawIPC.IPC();
+            if (!SOCKETS[`${bridge}.sock`]) {
+                SOCKETS[`${bridge}.sock`] = new RawIPC.IPC();
 
-                SOCKETS[`${instance}.sock`].config.appspace = "/";
-                SOCKETS[`${instance}.sock`].config.socketRoot = Paths.storagePath();
-                SOCKETS[`${instance}.sock`].config.logInColor = true;
-                SOCKETS[`${instance}.sock`].config.logger = Print;
-                SOCKETS[`${instance}.sock`].config.maxRetries = 0;
-                SOCKETS[`${instance}.sock`].config.stopRetrying = true;
+                SOCKETS[`${bridge}.sock`].config.appspace = "/";
+                SOCKETS[`${bridge}.sock`].config.socketRoot = Paths.storagePath();
+                SOCKETS[`${bridge}.sock`].config.logInColor = true;
+                SOCKETS[`${bridge}.sock`].config.logger = Print;
+                SOCKETS[`${bridge}.sock`].config.maxRetries = 0;
+                SOCKETS[`${bridge}.sock`].config.stopRetrying = true;
             }
 
-            SOCKETS[`${instance}.sock`].connectTo(`${instance}.sock`, () => {
-                SOCKETS[`${instance}.sock`].of[`${instance}.sock`].on(session, (data: any) => {
-                    SOCKETS[`${instance}.sock`].of[`${instance}.sock`].off(session, "*");
-                    SOCKETS[`${instance}.sock`].disconnect();
+            SOCKETS[`${bridge}.sock`].connectTo(`${bridge}.sock`, () => {
+                SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].on(session, (data: any) => {
+                    SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].off(session, "*");
+                    SOCKETS[`${bridge}.sock`].disconnect();
 
                     resolve(data);
                 });
 
-                SOCKETS[`${instance}.sock`].of[`${instance}.sock`].on("error", () => {
-                    SOCKETS[`${instance}.sock`].of[`${instance}.sock`].off(session, "*");
-                    SOCKETS[`${instance}.sock`].disconnect();
+                SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].on("error", () => {
+                    SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].off(session, "*");
+                    SOCKETS[`${bridge}.sock`].disconnect();
 
                     resolve(null);
                 });
 
-                SOCKETS[`${instance}.sock`].of[`${instance}.sock`].emit(Events.REQUEST, {
+                SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].emit(Events.REQUEST, {
                     path,
                     session,
                     params,

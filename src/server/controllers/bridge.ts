@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import State from "../../state";
-import Instances from "../../services/instances";
+import Bridges from "../../services/bridges";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class BridgeController {
@@ -54,7 +54,7 @@ export default class BridgeController {
     }
 
     async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        Instances.purge();
+        Bridges.purge();
 
         if (State.bridge?.running) await State.server?.stop(true);
         if (!State.bridge?.running) State.server?.start(true, true);

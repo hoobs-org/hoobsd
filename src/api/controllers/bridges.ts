@@ -19,66 +19,66 @@
 import { Request, Response } from "express-serve-static-core";
 import Forms from "formidable";
 import State from "../../state";
-import Instances from "../../services/instances";
+import Bridges from "../../services/bridges";
 import Config from "../../services/config";
 
-export default class InstancesController {
+export default class BridgesController {
     constructor() {
-        State.app?.get("/api/instances", (request, response) => this.list(request, response));
-        State.app?.put("/api/instances", (request, response) => this.create(request, response));
-        State.app?.get("/api/instances/count", (request, response) => this.count(request, response));
-        State.app?.post("/api/instances/import", (request, response) => this.import(request, response));
-        State.app?.post("/api/instance/:id", (request, response) => this.update(request, response));
-        State.app?.post("/api/instance/:id/ports", (request, response) => this.ports(request, response));
-        State.app?.get("/api/instance/:id/export", (request, response) => this.export(request, response));
-        State.app?.delete("/api/instance/:id", (request, response) => this.remove(request, response));
+        State.app?.get("/api/bridges", (request, response) => this.list(request, response));
+        State.app?.put("/api/bridges", (request, response) => this.create(request, response));
+        State.app?.get("/api/bridges/count", (request, response) => this.count(request, response));
+        State.app?.post("/api/bridges/import", (request, response) => this.import(request, response));
+        State.app?.post("/api/bridge/:id", (request, response) => this.update(request, response));
+        State.app?.post("/api/bridge/:id/ports", (request, response) => this.ports(request, response));
+        State.app?.get("/api/bridge/:id/export", (request, response) => this.export(request, response));
+        State.app?.delete("/api/bridge/:id", (request, response) => this.remove(request, response));
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send(State.instances.filter((item) => item.type === "bridge"));
+        return response.send(State.bridges.filter((item) => item.type === "bridge"));
     }
 
     count(_request: Request, response: Response): Response {
         return response.send({
-            instances: (State.instances.filter((item) => item.type === "bridge")).length,
+            bridges: (State.bridges.filter((item) => item.type === "bridge")).length,
         });
     }
 
     create(request: Request, response: Response): Response {
-        if (State.instances.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.instances) {
+        if (State.bridges.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
             });
         }
 
-        Instances.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
+        Bridges.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
 
         return this.list(request, response);
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instances) {
+        if (!request.user?.permissions.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
             });
         }
 
-        await Instances.update(request.params.id).info(request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
+        await Bridges.update(request.params.id).info(request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
 
         return this.list(request, response);
     }
 
     async ports(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.instances) {
+        if (!request.user?.permissions.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
             });
         }
 
-        await Instances.update(request.params.id).ports(request.body.start, request.body.end);
+        await Bridges.update(request.params.id).ports(request.body.start, request.body.end);
 
         return this.list(request, response);
     }
@@ -98,14 +98,14 @@ export default class InstancesController {
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, fields, files) => {
-            Instances.import(<string>fields.name, parseInt(<string>fields.port, 10), <string>fields.pin || "031-45-154", <string>fields.username || Config.generateUsername(), files.file.path, true).finally(() => {
+            Bridges.import(<string>fields.name, parseInt(<string>fields.port, 10), <string>fields.pin || "031-45-154", <string>fields.username || Config.generateUsername(), files.file.path, true).finally(() => {
                 this.list(request, response);
             });
         });
     }
 
     export(request: Request, response: Response): void {
-        if (!request.user?.permissions.instances) {
+        if (!request.user?.permissions.bridges) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -114,7 +114,7 @@ export default class InstancesController {
             return;
         }
 
-        Instances.export(request.params.id).then((filename) => response.send({
+        Bridges.export(request.params.id).then((filename) => response.send({
             success: true,
             filename,
         })).catch((error) => response.send({
@@ -123,14 +123,14 @@ export default class InstancesController {
     }
 
     remove(request: Request, response: Response): Response {
-        if (!request.user?.permissions.instances) {
+        if (!request.user?.permissions.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
             });
         }
 
-        Instances.uninstall(request.params.id);
+        Bridges.uninstall(request.params.id);
 
         return this.list(request, response);
     }

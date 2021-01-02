@@ -23,27 +23,27 @@ import Socket from "../services/socket";
 export default class PluginsController {
     constructor() {
         State.app?.get("/api/plugins", (request, response) => this.all(request, response));
-        State.app?.get("/api/plugins/:instance", (request, response) => this.installed(request, response));
-        State.app?.put("/api/plugins/:instance/:name", (request, response) => this.install(request, response));
-        State.app?.put("/api/plugins/:instance/:scope/:name", (request, response) => this.install(request, response));
-        State.app?.post("/api/plugins/:instance/:name", (request, response) => this.upgrade(request, response));
-        State.app?.post("/api/plugins/:instance/:scope/:name", (request, response) => this.upgrade(request, response));
-        State.app?.delete("/api/plugins/:instance/:name", (request, response) => this.uninstall(request, response));
-        State.app?.delete("/api/plugins/:instance/:scope/:name", (request, response) => this.uninstall(request, response));
+        State.app?.get("/api/plugins/:bridge", (request, response) => this.installed(request, response));
+        State.app?.put("/api/plugins/:bridge/:name", (request, response) => this.install(request, response));
+        State.app?.put("/api/plugins/:bridge/:scope/:name", (request, response) => this.install(request, response));
+        State.app?.post("/api/plugins/:bridge/:name", (request, response) => this.upgrade(request, response));
+        State.app?.post("/api/plugins/:bridge/:scope/:name", (request, response) => this.upgrade(request, response));
+        State.app?.delete("/api/plugins/:bridge/:name", (request, response) => this.uninstall(request, response));
+        State.app?.delete("/api/plugins/:bridge/:scope/:name", (request, response) => this.uninstall(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<Response> {
         const results = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                const plugins = await Socket.fetch(State.instances[i].id, "plugins:get");
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                const plugins = await Socket.fetch(State.bridges[i].id, "plugins:get");
 
                 if (plugins) {
                     for (let j = 0; j < plugins.length; j += 1) {
                         const { ...plugin } = plugins[j];
 
-                        plugin.instance = State.instances[i].id;
+                        plugin.bridge = State.bridges[i].id;
 
                         results.push(plugin);
                     }
@@ -55,7 +55,7 @@ export default class PluginsController {
     }
 
     async installed(request: Request, response: Response): Promise<Response> {
-        return response.send(await Socket.fetch(request.params.instance, "plugins:get"));
+        return response.send(await Socket.fetch(request.params.bridge, "plugins:get"));
     }
 
     async install(request: Request, response: Response): Promise<Response> {
@@ -66,7 +66,7 @@ export default class PluginsController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "plugins:install", request.params));
+        return response.send(await Socket.fetch(request.params.bridge, "plugins:install", request.params));
     }
 
     async upgrade(request: Request, response: Response): Promise<Response> {
@@ -77,7 +77,7 @@ export default class PluginsController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "plugins:upgrade", request.params));
+        return response.send(await Socket.fetch(request.params.bridge, "plugins:upgrade", request.params));
     }
 
     async uninstall(request: Request, response: Response): Promise<Response> {
@@ -88,6 +88,6 @@ export default class PluginsController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "plugins:uninstall", request.params));
+        return response.send(await Socket.fetch(request.params.bridge, "plugins:uninstall", request.params));
     }
 }

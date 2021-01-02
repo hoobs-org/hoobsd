@@ -23,23 +23,23 @@ import Socket from "../services/socket";
 export default class BridgeController {
     constructor() {
         State.app?.get("/api/bridge", (request, response) => this.all(request, response));
-        State.app?.get("/api/bridge/:instance", (request, response) => this.status(request, response));
-        State.app?.post("/api/bridge/:instance/start", (request, response) => this.start(request, response));
-        State.app?.post("/api/bridge/:instance/stop", (request, response) => this.stop(request, response));
-        State.app?.post("/api/bridge/:instance/restart", (request, response) => this.restart(request, response));
-        State.app?.post("/api/bridge/:instance/purge", (request, response) => this.purge(request, response));
+        State.app?.get("/api/bridge/:bridge", (request, response) => this.status(request, response));
+        State.app?.post("/api/bridge/:bridge/start", (request, response) => this.start(request, response));
+        State.app?.post("/api/bridge/:bridge/stop", (request, response) => this.stop(request, response));
+        State.app?.post("/api/bridge/:bridge/restart", (request, response) => this.restart(request, response));
+        State.app?.post("/api/bridge/:bridge/purge", (request, response) => this.purge(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<Response> {
         const results = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                const status = await Socket.fetch(State.instances[i].id, "status:get");
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                const status = await Socket.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
                     results.push({
-                        instance: State.instances[i].id,
+                        bridge: State.bridges[i].id,
                         status,
                     });
                 }
@@ -50,7 +50,7 @@ export default class BridgeController {
     }
 
     async status(request: Request, response: Response): Promise<Response> {
-        return response.send(await Socket.fetch(request.params.instance, "status:get"));
+        return response.send(await Socket.fetch(request.params.bridge, "status:get"));
     }
 
     async start(request: Request, response: Response): Promise<Response> {
@@ -61,7 +61,7 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "bridge:start"));
+        return response.send(await Socket.fetch(request.params.bridge, "bridge:start"));
     }
 
     async stop(request: Request, response: Response): Promise<Response> {
@@ -72,7 +72,7 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "bridge:stop"));
+        return response.send(await Socket.fetch(request.params.bridge, "bridge:stop"));
     }
 
     async restart(request: Request, response: Response): Promise<Response> {
@@ -83,7 +83,7 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "bridge:restart"));
+        return response.send(await Socket.fetch(request.params.bridge, "bridge:restart"));
     }
 
     async purge(request: Request, response: Response): Promise<Response> {
@@ -94,6 +94,6 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "bridge:purge"));
+        return response.send(await Socket.fetch(request.params.bridge, "bridge:purge"));
     }
 }

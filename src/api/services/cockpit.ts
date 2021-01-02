@@ -81,9 +81,9 @@ export default class Cockpit {
 
                 const paths = [];
 
-                for (let i = 0; i < State.instances.length; i += 1) {
-                    if (State.instances[i].plugins && existsSync(join(<string>State.instances[i].plugins, "node_modules", ".bin"))) {
-                        paths.push(join(<string>State.instances[i].plugins, "node_modules", ".bin"));
+                for (let i = 0; i < State.bridges.length; i += 1) {
+                    if (State.bridges[i].plugins && existsSync(join(<string>State.bridges[i].plugins, "node_modules", ".bin"))) {
+                        paths.push(join(<string>State.bridges[i].plugins, "node_modules", ".bin"));
                     }
                 }
 

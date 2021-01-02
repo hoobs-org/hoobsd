@@ -25,7 +25,7 @@ import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Paths from "../../services/paths";
 import System from "../../services/system";
-import Instances from "../../services/instances";
+import Bridges from "../../services/bridges";
 import { Console } from "../../services/logger";
 
 export default class SystemController {
@@ -147,7 +147,7 @@ export default class SystemController {
     }
 
     network(_request: Request, response: Response): Response {
-        return response.send(Instances.network());
+        return response.send(Bridges.network());
     }
 
     async activity(_request: Request, response: Response): Promise<Response> {
@@ -182,7 +182,7 @@ export default class SystemController {
             return;
         }
 
-        Instances.backup().then((filename) => response.send({
+        Bridges.backup().then((filename) => response.send({
             success: true,
             filename,
         })).catch((error) => response.send({
@@ -199,7 +199,7 @@ export default class SystemController {
         }
 
         if (existsSync(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)))) {
-            await Instances.restore(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)));
+            await Bridges.restore(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)));
 
             this.reboot(request, response);
 
@@ -229,7 +229,7 @@ export default class SystemController {
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
-            Instances.restore(files.file.path, true).finally(() => {
+            Bridges.restore(files.file.path, true).finally(() => {
                 this.reboot(request, response);
             });
         });
@@ -243,7 +243,7 @@ export default class SystemController {
             });
         }
 
-        await Instances.backup();
+        await Bridges.backup();
 
         const system = await System.info();
 
@@ -304,7 +304,7 @@ export default class SystemController {
             });
         }
 
-        await Instances.reset();
+        await Bridges.reset();
 
         return response.send({
             success: true,

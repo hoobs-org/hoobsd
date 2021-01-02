@@ -23,9 +23,9 @@ import Socket from "../services/socket";
 export default class CacheController {
     constructor() {
         State.app?.get("/api/cache", (request, response) => this.all(request, response));
-        State.app?.get("/api/cache/:instance", (request, response) => this.list(request, response));
-        State.app?.get("/api/cache/:instance/parings", (request, response) => this.listParings(request, response));
-        State.app?.get("/api/cache/:instance/accessories", (request, response) => this.listAccessories(request, response));
+        State.app?.get("/api/cache/:bridge", (request, response) => this.list(request, response));
+        State.app?.get("/api/cache/:bridge/parings", (request, response) => this.listParings(request, response));
+        State.app?.get("/api/cache/:bridge/accessories", (request, response) => this.listAccessories(request, response));
     }
 
     async all(request: Request, response: Response): Promise<Response> {
@@ -38,14 +38,14 @@ export default class CacheController {
 
         const results = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                const parings = await Socket.fetch(State.instances[i].id, "cache:parings");
-                const accessories = await Socket.fetch(State.instances[i].id, "cache:accessories");
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                const parings = await Socket.fetch(State.bridges[i].id, "cache:parings");
+                const accessories = await Socket.fetch(State.bridges[i].id, "cache:accessories");
 
                 if (parings || accessories) {
                     results.push({
-                        instance: State.instances[i].id,
+                        bridge: State.bridges[i].id,
                         parings,
                         accessories,
                     });
@@ -64,8 +64,8 @@ export default class CacheController {
             });
         }
 
-        const parings = await Socket.fetch(request.params.instance, "cache:parings");
-        const accessories = await Socket.fetch(request.params.instance, "cache:accessories");
+        const parings = await Socket.fetch(request.params.bridge, "cache:parings");
+        const accessories = await Socket.fetch(request.params.bridge, "cache:accessories");
 
         return response.send({
             parings,
@@ -81,7 +81,7 @@ export default class CacheController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "cache:parings"));
+        return response.send(await Socket.fetch(request.params.bridge, "cache:parings"));
     }
 
     async listAccessories(request: Request, response: Response): Promise<Response> {
@@ -92,6 +92,6 @@ export default class CacheController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "cache:accessories"));
+        return response.send(await Socket.fetch(request.params.bridge, "cache:accessories"));
     }
 }

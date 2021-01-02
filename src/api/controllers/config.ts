@@ -21,14 +21,14 @@ import State from "../../state";
 import Config from "../../services/config";
 import Socket from "../services/socket";
 import { Console, Events, NotificationType } from "../../services/logger";
-import { InstanceRecord } from "../../services/instances";
+import { BridgeRecord } from "../../services/bridges";
 
 export default class ConfigController {
     constructor() {
         State.app?.get("/api/config", (request, response) => this.getConsole(request, response));
         State.app?.post("/api/config", (request, response) => this.saveConsole(request, response));
-        State.app?.get("/api/config/:instance", (request, response) => this.getInstance(request, response));
-        State.app?.post("/api/config/:instance", (request, response) => this.saveInstance(request, response));
+        State.app?.get("/api/config/:bridge", (request, response) => this.getBridge(request, response));
+        State.app?.post("/api/config/:bridge", (request, response) => this.saveBridge(request, response));
     }
 
     async getConsole(_request: Request, response: Response): Promise<Response> {
@@ -53,7 +53,7 @@ export default class ConfigController {
         });
     }
 
-    async getInstance(request: Request, response: Response): Promise<Response> {
+    async getBridge(request: Request, response: Response): Promise<Response> {
         if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
@@ -61,10 +61,10 @@ export default class ConfigController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.instance, "config:get"));
+        return response.send(await Socket.fetch(request.params.bridge, "config:get"));
     }
 
-    async saveInstance(request: Request, response: Response): Promise<Response> {
+    async saveBridge(request: Request, response: Response): Promise<Response> {
         if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
@@ -72,16 +72,16 @@ export default class ConfigController {
             });
         }
 
-        const instance: InstanceRecord | undefined = State.instances.find((item) => item.id === request.params.instance);
+        const bridge: BridgeRecord | undefined = State.bridges.find((item) => item.id === request.params.bridge);
 
         Console.notify(
-            request.params.instance,
+            request.params.bridge,
             "Configuration Changed",
-            `The configuration for "${instance?.display || "Undefined"}" has changed.`,
+            `The configuration for "${bridge?.display || "Undefined"}" has changed.`,
             NotificationType.WARN,
             "settings",
         );
 
-        return response.send(await Socket.fetch(request.params.instance, "config:save", request.params, request.body));
+        return response.send(await Socket.fetch(request.params.bridge, "config:save", request.params, request.body));
     }
 }

@@ -55,7 +55,7 @@ import BridgeController from "./controllers/bridge";
 import CacheController from "./controllers/cache";
 import ConfigController from "./controllers/config";
 import ExtentionsController from "./controllers/extentions";
-import InstancesController from "./controllers/instances";
+import BridgesController from "./controllers/bridges";
 import PluginController from "./controllers/plugin";
 import PluginsController from "./controllers/plugins";
 import RemoteController from "./controllers/remote";
@@ -63,7 +63,7 @@ import SystemController from "./controllers/system";
 import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
-const INSTANCE_LAUNCH_DELAY = 1000;
+const BRIDGE_LAUNCH_DELAY = 1000;
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -118,9 +118,9 @@ export default class API extends EventEmitter {
 
         const paths = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].plugins && existsSync(join(<string>State.instances[i].plugins, ".bin"))) {
-                paths.push(join(<string>State.instances[i].plugins, ".bin"));
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].plugins && existsSync(join(<string>State.bridges[i].plugins, ".bin"))) {
+                paths.push(join(<string>State.bridges[i].plugins, ".bin"));
             }
         }
 
@@ -209,7 +209,7 @@ export default class API extends EventEmitter {
                 "/api/auth",
                 "/api/auth/disable",
                 "/api/auth/validate",
-                "/api/instances/count",
+                "/api/bridges/count",
                 Users.count() > 0 ? "/api/auth/logon" : false,
                 Users.count() > 0 ? "/api/auth/logout" : false,
                 Users.count() === 0 ? "/api/users" : false,
@@ -234,7 +234,7 @@ export default class API extends EventEmitter {
         new CacheController();
         new ConfigController();
         new ExtentionsController();
-        new InstancesController();
+        new BridgesController();
         new PluginController();
         new PluginsController();
         new RemoteController();
@@ -256,16 +256,16 @@ export default class API extends EventEmitter {
 
         State.app?.use("/backups", Express.static(Paths.backupPath(), {
             setHeaders: (response, path) => {
-                if (extname(path) === ".instance") response.set("content-disposition", `attachment; filename="${basename(path).split("_")[0]}.instance"`);
+                if (extname(path) === ".bridge") response.set("content-disposition", `attachment; filename="${basename(path).split("_")[0]}.bridge"`);
                 if (extname(path) === ".backup") response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
             },
         }));
 
         const defined: string[] = [];
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") {
-                Plugins.load(State.instances[i].id, (identifier, _name, _scope, directory) => {
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") {
+                Plugins.load(State.bridges[i].id, (identifier, _name, _scope, directory) => {
                     const route = `/ui/plugin/${identifier.replace(/[^a-zA-Z0-9-_]/, "")}`;
 
                     if (defined.indexOf(route) === -1 && existsSync(join(directory, "static"))) {
@@ -290,9 +290,9 @@ export default class API extends EventEmitter {
 
     launch(id: string, port: number): void {
         const flags: string[] = [
-            "instance",
+            "bridge",
             "--mode", State.mode,
-            "--instance", id,
+            "--bridge", id,
             "--port", `${port}`,
         ];
 
@@ -330,22 +330,22 @@ export default class API extends EventEmitter {
             const current = Object.keys(this.processes);
 
             for (let i = 0; i < current.length; i += 1) {
-                if (!State.instances.find((item) => item.id === current[i])) {
+                if (!State.bridges.find((item) => item.id === current[i])) {
                     waiters.push(this.teardown(current[i]));
                 }
             }
 
-            const instances = State.instances.filter((item) => item.type === "bridge");
+            const bridges = State.bridges.filter((item) => item.type === "bridge");
             const directories = readdirSync(Paths.storagePath()).filter((item) => item !== "api" && item !== "backups" && lstatSync(join(Paths.storagePath(), item)).isDirectory());
-            const remove = directories.filter((item) => instances.findIndex((instance) => instance.id === item) === -1);
+            const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {
                 removeSync(join(Paths.storagePath(), remove[i]));
             }
 
-            for (let i = 0; i < instances.length; i += 1) {
-                if (!this.processes[instances[i].id] || this.processes[instances[i].id].killed) {
-                    this.launch(instances[i].id, instances[i].port);
+            for (let i = 0; i < bridges.length; i += 1) {
+                if (!this.processes[bridges[i].id] || this.processes[bridges[i].id].killed) {
+                    this.launch(bridges[i].id, bridges[i].port);
                 }
             }
 
@@ -364,8 +364,8 @@ export default class API extends EventEmitter {
 
         this.socket.start();
 
-        for (let i = 0; i < State.instances.length; i += 1) {
-            if (State.instances[i].type === "bridge") Console.import((await Socket.fetch(State.instances[i].id, "cache:log")) || []);
+        for (let i = 0; i < State.bridges.length; i += 1) {
+            if (State.bridges[i].type === "bridge") Console.import((await Socket.fetch(State.bridges[i].id, "cache:log")) || []);
         }
 
         this.listner?.listen(this.port, () => {
@@ -378,12 +378,12 @@ export default class API extends EventEmitter {
         Monitor();
 
         setTimeout(() => {
-            const instances = State.instances.filter((item) => item.type === "bridge");
+            const bridges = State.bridges.filter((item) => item.type === "bridge");
 
-            for (let i = 0; i < instances.length; i += 1) {
-                this.launch(instances[i].id, instances[i].port);
+            for (let i = 0; i < bridges.length; i += 1) {
+                this.launch(bridges[i].id, bridges[i].port);
             }
-        }, INSTANCE_LAUNCH_DELAY);
+        }, BRIDGE_LAUNCH_DELAY);
     }
 
     stop(): Promise<void> {
@@ -393,11 +393,11 @@ export default class API extends EventEmitter {
 
                 this.running = false;
 
-                const instances = State.instances.filter((item) => item.type === "bridge");
+                const bridges = State.bridges.filter((item) => item.type === "bridge");
                 const waiters: Promise<void>[] = [];
 
-                for (let i = 0; i < instances.length; i += 1) {
-                    waiters.push(this.teardown(instances[i].id));
+                for (let i = 0; i < bridges.length; i += 1) {
+                    waiters.push(this.teardown(bridges[i].id));
                 }
 
                 Promise.all(waiters).then(() => {

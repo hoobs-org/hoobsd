@@ -41,7 +41,7 @@ import BridgeController from "./controllers/bridge";
 import PluginsController from "./controllers/plugins";
 import AccessoriesController from "./controllers/accessories";
 
-const INSTANCE_START_DELAY = 0;
+const BRIDGE_START_DELAY = 0;
 
 export default class Server extends EventEmitter {
     declare time: number;
@@ -99,7 +99,7 @@ export default class Server extends EventEmitter {
     }
 
     start(soft?: boolean, override?: boolean): void {
-        const instance = State.instances.find((n: any) => n.id === State.id);
+        const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
         State.bridge = new Bridge(this.port || undefined);
@@ -115,10 +115,10 @@ export default class Server extends EventEmitter {
             });
         });
 
-        if (override || (instance?.autostart || 0) >= 0) {
+        if (override || (bridge?.autostart || 0) >= 0) {
             setTimeout(() => {
                 State.bridge?.start();
-            }, override ? 0 : (instance?.autostart || INSTANCE_START_DELAY) * 1000);
+            }, override ? 0 : (bridge?.autostart || BRIDGE_START_DELAY) * 1000);
         }
 
         if (!soft) State.socket?.start();

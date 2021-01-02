@@ -47,19 +47,19 @@ export default class Plugins {
         return join(Paths.storagePath(State.id), "node_modules");
     }
 
-    static installed(instance?: string): Plugin[] {
+    static installed(bridge?: string): Plugin[] {
         const results: Plugin[] = [];
 
-        Plugins.load(instance || State.id, (_identifier, name, scope, directory, pjson) => {
+        Plugins.load(bridge || State.id, (_identifier, name, scope, directory, pjson) => {
             results.push(new Plugin(name, directory, pjson, scope));
         });
 
         return results;
     }
 
-    static load(instance: string, callback: (identifier: string, name: string, scope: string, directory: string, pjson: PackageJSON, library: string) => void): void {
-        if (existsSync(join(Paths.storagePath(instance), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(instance), "package.json"), {}).dependencies || {});
+    static load(bridge: string, callback: (identifier: string, name: string, scope: string, directory: string, pjson: PackageJSON, library: string) => void): void {
+        if (existsSync(join(Paths.storagePath(bridge), "package.json"))) {
+            const plugins = Object.keys(loadJson<any>(join(Paths.storagePath(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {
