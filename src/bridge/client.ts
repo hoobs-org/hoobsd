@@ -30,7 +30,7 @@ export default class Client {
             if (cached) {
                 resolve(this.process(cached));
             } else {
-                Request.get(`http://127.0.0.1:${State.bridge?.port}/accessories`).then((response) => {
+                Request.get(`http://127.0.0.1:${State.homebridge?.port}/accessories`).then((response) => {
                     State.cache?.set(key, response.data.accessories, 30);
                     resolve(this.process(response.data.accessories));
                 }).catch((error) => {
@@ -152,7 +152,7 @@ export default class Client {
         return new Promise((resolve, reject) => {
             const iids = service.characteristics.map((c: { [key: string]: any }) => c.iid);
 
-            Request.get(`http://127.0.0.1:${State.bridge?.port}/characteristics?id=${iids.map((iid: string) => `${service.aid}.${iid}`).join(",")}`).then((response) => {
+            Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${iids.map((iid: string) => `${service.aid}.${iid}`).join(",")}`).then((response) => {
                 response.data.characteristics.forEach((c: { [key: string]: any }) => {
                     const idx = service.characteristics.findIndex((x: { [key: string]: any }) => x.iid === c.iid);
 
@@ -168,7 +168,7 @@ export default class Client {
 
     static get(service: { [key: string]: any }, iid: string) {
         return new Promise((resolve, reject) => {
-            Request.get(`http://127.0.0.1:${State.bridge?.port}/characteristics?id=${service.aid}.${iid}`).then((response) => {
+            Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${service.aid}.${iid}`).then((response) => {
                 const idx = service.characteristics.findIndex((item: { [key: string]: any }) => item.iid === response.data.characteristics[0].iid);
 
                 service.characteristics[idx].value = response.data.characteristics[0].value;
@@ -181,9 +181,9 @@ export default class Client {
 
     set(service: { [key: string]: any }, iid: string, value: any) {
         return new Promise((resolve, reject) => {
-            Request.defaults.headers.put.Authorization = State.bridge?.settings.pin || "031-45-154";
+            Request.defaults.headers.put.Authorization = State.homebridge?.settings.pin || "031-45-154";
 
-            Request.put(`http://127.0.0.1:${State.bridge?.port}/characteristics`, {
+            Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
                 characteristics: [{
                     aid: service.aid,
                     iid,
@@ -191,7 +191,7 @@ export default class Client {
                 }],
             }, {
                 headers: {
-                    "'Authorization'": State.bridge?.settings.pin || "031-45-154",
+                    "'Authorization'": State.homebridge?.settings.pin || "031-45-154",
                 },
             }).then(() => {
                 this.accessory(service.aid).then((results) => {

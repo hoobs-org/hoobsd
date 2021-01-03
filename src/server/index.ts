@@ -23,7 +23,7 @@ import { join } from "path";
 import State from "../state";
 import Paths from "../services/paths";
 import Socket from "./services/socket";
-import Bridge from "../bridge";
+import Homebridge from "../bridge/server";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
@@ -102,13 +102,13 @@ export default class Server extends EventEmitter {
         const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
-        State.bridge = new Bridge(this.port || undefined);
+        State.homebridge = new Homebridge(this.port || undefined);
 
-        State.bridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
+        State.homebridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
             Console.debug(`Setup URI '${uri}'`);
         });
 
-        State.bridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
+        State.homebridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
             Console.emit(Events.ACCESSORY_CHANGE, State.id, {
                 accessory,
                 value,
@@ -117,7 +117,7 @@ export default class Server extends EventEmitter {
 
         if (override || (bridge?.autostart || 0) >= 0) {
             setTimeout(() => {
-                State.bridge?.start();
+                State.homebridge?.start();
             }, override ? 0 : (bridge?.autostart || BRIDGE_START_DELAY) * 1000);
         }
 
@@ -127,11 +127,11 @@ export default class Server extends EventEmitter {
     async stop(soft?: boolean): Promise<void> {
         Console.debug("Shutting down");
 
-        if (State.bridge) await State.bridge.stop();
+        if (State.homebridge) await State.homebridge.stop();
         if (State.socket && !soft) State.socket.stop();
 
         Console.debug("Stopped");
 
-        State.bridge = undefined;
+        State.homebridge = undefined;
     }
 }

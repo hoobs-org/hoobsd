@@ -29,7 +29,7 @@ export default class BridgeController {
     }
 
     async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (!State.bridge?.running) State.server?.start(true);
+        if (!State.homebridge?.running) State.server?.start(true);
 
         response.send({
             success: true,
@@ -37,7 +37,7 @@ export default class BridgeController {
     }
 
     async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (State.bridge?.running) await State.server?.stop(true);
+        if (State.homebridge?.running) await State.server?.stop(true);
 
         response.send({
             success: true,
@@ -45,8 +45,8 @@ export default class BridgeController {
     }
 
     async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (State.bridge?.running) await State.server?.stop(true);
-        if (!State.bridge?.running) State.server?.start(true, true);
+        if (State.homebridge?.running) await State.server?.stop(true);
+        if (!State.homebridge?.running) State.server?.start(true, true);
 
         response.send({
             success: true,
@@ -56,8 +56,8 @@ export default class BridgeController {
     async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
         Bridges.purge();
 
-        if (State.bridge?.running) await State.server?.stop(true);
-        if (!State.bridge?.running) State.server?.start(true, true);
+        if (State.homebridge?.running) await State.server?.stop(true);
+        if (!State.homebridge?.running) State.server?.start(true, true);
 
         response.send({
             success: true,

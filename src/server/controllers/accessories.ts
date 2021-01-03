@@ -66,7 +66,7 @@ export default class AccessoriesController {
 
     service(id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            State.bridge?.client.accessory(id).then((response: any) => {
+            State.homebridge?.client.accessory(id).then((response: any) => {
                 const service = response;
 
                 service.refresh((results: any) => {
@@ -100,7 +100,7 @@ export default class AccessoriesController {
         return new Promise((resolve, reject) => {
             let services: any[] = [];
 
-            State.bridge?.client.accessories().then((results: any) => {
+            State.homebridge?.client.accessories().then((results: any) => {
                 services = results;
             }).finally(() => {
                 if (!services) resolve([]);

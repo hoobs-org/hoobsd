@@ -29,16 +29,16 @@ export default class StatusController {
         response.send({
             id: State.id,
             bridge: State.display || State.id,
-            running: State.bridge?.running,
-            status: State.bridge?.running ? "running" : "stopped",
+            running: State.homebridge?.running,
+            status: State.homebridge?.running ? "running" : "stopped",
             uptime: new Date().getTime() - (State.server?.time || 0),
             product: "HOOBS State",
             version: State.version,
-            bridge_name: State.bridge?.settings.name || "",
-            bridge_username: State.bridge?.settings.username || "",
-            bridge_port: State.bridge?.port,
-            setup_pin: State.bridge?.settings.pin || "",
-            setup_id: State.bridge?.setupURI(),
+            bridge_name: State.homebridge?.settings.name || "",
+            bridge_username: State.homebridge?.settings.username || "",
+            bridge_port: State.homebridge?.port,
+            setup_pin: State.homebridge?.settings.pin || "",
+            setup_id: State.homebridge?.setupURI(),
             bridge_path: Paths.storagePath(State.id),
         });
     }

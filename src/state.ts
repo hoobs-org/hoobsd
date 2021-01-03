@@ -24,7 +24,7 @@ import { DotenvParseOutput } from "dotenv";
 import Cache from "./services/cache";
 import Socket from "./server/services/socket";
 import Server from "./server";
-import Bridge from "./bridge";
+import Homebridge from "./bridge/server";
 import Hub from "./hub";
 import { Loggers } from "./services/logger";
 import { BridgeRecord } from "./services/bridges";
@@ -41,7 +41,7 @@ export interface Application {
     socket: Socket | undefined;
     cache: Cache | undefined;
     server: Server | undefined;
-    bridge: Bridge | undefined;
+    homebridge: Homebridge | undefined;
     hub: Hub | undefined;
 
     id: string;
@@ -71,7 +71,7 @@ const bridge: Application = {
     socket: undefined,
     cache: undefined,
     server: undefined,
-    bridge: undefined,
+    homebridge: undefined,
     hub: undefined,
 
     id: "default",
