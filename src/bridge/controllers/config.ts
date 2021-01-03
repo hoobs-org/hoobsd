@@ -17,47 +17,21 @@
  **************************************************************************************************/
 
 import State from "../../state";
-import Bridges from "../../services/bridges";
+import Config from "../../services/config";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
-export default class BridgeController {
+export default class ConfigController {
     constructor() {
-        State.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
-        State.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
-        State.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
-        State.socket?.route("bridge:purge", (request: SocketRequest, response: SocketResponse) => this.purge(request, response));
+        State.socket?.route("config:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
+        State.socket?.route("config:save", (request: SocketRequest, response: SocketResponse) => this.save(request, response));
     }
 
-    async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (!State.homebridge?.running) State.server?.start(true);
-
-        response.send({
-            success: true,
-        });
+    get(_request: SocketRequest, response: SocketResponse): void {
+        response.send(State.bridge?.config);
     }
 
-    async stop(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (State.homebridge?.running) await State.server?.stop(true);
-
-        response.send({
-            success: true,
-        });
-    }
-
-    async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (State.homebridge?.running) await State.server?.stop(true);
-        if (!State.homebridge?.running) State.server?.start(true, true);
-
-        response.send({
-            success: true,
-        });
-    }
-
-    async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        Bridges.purge();
-
-        if (State.homebridge?.running) await State.server?.stop(true);
-        if (!State.homebridge?.running) State.server?.start(true, true);
+    async save(request: SocketRequest, response: SocketResponse): Promise<void> {
+        Config.saveConfig(request.body);
 
         response.send({
             success: true,

@@ -23,7 +23,7 @@ import { readFileSync, writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
-import Socket from "../server/services/socket";
+import Socket from "../bridge/services/socket";
 
 import {
     formatJson,
@@ -169,7 +169,7 @@ class Logger {
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
-        if ((State.hub || State.server) && (State.id === "hub" || !Socket.up())) {
+        if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) {
             CACHE.push(data);
 
             if (CACHE.length > 5000) {
@@ -182,7 +182,7 @@ class Logger {
         }
 
         if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
-        if (State.server) Socket.fetch(Events.LOG, data);
+        if (State.bridge) Socket.fetch(Events.LOG, data);
 
         if (State.id === "hub" || State.debug) {
             const prefixes = [];
@@ -360,7 +360,7 @@ class Logger {
             });
         }
 
-        if (State.server) {
+        if (State.bridge) {
             Socket.fetch(Events.NOTIFICATION, {
                 bridge,
                 data: {
@@ -381,7 +381,7 @@ class Logger {
             });
         }
 
-        if (State.server) {
+        if (State.bridge) {
             Socket.fetch(event, {
                 bridge,
                 data,

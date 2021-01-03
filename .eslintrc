@@ -85,7 +85,7 @@
         },
         {
             "files": [
-                "src/server/index.ts"
+                "src/bridge/index.ts"
             ],
             "rules": {
                 "@typescript-eslint/no-var-requires": "off",

@@ -43,7 +43,7 @@ import AccessoriesController from "./controllers/accessories";
 
 const BRIDGE_START_DELAY = 0;
 
-export default class Server extends EventEmitter {
+export default class Bridge extends EventEmitter {
     declare time: number;
 
     declare config: any;

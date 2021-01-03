@@ -26,7 +26,7 @@ import { existsSync } from "fs-extra";
 import State from "./state";
 import Bridges from "./services/bridges";
 import Users from "./services/users";
-import Server from "./server";
+import Bridge from "./bridge";
 import Cache from "./services/cache";
 import Paths from "./services/paths";
 import System from "./services/system";
@@ -109,7 +109,7 @@ export = function Daemon(): void {
             const bridge = State.bridges.find((n) => n.id === State.id);
 
             if (bridge) {
-                State.server = new Server(command.port || bridge.port);
+                State.bridge = new Bridge(command.port || bridge.port);
 
                 Watcher.watch(Paths.bridgesPath()).on("change", () => {
                     const current = cloneJson(State.bridges.find((n: any) => n.id === State.id));
@@ -120,20 +120,20 @@ export = function Daemon(): void {
                         const modified = State.bridges.find((n: any) => n.id === State.id);
 
                         if (modified && !jsonEquals(current, modified)) {
-                            State.server?.stop().then(() => {
-                                State.server?.start();
+                            State.bridge?.stop().then(() => {
+                                State.bridge?.start();
                             });
                         }
                     }
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", () => {
-                    State.server?.stop().then(() => {
-                        if (existsSync(Paths.configPath())) State.server?.start();
+                    State.bridge?.stop().then(() => {
+                        if (existsSync(Paths.configPath())) State.bridge?.start();
                     });
                 });
 
-                State.server.start();
+                State.bridge.start();
             } else {
                 Console.error(`${State.id} is not created, please run 'sudo hoobs bridge add' to create`);
             }
@@ -186,7 +186,7 @@ export = function Daemon(): void {
             State.terminating = true;
 
             if (State.cache) State.cache.save(Paths.storagePath(State.id), ["hap/accessories"]);
-            if (State.server) await State.server.stop();
+            if (State.bridge) await State.bridge.stop();
             if (State.hub) await State.hub.stop();
 
             setTimeout(() => {

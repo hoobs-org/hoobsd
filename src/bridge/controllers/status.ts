@@ -31,7 +31,7 @@ export default class StatusController {
             bridge: State.display || State.id,
             running: State.homebridge?.running,
             status: State.homebridge?.running ? "running" : "stopped",
-            uptime: new Date().getTime() - (State.server?.time || 0),
+            uptime: new Date().getTime() - (State.bridge?.time || 0),
             product: "HOOBS State",
             version: State.version,
             bridge_name: State.homebridge?.settings.name || "",

@@ -22,9 +22,9 @@ import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
 import Cache from "./services/cache";
-import Socket from "./server/services/socket";
-import Server from "./server";
-import Homebridge from "./server/server";
+import Socket from "./bridge/services/socket";
+import Bridge from "./bridge";
+import Homebridge from "./bridge/server";
 import Hub from "./hub";
 import { Loggers } from "./services/logger";
 import { BridgeRecord } from "./services/bridges";
@@ -40,9 +40,9 @@ export interface Application {
     io: IO.Server | undefined;
     socket: Socket | undefined;
     cache: Cache | undefined;
-    server: Server | undefined;
-    homebridge: Homebridge | undefined;
     hub: Hub | undefined;
+    bridge: Bridge | undefined;
+    homebridge: Homebridge | undefined;
 
     id: string;
     display: string;
@@ -70,9 +70,9 @@ const bridge: Application = {
     io: undefined,
     socket: undefined,
     cache: undefined,
-    server: undefined,
-    homebridge: undefined,
     hub: undefined,
+    bridge: undefined,
+    homebridge: undefined,
 
     id: "default",
     display: "Default",
