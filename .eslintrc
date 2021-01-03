@@ -77,7 +77,7 @@
         },
         {
             "files": [
-                "src/bridge/types.ts"
+                "src/bridge/services/types.ts"
             ],
             "rules": {
                 "quote-props": "off"

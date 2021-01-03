@@ -20,4 +20,4 @@
 
 process.title = "hoobsd";
 
-require("../lib/hoobsd/cli")();
+require("../lib/hoobsd/main")();

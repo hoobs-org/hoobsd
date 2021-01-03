@@ -18,10 +18,10 @@
 
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
-import Cockpit from "../services/cockpit";
+import Remote from "../services/remote";
 
 export default class RemoteController {
-    declare client: Cockpit;
+    declare client: Remote;
 
     constructor() {
         State.app?.get("/api/remote", (request, response) => this.status(request, response));
@@ -42,7 +42,7 @@ export default class RemoteController {
     }
 
     start(_request: Request, response: Response): void {
-        this.client = new Cockpit();
+        this.client = new Remote();
 
         this.client.start(false).then((registration) => response.send({
             registration,

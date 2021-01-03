@@ -18,7 +18,7 @@
 
 import _ from "lodash";
 import Request from "axios";
-import State from "../state";
+import State from "../../state";
 import { Services, Characteristics } from "./types";
 
 export default class Client {

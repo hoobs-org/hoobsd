@@ -63,7 +63,7 @@ import Paths from "../services/paths";
 import State from "../state";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
-import Client from "./client";
+import Client from "./services/client";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 
