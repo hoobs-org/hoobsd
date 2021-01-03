@@ -32,7 +32,7 @@ export default class ConfigController {
     }
 
     async getConsole(_request: Request, response: Response): Promise<Response> {
-        return response.send(State.api?.config);
+        return response.send(State.hub?.config);
     }
 
     async saveConsole(request: Request, response: Response): Promise<Response> {

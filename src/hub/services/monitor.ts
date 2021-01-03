@@ -72,5 +72,5 @@ export default async function Monitor() {
 
     setTimeout(() => {
         Monitor();
-    }, (State.api?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
+    }, (State.hub?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
 }

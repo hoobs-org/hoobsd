@@ -25,7 +25,7 @@ import Cache from "./services/cache";
 import Socket from "./server/services/socket";
 import Server from "./server";
 import Bridge from "./bridge";
-import API from "./api";
+import Hub from "./hub";
 import { Loggers } from "./services/logger";
 import { BridgeRecord } from "./services/bridges";
 import { UserRecord } from "./services/users";
@@ -42,7 +42,7 @@ export interface Application {
     cache: Cache | undefined;
     server: Server | undefined;
     bridge: Bridge | undefined;
-    api: API | undefined;
+    hub: Hub | undefined;
 
     id: string;
     display: string;
@@ -72,7 +72,7 @@ const bridge: Application = {
     cache: undefined,
     server: undefined,
     bridge: undefined,
-    api: undefined,
+    hub: undefined,
 
     id: "default",
     display: "Default",

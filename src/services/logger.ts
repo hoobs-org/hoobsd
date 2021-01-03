@@ -169,7 +169,7 @@ class Logger {
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
-        if ((State.api || State.server) && (State.id === "hub" || !Socket.up())) {
+        if ((State.hub || State.server) && (State.id === "hub" || !Socket.up())) {
             CACHE.push(data);
 
             if (CACHE.length > 5000) {
@@ -181,7 +181,7 @@ class Logger {
             }
         }
 
-        if (State.api && State.api.running) State.io?.sockets.emit(Events.LOG, data);
+        if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
         if (State.server) Socket.fetch(Events.LOG, data);
 
         if (State.id === "hub" || State.debug) {
@@ -238,7 +238,7 @@ class Logger {
     }
 
     import(data: Message[]) {
-        if (State.api && State.api.running && State.id === "hub") {
+        if (State.hub && State.hub.running && State.id === "hub") {
             CACHE.push(...(data.filter((m) => (m.message !== ""))));
 
             CACHE.sort((a, b) => {
@@ -348,7 +348,7 @@ class Logger {
             }
         }
 
-        if (State.api && State.api.running) {
+        if (State.hub && State.hub.running) {
             State.io?.sockets.emit(Events.NOTIFICATION, {
                 bridge,
                 data: {
@@ -374,7 +374,7 @@ class Logger {
     }
 
     emit(event: Events, bridge: string, data: any): void {
-        if (State.api && State.api.running) {
+        if (State.hub && State.hub.running) {
             State.io?.sockets.emit(event, {
                 bridge,
                 data,

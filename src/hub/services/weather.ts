@@ -55,10 +55,10 @@ export default class Weather {
     }
 
     static async current(): Promise<{ [key: string]: any }> {
-        if (!(((State.api || {}).config || {}).weather || {}).location || (((((State.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return {};
+        if (!(((State.hub || {}).config || {}).weather || {}).location || (((((State.hub || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return {};
 
-        const id = State.api?.config.weather.location.id;
-        const units = State.api?.config.weather.units || "celsius";
+        const id = State.hub?.config.weather.location.id;
+        const units = State.hub?.config.weather.units || "celsius";
         const key = `weather/${id}/${units}`;
         const cached = State.cache?.get<{ [key: string]: any }>(key);
 
@@ -91,10 +91,10 @@ export default class Weather {
     }
 
     static async forecast(): Promise<{ [key: string]: any }[]> {
-        if (!(((State.api || {}).config || {}).weather || {}).location || (((((State.api || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return [];
+        if (!(((State.hub || {}).config || {}).weather || {}).location || (((((State.hub || {}).config || {}).weather || {}).location || {}).id || -1) <= 0) return [];
 
-        const id = State.api?.config.weather.location.id;
-        const units = State.api?.config.weather.units || "celsius";
+        const id = State.hub?.config.weather.location.id;
+        const units = State.hub?.config.weather.units || "celsius";
         const key = `forecast/${id}/${units}`;
         const cached = State.cache?.get<{ [key: string]: any }[]>(key);
 

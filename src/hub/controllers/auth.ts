@@ -31,7 +31,7 @@ export default class AuthController {
     }
 
     state(_request: Request, response: Response): Response {
-        if (State.api?.settings.disable_auth) {
+        if (State.hub?.settings.disable_auth) {
             return response.send({
                 state: "disabled",
             });
@@ -49,7 +49,7 @@ export default class AuthController {
     }
 
     async validate(request: Request, response: Response): Promise<Response> {
-        if (State.api?.settings.disable_auth) {
+        if (State.hub?.settings.disable_auth) {
             return response.send({
                 valid: true,
             });
@@ -100,7 +100,7 @@ export default class AuthController {
     }
 
     logout(request: Request, response: Response): Response {
-        if (State.api?.settings.disable_auth) {
+        if (State.hub?.settings.disable_auth) {
             return response.send({
                 success: true,
             });

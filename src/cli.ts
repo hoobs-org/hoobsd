@@ -30,7 +30,7 @@ import Server from "./server";
 import Cache from "./services/cache";
 import Paths from "./services/paths";
 import System from "./services/system";
-import API from "./api";
+import Hub from "./hub";
 import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
@@ -69,11 +69,11 @@ export = function Daemon(): void {
             const bridge = State.bridges.find((n) => n.id === State.id);
 
             if (bridge) {
-                State.api = API.createServer(command.port || bridge.port);
+                State.hub = Hub.createServer(command.port || bridge.port);
 
                 Watcher.watch(Paths.bridgesPath()).on("change", () => {
                     State.bridges = Bridges.list();
-                    State.api?.sync();
+                    State.hub?.sync();
                 });
 
                 Watcher.watch(join(Paths.storagePath(), "access")).on("change", () => {
@@ -81,13 +81,13 @@ export = function Daemon(): void {
                 });
 
                 Watcher.watch(Paths.configPath()).on("change", () => {
-                    State.api?.stop().then(() => {
-                        State.api = API.createServer(command.port || bridge.port);
-                        State.api.start();
+                    State.hub?.stop().then(() => {
+                        State.hub = Hub.createServer(command.port || bridge.port);
+                        State.hub.start();
                     });
                 });
 
-                State.api.start();
+                State.hub.start();
             } else {
                 Console.error(`${State.id} is not created, please run 'sudo hbs install' to create`);
             }
@@ -187,7 +187,7 @@ export = function Daemon(): void {
 
             if (State.cache) State.cache.save(Paths.storagePath(State.id), ["hap/accessories"]);
             if (State.server) await State.server.stop();
-            if (State.api) await State.api.stop();
+            if (State.hub) await State.hub.stop();
 
             setTimeout(() => {
                 process.exit();

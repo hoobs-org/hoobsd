@@ -83,7 +83,7 @@ export default class Users {
 
             const session = Buffer.from(JSON.stringify(token), "utf8").toString("base64");
 
-            State.cache?.set(session, remember ? 525600 : State.api?.settings.inactive_logoff || 30, remember ? 525600 : State.api?.settings.inactive_logoff || 30);
+            State.cache?.set(session, remember ? 525600 : State.hub?.settings.inactive_logoff || 30, remember ? 525600 : State.hub?.settings.inactive_logoff || 30);
 
             return session;
         }
@@ -92,7 +92,7 @@ export default class Users {
     }
 
     static decodeToken(token: string | undefined): { [key: string]: any } {
-        if (State.api?.settings.disable_auth) {
+        if (State.hub?.settings.disable_auth) {
             return {
                 permissions: {
                     accessories: true,
@@ -124,7 +124,7 @@ export default class Users {
     }
 
     static async validateToken(token: string | undefined): Promise<boolean> {
-        if (State.api?.settings.disable_auth) return true;
+        if (State.hub?.settings.disable_auth) return true;
         if (!token || token === "") return false;
 
         const server = State.cache?.get<number>(token);

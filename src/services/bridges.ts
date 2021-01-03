@@ -436,7 +436,7 @@ export default class Bridges {
     }
 
     static async reset(): Promise<void> {
-        await State.api?.stop();
+        await State.hub?.stop();
         await Bridges.backup();
 
         const bridges = Bridges.list().filter((item) => item.type === "bridge");
