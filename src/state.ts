@@ -24,7 +24,7 @@ import { DotenvParseOutput } from "dotenv";
 import Cache from "./services/cache";
 import Socket from "./server/services/socket";
 import Server from "./server";
-import Homebridge from "./bridge/server";
+import Homebridge from "./server/server";
 import Hub from "./hub";
 import { Loggers } from "./services/logger";
 import { BridgeRecord } from "./services/bridges";

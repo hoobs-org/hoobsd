@@ -23,7 +23,7 @@ import { join } from "path";
 import State from "../state";
 import Paths from "../services/paths";
 import Socket from "./services/socket";
-import Homebridge from "../bridge/server";
+import Homebridge from "./server";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
