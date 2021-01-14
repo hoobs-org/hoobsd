@@ -201,9 +201,7 @@ export = function Daemon(): void {
         if (!State.terminating) process.kill(process.pid, "SIGTERM");
     });
 
-    process.on("unhandledRejection", (_reason, promise) => {
-        promise.catch((error) => {
-            Console.error(`${error.message} ${error.stack}`);
-        });
+    process.on("unhandledRejection", (reason) => {
+        if ((`${reason}`).trim() !== "TypeError: Invalid Version:") Console.debug(`unhandled rejection: ${reason}`);
     });
 };
