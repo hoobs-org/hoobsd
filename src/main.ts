@@ -203,7 +203,7 @@ export = function Daemon(): void {
 
     process.on("unhandledRejection", (_reason, promise) => {
         promise.catch((error) => {
-            Console.error(error.stack);
+            Console.error(`${error.message} ${error.stack}`);
         });
     });
 };
