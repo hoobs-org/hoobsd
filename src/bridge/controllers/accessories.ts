@@ -23,27 +23,25 @@ import { SocketRequest, SocketResponse } from "../services/socket";
 export default class AccessoriesController {
     declare rooms: any[];
 
-    declare accessories: any[];
-
     constructor() {
         this.rooms = [];
-        this.accessories = [];
 
         State.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
         State.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
         State.socket?.route("accessory:service", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
+        State.socket?.route("accessory:characteristics", (request: SocketRequest, response: SocketResponse) => this.characteristics(request, response));
     }
 
     list(_request: SocketRequest, response: SocketResponse): void {
         this.services().then((accessories) => {
-            this.accessories = accessories;
-        }).finally(() => response.send(this.accessories));
+            response.send(accessories)
+        });
     }
 
     get(request: SocketRequest, response: SocketResponse): void {
         let accessory = {};
 
-        this.service(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((results) => {
+        this.service(request.params?.id).then((results) => {
             accessory = results;
         }).finally(() => response.send(accessory));
     }
@@ -51,7 +49,7 @@ export default class AccessoriesController {
     set(request: SocketRequest, response: SocketResponse): void {
         let accessory = {};
 
-        this.service(`${parseInt((`${request.params?.id}`).split(".")[0], 10)}`).then((service) => {
+        this.service(request.params?.id).then((service) => {
             let { value } = request.body;
 
             if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
@@ -64,64 +62,84 @@ export default class AccessoriesController {
         }).catch(() => response.send(accessory));
     }
 
-    service(id: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            State.homebridge?.client.accessory(id).then((response: any) => {
-                const service = response;
+    characteristics(request: SocketRequest, response: SocketResponse): void {
+        let results: string[] = [];
 
-                service.refresh((results: any) => {
-                    service.values = results.values;
-                }).finally(() => resolve(service));
-            }).catch((error: Error) => reject(error));
+        this.service(request.params?.id).then((service) => {
+            results = service.characteristics.map((characteristic: any) => characteristic.type);
+        }).finally(() => response.send(results));
+    }
+
+    service(id: string): Promise<any> {
+        return new Promise((resolve) => {
+            State.homebridge?.client.accessory(id).then((response: any) => {
+                let service = response;
+
+                if (service) {
+                    service.refresh((results: any) => {
+                        service.values = results.values;
+                    }).finally(() => resolve(<{ [key: string]: any }>this.cleanse(service)));
+                } else {
+                    resolve(undefined);
+                }
+            });
         });
     }
 
-    uuid(services: any[]) {
-        const lookup: { [key: string]: number } = {};
+    cleanse(value: { [key: string]: any } | { [key: string]: any }[]): { [key: string]: any } | { [key: string]: any }[] {
+        if (Array.isArray(value)) {
+            const results: { [key: string]: any }[] = [];
 
-        const results: any[] = services;
-
-        for (let i = 0; i < results.length; i += 1) {
-            const { aid } = results[i];
-
-            if (lookup[aid]) results[i].aid = parseFloat(`${aid}.${lookup[aid]}`);
-
-            if (!lookup[aid]) {
-                lookup[aid] = 1;
-            } else {
-                lookup[aid] += 1;
+            for (let i = 0; i < value.length; i += 1) {
+                results.push(<{ [key: string]: any }>this.cleanse(value[i]));
             }
-        }
 
-        return results;
+            return results;
+        } else {
+            const results =  { ...value };
+
+            delete results._id;
+
+            for (let i = 0; i < results.characteristics.length; i += 1) {
+                delete results.characteristics[i]._id;
+            }
+
+            return results;
+        }
     }
 
-    services(): Promise<any[]> {
-        return new Promise((resolve, reject) => {
-            let services: any[] = [];
-
-            State.homebridge?.client.accessories().then((results: any) => {
-                services = results;
-            }).finally(() => {
+    services(): Promise<{ [key: string]: any }[]> {
+        return new Promise((resolve) => {
+            State.homebridge?.client.accessories().then((services: { [key: string]: any }[]) => {
                 if (!services) resolve([]);
                 if (!Array.isArray(services)) services = [services];
 
-                const queue: boolean[] = [];
+                const queue: Promise<void>[] = [];
 
                 for (let i = 0; i < services.length; i += 1) {
-                    queue.push(true);
-
-                    services[i].refresh((results: any) => {
-                        services[i].values = results.values;
-                    }).finally(() => {
-                        queue.pop();
-
-                        if (queue.length === 0) resolve(this.uuid(services));
-                    });
+                    queue.push(new Promise((resolve) => {
+                        services[i].refresh((results: { [key: string]: any }) => {
+                            services[i].values = results.values;
+                        }).finally(() => {
+                            resolve();
+                        });
+                    }));
                 }
 
-                if (queue.length === 0) resolve(this.uuid(services));
-            }).catch((error: Error) => reject(error));
+                Promise.all(queue).then(() => {
+                    services = [...services];
+
+                    for (let i = 0; i < services.length; i += 1) {
+                        delete services[i]._id;
+
+                        for (let j = 0; j < services[i].characteristics.length; j += 1) {
+                            delete services[i].characteristics[j]._id;
+                        }
+                    }
+
+                    resolve(<{ [key: string]: any }[]>this.cleanse(services));
+                });
+            });
         });
     }
 }

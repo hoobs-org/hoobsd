@@ -470,6 +470,8 @@ export default class Server extends EventEmitter {
 
         const informationService = accessory.getService(Service.AccessoryInformation)!;
 
+        informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
+
         services.forEach((service) => {
             if (service instanceof Service.AccessoryInformation) {
                 service.setCharacteristic(Characteristic.Name, displayName);
@@ -484,6 +486,20 @@ export default class Server extends EventEmitter {
         if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
             informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
         }
+
+        informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, accessory.UUID);
+
+        accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+            this.client.accessory(accessory.UUID).then((service) => {
+                if (service) {
+                    service.refresh((results: any) => {
+                        service.values = results.values;
+                    }).finally(() => {
+                        this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                    });
+                }
+            });
+        });
 
         controllers.forEach((controller) => {
             accessory.configureController(controller);

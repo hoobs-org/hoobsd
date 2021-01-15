@@ -25,6 +25,7 @@ export default class AccessoriesController {
         State.app?.get("/api/accessories", (request, response) => this.all(request, response));
         State.app?.get("/api/accessories/:bridge", (request, response) => this.list(request, response));
         State.app?.get("/api/accessory/:bridge/:id", (request, response) => this.get(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/characteristics", (request, response) => this.characteristics(request, response));
         State.app?.put("/api/accessory/:bridge/:id/:service", (request, response) => this.set(request, response));
     }
 
@@ -54,5 +55,9 @@ export default class AccessoriesController {
 
     async set(request: Request, response: Response): Promise<void> {
         response.send(await Socket.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
+    }
+
+    async characteristics(request: Request, response: Response): Promise<void> {
+        response.send(await Socket.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
     }
 }
