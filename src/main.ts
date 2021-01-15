@@ -95,7 +95,7 @@ export = function Daemon(): void {
 
     Program.command("bridge")
         .description("start a bridge bridge")
-        .option("-i, --bridge <name>", "set the bridge name")
+        .option("-b, --bridge <name>", "set the bridge name")
         .option("-p, --port <port>", "change the port the bridge runs on")
         .action(async (command) => {
             State.enviornment = Enviornment.config({ path: join(__dirname, `.env.${State.mode || "production"}`) }).parsed;
@@ -202,6 +202,6 @@ export = function Daemon(): void {
     });
 
     process.on("unhandledRejection", (reason) => {
-        if ((`${reason}`).trim() !== "TypeError: Invalid Version:") Console.debug(`unhandled rejection: ${reason}`);
+        Console.warn(`unhandled rejection: ${reason}`);
     });
 };

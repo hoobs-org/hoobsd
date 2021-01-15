@@ -459,26 +459,6 @@ export default class Server extends EventEmitter {
         const accessoryUUID = uuid.generate(`${accessoryType}:${uuidBase || displayName}`);
         const accessory = new Accessory(displayName, accessoryUUID);
 
-        accessory.on("service-characteristic-change", (data: any) => {
-            if (
-                accessory.aid
-                && data.newValue !== data.oldValue
-                && data.characteristic.displayName !== "Last Updated"
-                && data.characteristic.displayName !== "Serial Number"
-                && data.characteristic.displayName !== "Manufacturer"
-                && data.characteristic.displayName !== "Identify"
-                && data.characteristic.displayName !== "Model"
-            ) {
-                this.client.accessory(`${parseInt(`${accessory.aid}`, 10)}`).then((service) => {
-                    service.refresh((results: any) => {
-                        service.values = results.values;
-                    }).finally(() => {
-                        this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                    });
-                });
-            }
-        });
-
         if (accessoryInstance.identify) {
             accessory.on(AccessoryEventTypes.IDENTIFY, (_paired, callback) => {
                 // @ts-ignore
@@ -521,9 +501,13 @@ export default class Server extends EventEmitter {
             if (plugin) {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
 
+                informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
+
                 if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
                     informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
                 }
+
+                informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, accessory._associatedHAPAccessory.UUID);
 
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
@@ -533,6 +517,18 @@ export default class Server extends EventEmitter {
             } else {
                 Console.warn("A platform configured a new accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
             }
+
+            accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                this.client.accessory(accessory._associatedHAPAccessory.UUID).then((service) => {
+                    if (service) {
+                        service.refresh((results: any) => {
+                            service.values = results.values;
+                        }).finally(() => {
+                            this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                        });
+                    }
+                });
+            });
 
             return accessory._associatedHAPAccessory;
         });

@@ -41,13 +41,23 @@ export default class Client {
         });
     }
 
-    accessory(aid: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.accessories().then((services) => {
-                resolve(services.find((item) => item.aid === aid));
-            }).catch((error) => {
-                reject(error);
-            });
+    accessory(value: string): Promise<any> {
+        return new Promise((resolve) => {
+            if (!value || value === "") {
+                resolve(undefined);
+            } else if (value.split("-").length > 1) {
+                this.accessories().then((services) => {
+                    resolve(services.find((item) => item.accessory_identifier === value));
+                }).catch(() => {
+                    resolve(undefined);
+                });
+            } else {
+                this.accessories().then((services) => {
+                    resolve(services.find((item) => item.aid === parseFloat(value)));
+                }).catch(() => {
+                    resolve(undefined);
+                });
+            }
         });
     }
 
@@ -196,9 +206,7 @@ export default class Client {
                 },
             }).then(() => {
                 this.accessory(service.aid).then((results) => {
-                    resolve(results);
-                }).catch((error) => {
-                    reject(error);
+                    if (results) resolve(results);
                 });
             }).catch((error) => {
                 reject(error);
