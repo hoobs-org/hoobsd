@@ -397,7 +397,7 @@ console.debug = function debug(message: string, ...parameters: any[]) {
 };
 
 console.log = function log(message: string, ...parameters: any[]) {
-    if (State.debug) system.info(message, ...parameters);
+    system.info(message, ...parameters);
 };
 
 console.warn = function warn(message: string, ...parameters: any[]) {
