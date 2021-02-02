@@ -73,7 +73,7 @@ const PERSISTED_CACHE: LocalStorage = storage.create();
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
 
-User.setStoragePath(Paths.storagePath());
+User.setStoragePath(Paths.data());
 
 export default class Server extends EventEmitter {
     public running: boolean;
@@ -120,7 +120,7 @@ export default class Server extends EventEmitter {
 
         (async () => {
             await PERSISTED_CACHE.init({
-                dir: Paths.cachedAccessoryPath(),
+                dir: Paths.accessories,
             });
         })();
 
@@ -170,7 +170,7 @@ export default class Server extends EventEmitter {
 
         const pluginManagerOptions: PluginManagerOptions = {
             activePlugins: this.config.plugins,
-            customPluginPath: join(Paths.storagePath(State.id), "node_modules"),
+            customPluginPath: join(Paths.data(State.id), "node_modules"),
         };
 
         this.pluginManager = new PluginManager(this.api, pluginManagerOptions);

@@ -140,7 +140,7 @@ export default class API extends EventEmitter {
                 try {
                     shell = spawn(process.env.SHELL || "sh", [], {
                         name: "xterm-color",
-                        cwd: Paths.storagePath(),
+                        cwd: Paths.data(),
                         env: _.create(process.env, this.enviornment),
                     });
                 } catch (error) {
@@ -252,9 +252,9 @@ export default class API extends EventEmitter {
 
         State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
         State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));
-        State.app?.use("/themes", Express.static(Paths.themePath()));
+        State.app?.use("/themes", Express.static(Paths.themes));
 
-        State.app?.use("/backups", Express.static(Paths.backupPath(), {
+        State.app?.use("/backups", Express.static(Paths.backups, {
             setHeaders: (response, path) => {
                 if (extname(path) === ".bridge") response.set("content-disposition", `attachment; filename="${basename(path).split("_")[0]}.bridge"`);
                 if (extname(path) === ".backup") response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
@@ -336,11 +336,11 @@ export default class API extends EventEmitter {
             }
 
             const bridges = State.bridges.filter((item) => item.type === "bridge");
-            const directories = readdirSync(Paths.storagePath()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(join(Paths.storagePath(), item)).isDirectory());
+            const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(join(Paths.data(), item)).isDirectory());
             const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {
-                removeSync(join(Paths.storagePath(), remove[i]));
+                removeSync(join(Paths.data(), remove[i]));
             }
 
             for (let i = 0; i < bridges.length; i += 1) {

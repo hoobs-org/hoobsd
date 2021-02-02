@@ -34,9 +34,9 @@ export interface UserRecord {
 
 export default class Users {
     static list() {
-        if (!existsSync(join(Paths.storagePath(), "access"))) writeFileSync(join(Paths.storagePath(), "access"), formatJson([], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+        if (!existsSync(join(Paths.data(), "access"))) writeFileSync(join(Paths.data(), "access"), formatJson([], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
-        return loadJson<UserRecord[]>(join(Paths.storagePath(), "access"), [], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
+        return loadJson<UserRecord[]>(join(Paths.data(), "access"), [], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
     }
 
     static count(): number {
@@ -172,7 +172,7 @@ export default class Users {
 
         State.users.push(user);
 
-        writeFileSync(join(Paths.storagePath(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+        writeFileSync(join(Paths.data(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
         return user;
     }
@@ -187,7 +187,7 @@ export default class Users {
             if (permissions) State.users[index].permissions = permissions;
             if (password) State.users[index].password = await this.hashValue(password, State.users[index].salt);
 
-            writeFileSync(join(Paths.storagePath(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+            writeFileSync(join(Paths.data(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
             return State.users[index];
         }
@@ -201,7 +201,7 @@ export default class Users {
         if (index >= 0) {
             State.users.splice(index, 1);
 
-            writeFileSync(join(Paths.storagePath(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+            writeFileSync(join(Paths.data(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
 
             return true;
         }

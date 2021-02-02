@@ -95,7 +95,7 @@ export default class Cockpit {
 
                 this.shell = spawn(process.env.SHELL || "sh", [], {
                     name: "xterm-color",
-                    cwd: Paths.storagePath(),
+                    cwd: Paths.data(),
                     env: _.create(process.env, this.enviornment),
                 });
 

@@ -55,7 +55,7 @@ export default class Bridge extends EventEmitter {
     constructor(port: number | undefined) {
         super();
 
-        HAPStorage.setCustomStoragePath(Paths.persistPath());
+        HAPStorage.setCustomStoragePath(Paths.persist);
 
         this.time = 0;
         this.port = port || 51826;

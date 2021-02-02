@@ -57,7 +57,7 @@ export default class Socket {
         this.pipe.config.logInColor = true;
         this.pipe.config.logger = Print;
         this.pipe.config.appspace = "/";
-        this.pipe.config.socketRoot = Paths.storagePath();
+        this.pipe.config.socketRoot = Paths.data();
         this.pipe.config.id = `${this.name}.sock`;
 
         this.pipe.serve(() => {
@@ -92,7 +92,7 @@ export default class Socket {
             SOCKETS[`${this.name}.sock`] = new RawIPC.IPC();
 
             SOCKETS[`${this.name}.sock`].config.appspace = "/";
-            SOCKETS[`${this.name}.sock`].config.socketRoot = Paths.storagePath();
+            SOCKETS[`${this.name}.sock`].config.socketRoot = Paths.data();
             SOCKETS[`${this.name}.sock`].config.logInColor = true;
             SOCKETS[`${this.name}.sock`].config.logger = () => {};
             SOCKETS[`${this.name}.sock`].config.maxRetries = 0;
@@ -142,19 +142,19 @@ export default class Socket {
             this.running = false;
             this.pipe.server.stop();
 
-            if (existsSync(join(Paths.storagePath(), `${this.name}.sock`))) unlinkSync(join(Paths.storagePath(), `${this.name}.sock`));
+            if (existsSync(join(Paths.data(), `${this.name}.sock`))) unlinkSync(join(Paths.data(), `${this.name}.sock`));
         }
     }
 
     static up() {
-        return existsSync(join(Paths.storagePath(), "api.sock"));
+        return existsSync(join(Paths.data(), "api.sock"));
     }
 
     static fetch(event: Events, body: any): Promise<void> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
-            if (!existsSync(join(Paths.storagePath(), "api.sock"))) {
+            if (!existsSync(join(Paths.data(), "api.sock"))) {
                 resolve();
 
                 return;
@@ -164,7 +164,7 @@ export default class Socket {
                 SOCKETS["api.sock"] = new RawIPC.IPC();
 
                 SOCKETS["api.sock"].config.appspace = "/";
-                SOCKETS["api.sock"].config.socketRoot = Paths.storagePath();
+                SOCKETS["api.sock"].config.socketRoot = Paths.data();
                 SOCKETS["api.sock"].config.logInColor = true;
                 SOCKETS["api.sock"].config.logger = Print;
                 SOCKETS["api.sock"].config.maxRetries = 0;

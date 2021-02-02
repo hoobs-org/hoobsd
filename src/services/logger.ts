@@ -127,7 +127,7 @@ class Logger {
     load() {
         if (State.id === "hub") {
             try {
-                CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.logPath())).toString(), []);
+                CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.log)).toString(), []);
             } catch (_error) {
                 CACHE = [];
             }
@@ -177,7 +177,7 @@ class Logger {
             }
 
             if (State.id === "hub") {
-                writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
+                writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));
             }
         }
 
@@ -251,7 +251,7 @@ class Logger {
                 CACHE.splice(0, CACHE.length - 5000);
             }
 
-            writeFileSync(Paths.logPath(), gzipSync(formatJson(CACHE)));
+            writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));
 
             for (let i = 0; i < data.length; i += 1) {
                 State.io?.sockets.emit(Events.LOG, data[i]);

@@ -160,7 +160,7 @@ export default class SystemController {
 
     catalog(_request: Request, response: Response): void {
         const results: { [key: string]: string | number }[] = [];
-        const entries = readdirSync(Paths.backupPath()).filter((item) => item.endsWith(".backup"));
+        const entries = readdirSync(Paths.backups).filter((item) => item.endsWith(".backup"));
 
         for (let i = 0; i < entries.length; i += 1) {
             results.push({
@@ -198,8 +198,8 @@ export default class SystemController {
             });
         }
 
-        if (existsSync(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)))) {
-            await Bridges.restore(join(Paths.backupPath(), decodeURIComponent(`${request.query.filename}`)));
+        if (existsSync(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)))) {
+            await Bridges.restore(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)));
 
             this.reboot(request, response);
 

@@ -365,10 +365,10 @@ export default class Themes {
         theme.name = sanitize(name);
         theme.display = name;
 
-        ensureDirSync(join(Paths.themePath(), theme.name));
+        ensureDirSync(join(Paths.themes, theme.name));
 
-        writeFileSync(join(Paths.themePath(), theme.name, "theme.js"), formatJson(theme));
-        writeFileSync(join(Paths.themePath(), theme.name, "theme.css"), Themes.generate(theme.name, theme));
+        writeFileSync(join(Paths.themes, theme.name, "theme.js"), formatJson(theme));
+        writeFileSync(join(Paths.themes, theme.name, "theme.css"), Themes.generate(theme.name, theme));
     }
 
     static backdrop(file: string, type: string): string {
@@ -376,32 +376,32 @@ export default class Themes {
 
         switch (type) {
             case "image/png":
-                renameSync(file, join(Paths.themePath(), `${filename}.png`));
+                renameSync(file, join(Paths.themes, `${filename}.png`));
 
                 return `${filename}.png`;
 
             case "image/gif":
-                renameSync(file, join(Paths.themePath(), `${filename}.gif`));
+                renameSync(file, join(Paths.themes, `${filename}.gif`));
 
                 return `${filename}.gif`;
 
             case "image/bmp":
-                renameSync(file, join(Paths.themePath(), `${filename}.bmp`));
+                renameSync(file, join(Paths.themes, `${filename}.bmp`));
 
                 return `${filename}.bmp`;
 
             case "image/svg+xml":
-                renameSync(file, join(Paths.themePath(), `${filename}.svg`));
+                renameSync(file, join(Paths.themes, `${filename}.svg`));
 
                 return `${filename}.svg`;
 
             case "image/webp":
-                renameSync(file, join(Paths.themePath(), `${filename}.webp`));
+                renameSync(file, join(Paths.themes, `${filename}.webp`));
 
                 return `${filename}.webp`;
 
             default:
-                renameSync(file, join(Paths.themePath(), `${filename}.jpg`));
+                renameSync(file, join(Paths.themes, `${filename}.jpg`));
 
                 return `${filename}.jpg`;
         }
@@ -416,8 +416,8 @@ export default class Themes {
                 return LightTheme;
 
             default:
-                if (existsSync(join(Paths.themePath(), sanitize(name), "theme.js"))) {
-                    return loadJson<Theme>(join(Paths.themePath(), sanitize(name), "theme.js"), DarkTheme);
+                if (existsSync(join(Paths.themes, sanitize(name), "theme.js"))) {
+                    return loadJson<Theme>(join(Paths.themes, sanitize(name), "theme.js"), DarkTheme);
                 }
 
                 return DarkTheme;

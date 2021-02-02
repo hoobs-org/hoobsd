@@ -39,7 +39,7 @@ export default class StatusController {
             bridge_port: State.homebridge?.port,
             setup_pin: State.homebridge?.settings.pin || "",
             setup_id: State.homebridge?.setupURI(),
-            bridge_path: Paths.storagePath(State.id),
+            bridge_path: Paths.data(State.id),
         });
     }
 }

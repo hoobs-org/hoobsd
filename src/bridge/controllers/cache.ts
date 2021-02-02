@@ -35,11 +35,11 @@ export default class CacheController {
     }
 
     parings(_request: SocketRequest, response: SocketResponse): void {
-        const pairings = readdirSync(Paths.persistPath()).filter((d) => d.match(/AccessoryInfo\.([A-F,a-f,0-9]+)\.json/));
+        const pairings = readdirSync(Paths.persist).filter((d) => d.match(/AccessoryInfo\.([A-F,a-f,0-9]+)\.json/));
         const results = [];
 
         for (let i = 0; i < pairings.length; i += 1) {
-            const pairing = readJsonSync(join(Paths.persistPath(), pairings[i]));
+            const pairing = readJsonSync(join(Paths.persist, pairings[i]));
             const [, id] = pairings[i].split(".");
 
             results.push({
@@ -59,7 +59,7 @@ export default class CacheController {
     }
 
     accessories(_request: SocketRequest, response: SocketResponse): void {
-        const accessories = join(Paths.cachedAccessoryPath(), "cachedAccessories");
+        const accessories = join(Paths.accessories, "cachedAccessories");
 
         if (existsSync(accessories)) {
             response.send(readJsonSync(accessories));

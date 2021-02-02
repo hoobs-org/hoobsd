@@ -100,12 +100,12 @@ export default class Bridges {
 
         let bridges: BridgeRecord[] = [];
 
-        if (existsSync(Paths.bridgesPath())) bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
+        if (existsSync(Paths.bridges)) bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
         for (let i = 0; i < bridges.length; i += 1) {
             bridges[i].host = host;
 
-            if (existsSync(join(Paths.storagePath(bridges[i].id), "package.json"))) bridges[i].plugins = join(Paths.storagePath(bridges[i].id), "node_modules");
+            if (existsSync(join(Paths.data(bridges[i].id), "package.json"))) bridges[i].plugins = join(Paths.data(bridges[i].id), "node_modules");
         }
 
         return bridges;
@@ -201,7 +201,7 @@ export default class Bridges {
                     State.bridges[index].username = username || State.bridges[index].username || Config.generateUsername();
                     State.bridges[index].autostart = autostart || 0;
 
-                    writeFileSync(Paths.bridgesPath(), formatJson(State.bridges));
+                    writeFileSync(Paths.bridges, formatJson(State.bridges));
 
                     return resolve(true);
                 }
@@ -221,7 +221,7 @@ export default class Bridges {
                         end,
                     };
 
-                    writeFileSync(Paths.bridgesPath(), formatJson(State.bridges));
+                    writeFileSync(Paths.bridges, formatJson(State.bridges));
 
                     return resolve(true);
                 }
@@ -240,12 +240,12 @@ export default class Bridges {
         if (index >= 0) {
             State.bridges.splice(index, 1);
 
-            writeFileSync(Paths.bridgesPath(), formatJson(State.bridges));
+            writeFileSync(Paths.bridges, formatJson(State.bridges));
 
-            removeSync(join(Paths.storagePath(), id));
-            removeSync(join(Paths.storagePath(), `${id}.accessories`));
-            removeSync(join(Paths.storagePath(), `${id}.persist`));
-            removeSync(join(Paths.storagePath(), `${id}.conf`));
+            removeSync(join(Paths.data(), id));
+            removeSync(join(Paths.data(), `${id}.accessories`));
+            removeSync(join(Paths.data(), `${id}.persist`));
+            removeSync(join(Paths.data(), `${id}.conf`));
 
             Console.notify(
                 "hub",
@@ -399,12 +399,12 @@ export default class Bridges {
             });
         }
 
-        writeFileSync(Paths.bridgesPath(), formatJson(bridges));
+        writeFileSync(Paths.bridges, formatJson(bridges));
     }
 
     static create(name: string, port: number, pin: string, username: string): void {
         if (sanitize(name) === "hub") Bridges.install();
-        if (!existsSync(Paths.bridgesPath())) writeFileSync(Paths.bridgesPath(), "[]");
+        if (!existsSync(Paths.bridges)) writeFileSync(Paths.bridges, "[]");
 
         Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0);
 
@@ -418,13 +418,13 @@ export default class Bridges {
     }
 
     static purge(): void {
-        if (existsSync(join(Paths.storagePath(), `${State.id}.persist`))) removeSync(join(Paths.storagePath(), `${State.id}.persist`));
+        if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
 
-        ensureDirSync(join(Paths.storagePath(), `${State.id}.persist`));
+        ensureDirSync(join(Paths.data(), `${State.id}.persist`));
 
-        if (existsSync(join(Paths.storagePath(), `${State.id}.accessories`))) removeSync(join(Paths.storagePath(), `${State.id}.accessories`));
+        if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
 
-        ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
+        ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
 
         Console.notify(
             State.id,
@@ -443,12 +443,12 @@ export default class Bridges {
 
         for (let i = 0; i < bridges.length; i += 1) Bridges.uninstall(bridges[i].id);
 
-        removeSync(join(Paths.storagePath(), "hub"));
-        removeSync(join(Paths.storagePath(), "hub.accessories"));
-        removeSync(join(Paths.storagePath(), "hub.persist"));
-        removeSync(join(Paths.storagePath(), "hub.conf"));
-        removeSync(join(Paths.storagePath(), "hoobs.log"));
-        removeSync(join(Paths.storagePath(), "access"));
+        removeSync(join(Paths.data(), "hub"));
+        removeSync(join(Paths.data(), "hub.accessories"));
+        removeSync(join(Paths.data(), "hub.persist"));
+        removeSync(join(Paths.data(), "hub.conf"));
+        removeSync(join(Paths.data(), "hoobs.log"));
+        removeSync(join(Paths.data(), "access"));
 
         State.users = [];
     }
@@ -459,7 +459,7 @@ export default class Bridges {
 
             const bridge = State.bridges.find((item) => item.id === id);
 
-            writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
+            writeFileSync(join(Paths.data(), "meta"), formatJson({
                 date: (new Date()).getTime(),
                 type: "bridge",
                 data: {
@@ -476,12 +476,12 @@ export default class Bridges {
             if (!bridge) reject(new Error("bridge does not exist"));
 
             const filename = `${id}_${new Date().getTime()}`;
-            const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
+            const output = createWriteStream(join(Paths.backups, `${filename}.zip`));
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.bridge`));
-                unlinkSync(join(Paths.storagePath(), "meta"));
+                renameSync(join(Paths.backups, `${filename}.zip`), join(Paths.backups, `${filename}.bridge`));
+                unlinkSync(join(Paths.data(), "meta"));
 
                 resolve(`${filename}.bridge`);
             });
@@ -492,10 +492,10 @@ export default class Bridges {
 
             archive.pipe(output);
 
-            archive.file(join(Paths.storagePath(), "meta"), { name: "meta" });
-            archive.file(join(Paths.storagePath(), `${bridge?.id}.conf`), { name: `${bridge?.id}.conf` });
+            archive.file(join(Paths.data(), "meta"), { name: "meta" });
+            archive.file(join(Paths.data(), `${bridge?.id}.conf`), { name: `${bridge?.id}.conf` });
 
-            Bridges.dig(archive, join(Paths.storagePath(), `${bridge?.id}`));
+            Bridges.dig(archive, join(Paths.data(), `${bridge?.id}`));
 
             archive.finalize();
         });
@@ -503,7 +503,7 @@ export default class Bridges {
 
     static backup(): Promise<string> {
         return new Promise((resolve, reject) => {
-            writeFileSync(join(Paths.storagePath(), "meta"), formatJson({
+            writeFileSync(join(Paths.data(), "meta"), formatJson({
                 date: (new Date()).getTime(),
                 type: "full",
                 product: "hoobs",
@@ -512,13 +512,13 @@ export default class Bridges {
             }));
 
             const filename = `${new Date().getTime()}`;
-            const entries = readdirSync(Paths.storagePath());
-            const output = createWriteStream(join(Paths.backupPath(), `${filename}.zip`));
+            const entries = readdirSync(Paths.data());
+            const output = createWriteStream(join(Paths.backups, `${filename}.zip`));
             const archive = Archiver("zip");
 
             output.on("close", () => {
-                renameSync(join(Paths.backupPath(), `${filename}.zip`), join(Paths.backupPath(), `${filename}.backup`));
-                unlinkSync(join(Paths.storagePath(), "meta"));
+                renameSync(join(Paths.backups, `${filename}.zip`), join(Paths.backups, `${filename}.backup`));
+                unlinkSync(join(Paths.data(), "meta"));
 
                 resolve(`${filename}.backup`);
             });
@@ -530,9 +530,9 @@ export default class Bridges {
             archive.pipe(output);
 
             for (let i = 0; i < entries.length; i += 1) {
-                const path = join(Paths.storagePath(), entries[i]);
+                const path = join(Paths.data(), entries[i]);
 
-                if (path !== Paths.backupPath()) {
+                if (path !== Paths.backups) {
                     if (lstatSync(path).isDirectory()) {
                         Bridges.dig(archive, path);
                     } else {
@@ -588,7 +588,7 @@ export default class Bridges {
             Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "bridge") {
                     const id = sanitize(name);
-                    const filename = join(Paths.storagePath(), `import-${new Date().getTime()}.zip`);
+                    const filename = join(Paths.data(), `import-${new Date().getTime()}.zip`);
 
                     if (remove) {
                         renameSync(file, filename);
@@ -596,16 +596,16 @@ export default class Bridges {
                         copySync(file, filename);
                     }
 
-                    ensureDirSync(join(Paths.backupPath(), "stage"));
+                    ensureDirSync(join(Paths.backups, "stage"));
 
                     createReadStream(filename).pipe(Unzip.Extract({
-                        path: join(Paths.backupPath(), "stage"),
+                        path: join(Paths.backups, "stage"),
                     })).on("finish", () => {
                         unlinkSync(filename);
 
                         setTimeout(async () => {
-                            copySync(join(Paths.backupPath(), "stage", `${metadata.data.name}.conf`), join(Paths.storagePath(), `${id}.conf`));
-                            copySync(join(Paths.backupPath(), "stage", metadata.data.name), join(Paths.storagePath(), id));
+                            copySync(join(Paths.backups, "stage", `${metadata.data.name}.conf`), join(Paths.data(), `${id}.conf`));
+                            copySync(join(Paths.backups, "stage", metadata.data.name), join(Paths.data(), id));
 
                             Bridges.create(name, port, pin, username);
 
@@ -615,15 +615,15 @@ export default class Bridges {
                             if (index >= 0) {
                                 if (metadata.data.autostart !== undefined) bridges[index].autostart = metadata.data.autostart;
                                 if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
-                                if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.bridgesPath(), formatJson(bridges));
+                                if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.bridges, formatJson(bridges));
 
-                                execSync(`${Paths.yarn()} install --unsafe-perm --ignore-engines`, {
-                                    cwd: Paths.storagePath(id),
+                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
+                                    cwd: Paths.data(id),
                                     stdio: "inherit",
                                 });
                             }
 
-                            removeSync(join(Paths.backupPath(), "stage"));
+                            removeSync(join(Paths.backups, "stage"));
                             resolve();
                         }, BRIDGE_TEARDOWN_DELAY);
                     });
@@ -638,13 +638,13 @@ export default class Bridges {
         return new Promise((resolve) => {
             Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "full") {
-                    const filename = join(Paths.storagePath(), `restore-${new Date().getTime()}.zip`);
-                    const entries = readdirSync(Paths.storagePath());
+                    const filename = join(Paths.data(), `restore-${new Date().getTime()}.zip`);
+                    const entries = readdirSync(Paths.data());
 
                     for (let i = 0; i < entries.length; i += 1) {
-                        const path = join(Paths.storagePath(), entries[i]);
+                        const path = join(Paths.data(), entries[i]);
 
-                        if (path !== Paths.backupPath()) {
+                        if (path !== Paths.backups) {
                             if (lstatSync(path).isDirectory()) {
                                 removeSync(path);
                             } else {
@@ -660,16 +660,16 @@ export default class Bridges {
                     }
 
                     createReadStream(filename).pipe(Unzip.Extract({
-                        path: Paths.storagePath(),
+                        path: Paths.data(),
                     })).on("finish", () => {
                         unlinkSync(filename);
 
                         setTimeout(() => {
-                            const bridges = loadJson<BridgeRecord[]>(Paths.bridgesPath(), []);
+                            const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                execSync(`${Paths.yarn()} install --unsafe-perm --ignore-engines`, {
-                                    cwd: Paths.storagePath(bridges[i].id),
+                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
+                                    cwd: Paths.data(bridges[i].id),
                                     stdio: "inherit",
                                 });
                             }

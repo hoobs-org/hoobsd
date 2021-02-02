@@ -64,23 +64,23 @@ export = function Daemon(): void {
             State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
-            State.cache.load(Paths.storagePath(State.id));
+            State.cache.load(Paths.data(State.id));
 
             const bridge = State.bridges.find((n) => n.id === State.id);
 
             if (bridge) {
                 State.hub = Hub.createServer(command.port || bridge.port);
 
-                Watcher.watch(Paths.bridgesPath()).on("change", () => {
+                Watcher.watch(Paths.bridges).on("change", () => {
                     State.bridges = Bridges.list();
                     State.hub?.sync();
                 });
 
-                Watcher.watch(join(Paths.storagePath(), "access")).on("change", () => {
+                Watcher.watch(join(Paths.data(), "access")).on("change", () => {
                     State.users = Users.list();
                 });
 
-                Watcher.watch(Paths.configPath()).on("change", () => {
+                Watcher.watch(Paths.config).on("change", () => {
                     State.hub?.stop().then(() => {
                         State.hub = Hub.createServer(command.port || bridge.port);
                         State.hub.start();
@@ -104,14 +104,14 @@ export = function Daemon(): void {
             State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
-            State.cache.load(Paths.storagePath(State.id));
+            State.cache.load(Paths.data(State.id));
 
             const bridge = State.bridges.find((n) => n.id === State.id);
 
             if (bridge) {
                 State.bridge = new Bridge(command.port || bridge.port);
 
-                Watcher.watch(Paths.bridgesPath()).on("change", () => {
+                Watcher.watch(Paths.bridges).on("change", () => {
                     const current = cloneJson(State.bridges.find((n: any) => n.id === State.id));
 
                     if (current) {
@@ -127,9 +127,9 @@ export = function Daemon(): void {
                     }
                 });
 
-                Watcher.watch(Paths.configPath()).on("change", () => {
+                Watcher.watch(Paths.config).on("change", () => {
                     State.bridge?.stop().then(() => {
-                        if (existsSync(Paths.configPath())) State.bridge?.start();
+                        if (existsSync(Paths.config)) State.bridge?.start();
                     });
                 });
 
@@ -185,7 +185,7 @@ export = function Daemon(): void {
 
             State.terminating = true;
 
-            if (State.cache) State.cache.save(Paths.storagePath(State.id), ["hap/accessories"]);
+            if (State.cache) State.cache.save(Paths.data(State.id), ["hap/accessories"]);
             if (State.bridge) await State.bridge.stop();
             if (State.hub) await State.hub.stop();
 

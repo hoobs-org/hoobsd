@@ -59,15 +59,15 @@ export default class Paths {
         return false;
     }
 
-    static applicationPath(): string {
+    static get application(): string {
         return File.existsSync(join(__dirname, "../package.json")) ? join(__dirname, "../") : join(__dirname, "../../../");
     }
 
-    static yarn(): string {
-        return join(Paths.applicationPath(), "/node_modules/yarn/bin/yarn");
+    static get yarn(): string {
+        return join(Paths.application, "/node_modules/yarn/bin/yarn");
     }
 
-    static storagePath(bridge?: string): string {
+    static data(bridge?: string): string {
         let path = "/var/lib/hoobs";
 
         if (State.container) {
@@ -83,45 +83,49 @@ export default class Paths {
         return path;
     }
 
-    static logPath(): string {
-        return join(Paths.storagePath(), "hoobs.log");
+    static get log(): string {
+        return join(Paths.data(), "hoobs.log");
     }
 
-    static themePath(): string {
-        File.ensureDirSync(join(Paths.storagePath(State.id), "themes"));
-
-        return join(Paths.storagePath(State.id), "themes");
+    static get layout(): string {
+        return join(Paths.data(), "layout.conf");
     }
 
-    static bridgesPath(): string {
-        return join(Paths.storagePath(), "bridges.conf");
+    static get themes(): string {
+        File.ensureDirSync(join(Paths.data(State.id), "themes"));
+
+        return join(Paths.data(State.id), "themes");
     }
 
-    static configPath(): string {
-        return join(Paths.storagePath(), `${State.id}.conf`);
+    static get bridges(): string {
+        return join(Paths.data(), "bridges.conf");
     }
 
-    static staticPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), "static"));
-
-        return join(Paths.storagePath(), "static");
+    static get config(): string {
+        return join(Paths.data(), `${State.id}.conf`);
     }
 
-    static backupPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), "backups"));
+    static get static(): string {
+        File.ensureDirSync(join(Paths.data(), "static"));
 
-        return join(Paths.storagePath(), "backups");
+        return join(Paths.data(), "static");
     }
 
-    static persistPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), `${State.id}.persist`));
+    static get backups(): string {
+        File.ensureDirSync(join(Paths.data(), "backups"));
 
-        return join(Paths.storagePath(), `${State.id}.persist`);
+        return join(Paths.data(), "backups");
     }
 
-    static cachedAccessoryPath(): string {
-        File.ensureDirSync(join(Paths.storagePath(), `${State.id}.accessories`));
+    static get persist(): string {
+        File.ensureDirSync(join(Paths.data(), `${State.id}.persist`));
 
-        return join(Paths.storagePath(), `${State.id}.accessories`);
+        return join(Paths.data(), `${State.id}.persist`);
+    }
+
+    static get accessories(): string {
+        File.ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
+
+        return join(Paths.data(), `${State.id}.accessories`);
     }
 }

@@ -40,7 +40,7 @@ export default class Socket extends EventEmitter {
         this.pipe.config.logInColor = true;
         this.pipe.config.logger = Print;
         this.pipe.config.appspace = "/";
-        this.pipe.config.socketRoot = Paths.storagePath();
+        this.pipe.config.socketRoot = Paths.data();
         this.pipe.config.id = "api.sock";
 
         this.pipe.serve(() => {
@@ -80,7 +80,7 @@ export default class Socket extends EventEmitter {
             SOCKETS["api.sock"] = new RawIPC.IPC();
 
             SOCKETS["api.sock"].config.appspace = "/";
-            SOCKETS["api.sock"].config.socketRoot = Paths.storagePath();
+            SOCKETS["api.sock"].config.socketRoot = Paths.data();
             SOCKETS["api.sock"].config.logInColor = true;
             SOCKETS["api.sock"].config.logger = () => {};
             SOCKETS["api.sock"].config.maxRetries = 0;
@@ -120,14 +120,14 @@ export default class Socket extends EventEmitter {
     stop() {
         this.pipe.server.stop();
 
-        if (existsSync(join(Paths.storagePath(), "api.sock"))) unlinkSync(join(Paths.storagePath(), "api.sock"));
+        if (existsSync(join(Paths.data(), "api.sock"))) unlinkSync(join(Paths.data(), "api.sock"));
     }
 
     static fetch(bridge: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
         return new Promise((resolve) => {
             const session = `${new Date().getTime()}:${Math.random()}`;
 
-            if (!existsSync(join(Paths.storagePath(), `${bridge}.sock`))) {
+            if (!existsSync(join(Paths.data(), `${bridge}.sock`))) {
                 resolve(null);
 
                 return;
@@ -137,7 +137,7 @@ export default class Socket extends EventEmitter {
                 SOCKETS[`${bridge}.sock`] = new RawIPC.IPC();
 
                 SOCKETS[`${bridge}.sock`].config.appspace = "/";
-                SOCKETS[`${bridge}.sock`].config.socketRoot = Paths.storagePath();
+                SOCKETS[`${bridge}.sock`].config.socketRoot = Paths.data();
                 SOCKETS[`${bridge}.sock`].config.logInColor = true;
                 SOCKETS[`${bridge}.sock`].config.logger = Print;
                 SOCKETS[`${bridge}.sock`].config.maxRetries = 0;
