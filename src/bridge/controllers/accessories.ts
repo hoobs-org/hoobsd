@@ -67,6 +67,13 @@ export default class AccessoriesController {
 
         this.service(request.params?.id).then((service) => {
             results = service.characteristics.map((characteristic: any) => characteristic.type);
+
+            results.sort((a: string, b: string) => {
+                if (a < b) return -1;
+                if (a > b) return 1;
+    
+                return 0;
+            });
         }).finally(() => response.send(results));
     }
 
