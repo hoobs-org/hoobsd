@@ -490,7 +490,7 @@ export default class Server extends EventEmitter {
         informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, accessory.UUID);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-            this.client.accessory(accessory.UUID).then((service) => {
+            this.client.accessory(Client.identifier(State.id, accessory.UUID)).then((service) => {
                 if (service) {
                     service.refresh((results: any) => {
                         service.values = results.values;
@@ -535,7 +535,7 @@ export default class Server extends EventEmitter {
             }
 
             accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                this.client.accessory(accessory._associatedHAPAccessory.UUID).then((service) => {
+                this.client.accessory(Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
                     if (service) {
                         service.refresh((results: any) => {
                             service.values = results.values;

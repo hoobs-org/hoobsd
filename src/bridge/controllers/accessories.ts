@@ -56,7 +56,7 @@ export default class AccessoriesController {
 
             Console.debug(`Update - ${request.params?.service}: ${value} (${typeof value})`);
 
-            service.set(parseInt(request.params?.service, 10), value).then((results: any) => {
+            service.set(request.params?.service, value).then((results: any) => {
                 accessory = results;
             }).finally(() => response.send(accessory));
         }).catch(() => response.send(accessory));
