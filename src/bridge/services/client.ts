@@ -23,29 +23,26 @@ import { createHash } from "crypto";
 import { writeFileSync } from "fs-extra";
 import State from "../../state";
 import Paths from "../../services/paths";
-import { loadJson, jsonEquals, formatJson } from "../../services/formatters";
 import { Services, Characteristics } from "./types";
+
+import {
+    loadJson,
+    jsonEquals,
+    formatJson,
+    sanitize,
+} from "../../services/formatters";
 
 export default class Client {
     get layout(): { [key: string]: any } {
-        const key = "accessories/layout";
-        const cached = State.cache?.get<{ [key: string]: any }>(key);
-
-        if (cached) return cached;
-
         const results: { [key: string]: any  } = loadJson<{ [key: string]: any }>(Paths.layout, {});
 
         results.rooms = results.rooms || [];
         results.accessories = results.accessories || {};
 
-        State.cache?.set(key, results, 60 * 3);
-
         return results;
     }
 
     set layout(value: { [key: string]: any }) {
-        const key = "accessories/layout";
-
         value.rooms = value.rooms || [];
         value.accessories = value.accessories || {};
 
@@ -60,10 +57,7 @@ export default class Client {
             }
         }
 
-        if (!jsonEquals(current, value)) {
-            writeFileSync(Paths.layout, formatJson(value));
-            State.cache?.set(key, value, 60 * 3);
-        }
+        if (!jsonEquals(current, value)) writeFileSync(Paths.layout, formatJson(value));
     }
 
     accessories(): Promise<{ [key: string]: any }[]> {
@@ -92,6 +86,7 @@ export default class Client {
 
     process(accessories: { [key: string]: any }[]): { [key: string]: any }[] {
         const services: { [key: string]: any }[] = [];
+        const layout = this.layout;
 
         for (let i = 0; i < accessories.length; i += 1) {
             const information: { [key: string]: any } = accessories[i].services.find((x: { [key: string]: any }) => x.type === "3E");
@@ -113,7 +108,7 @@ export default class Client {
                             accessory_identifier: "",
                             bridge_identifier: Client.identifier(State.id),
                             bridge: State.id,
-                            room: null,
+                            room: "default",
                             sequence: 0,
                             hidden: false,
                             type: Services[accessories[i].services[j].type],
@@ -136,8 +131,8 @@ export default class Client {
 
                             service.type = "bridge";
                             service.hidden = true;
-                        } else if (this.layout.accessories[service.accessory_identifier]) {
-                            _.extend(service, this.layout.accessories[service.accessory_identifier]);
+                        } else if (layout.accessories[service.accessory_identifier]) {
+                            _.extend(service, layout.accessories[service.accessory_identifier]);
                         }
 
                         service.refresh = (): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
@@ -158,13 +153,28 @@ export default class Client {
 
                         service.set = (type: string, value: any): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
                             const layout = this.layout;
+                            let room = undefined;
 
                             switch(type) {
                                 case "room":
                                     if (!layout.accessories[service.accessory_identifier]) layout.accessories[service.accessory_identifier] = [];
 
-                                    if (typeof value === "string" && value && value !== "") {
-                                        layout.accessories[service.accessory_identifier].room = value;
+                                    if (typeof value === "string" && value && sanitize(value) !== "default") {
+                                        room = layout.rooms.find((item: { [key: string]: any }) => item.id === sanitize(value));
+
+                                        if (!room) {
+                                            layout.rooms.unshift({
+                                                id: sanitize(value),
+                                                name: value,
+                                                sequence: 1,
+                                            });
+
+                                            for (let i = 0; i < layout.rooms.length; i += 1) {
+                                                layout.rooms[i].sequence = i + 1;
+                                            }
+                                        }
+
+                                        layout.accessories[service.accessory_identifier].room = room.id;
                                     } else {
                                         delete layout.accessories[service.accessory_identifier].room;
                                     }
