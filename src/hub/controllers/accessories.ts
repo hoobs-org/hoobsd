@@ -209,7 +209,7 @@ export default class AccessoriesController {
         if (index === -1) return response.send({ error: "room not found" });
 
         for (let i = 0; i < layout.rooms[index].accessories.length; i += 1) {
-            delete layout.accessories[layout.rooms[index].accessories[i].accessory_identifier];
+            if (layout.accessories[layout.rooms[index].accessories[i].accessory_identifier]) delete layout.accessories[layout.rooms[index].accessories[i].accessory_identifier].room;
         }
 
         layout.rooms.splice(index!, 1);
