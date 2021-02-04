@@ -38,6 +38,7 @@ export default class AccessoriesController {
         State.app?.put("/api/accessory/:bridge/:id/:service", (request, response) => this.set(request, response));
         State.app?.get("/api/rooms", (request, response) => this.rooms(request, response));
         State.app?.get("/api/room/:id", (request, response) => this.room(request, response));
+        State.app?.delete("/api/room/:id", (request, response) => this.remove(request, response));
         State.app?.put("/api/room/:id/:service", (request, response) => this.update(request, response));
         State.app?.put("/api/room", (request, response) => this.add(request, response));
     }
@@ -92,7 +93,7 @@ export default class AccessoriesController {
         response.send(await Socket.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
     }
 
-    async rooms(_request: Request, response: Response): Promise<void> {
+    async rooms(_request: Request, response: Response): Promise<Response> {
         const rooms: { [key: string]: any }[] = (loadJson<{ [key: string]: any }>(Paths.layout, {})).rooms || [];
         const accessories = (await this.accessories()).filter((item) => item.type !== "bridge");
 
@@ -123,7 +124,7 @@ export default class AccessoriesController {
             }, accessories, false, true));
         }
 
-        response.send(rooms);
+        return response.send(rooms);
     }
 
     async room(request: Request, response: Response): Promise<Response> {
@@ -194,6 +195,26 @@ export default class AccessoriesController {
         if (capabilities) room.characteristics = characteristics;
 
         return room;
+    }
+
+    async remove(request: Request, response: Response): Promise<Response> {
+        const id = sanitize(request.params.id);
+        const layout: { [key: string]: any } = loadJson<{ [key: string]: any }>(Paths.layout, {});
+
+        layout.rooms = layout.rooms || [];
+        layout.accessories = layout.accessories || {};
+
+        const index = layout.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
+
+        if (index === -1) return response.send({ error: "room not found" });
+
+        for (let i = 0; i < layout.rooms[index].accessories.length; i += 1) {
+            delete layout.accessories[layout.rooms[index].accessories[i].accessory_identifier];
+        }
+
+        layout.rooms.splice(index!, 1);
+
+        return await this.rooms(request, response);
     }
 
     add(request: Request, response: Response): Response {
