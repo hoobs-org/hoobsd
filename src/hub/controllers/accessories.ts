@@ -478,7 +478,7 @@ export default class AccessoriesController {
                 case "off":
                     index = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.type === "on");
 
-                    if (index >= 0 && accessory.characteristics[index].write && (accessory.type === "lightbulb" || accessory.type === "switch")) return true;
+                    if (index >= 0 && accessory.characteristics[index].write && (accessory.type === "lightbulb" || accessory.type === "switch" || accessory.type === "television" || accessory.type === "fan")) return true;
 
                     break;
             }
