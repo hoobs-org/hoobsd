@@ -20,46 +20,10 @@
 import _ from "lodash";
 import Request from "axios";
 import { createHash } from "crypto";
-import { writeFileSync } from "fs-extra";
 import State from "../../state";
-import Paths from "../../services/paths";
 import { Services, Characteristics } from "./types";
 
-import {
-    loadJson,
-    jsonEquals,
-    formatJson,
-    sanitize,
-} from "../../services/formatters";
-
 export default class Client {
-    get layout(): { [key: string]: any } {
-        const results: { [key: string]: any  } = loadJson<{ [key: string]: any }>(Paths.layout, {});
-
-        results.rooms = results.rooms || [];
-        results.accessories = results.accessories || {};
-
-        return results;
-    }
-
-    set layout(value: { [key: string]: any }) {
-        value.rooms = value.rooms || [];
-        value.accessories = value.accessories || {};
-
-        const current: { [key: string]: any } = loadJson<{ [key: string]: any }>(Paths.layout, {});
-        const keys = _.keys(value.accessories);
-
-        for (let i = 0; i < keys.length; i += 1) {
-            if (value.accessories[keys[i]] === null || value.accessories[keys[i]] === "") {
-                delete value.accessories[keys[i]];
-            } else if (Object.prototype.toString.call(value.accessories[keys[i]]) === "[object Object]" && Object.entries(value.accessories[keys[i]]).length === 0) {
-                delete value.accessories[keys[i]];
-            }
-        }
-
-        if (!jsonEquals(current, value)) writeFileSync(Paths.layout, formatJson(value));
-    }
-
     accessories(): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
             Request.get(`http://127.0.0.1:${State.homebridge?.port}/accessories`).then((response) => {
@@ -86,7 +50,6 @@ export default class Client {
 
     process(accessories: { [key: string]: any }[]): { [key: string]: any }[] {
         const services: { [key: string]: any }[] = [];
-        const layout = this.layout;
 
         for (let i = 0; i < accessories.length; i += 1) {
             const information: { [key: string]: any } = accessories[i].services.find((x: { [key: string]: any }) => x.type === "3E");
@@ -131,8 +94,6 @@ export default class Client {
 
                             service.type = "bridge";
                             service.hidden = true;
-                        } else if (layout.accessories[service.accessory_identifier]) {
-                            _.extend(service, layout.accessories[service.accessory_identifier]);
                         }
 
                         service.refresh = (): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
@@ -152,109 +113,22 @@ export default class Client {
                         });
 
                         service.set = (type: string, value: any): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
-                            const layout = this.layout;
-                            let room = undefined;
+                            Request.defaults.headers.put.Authorization = State.homebridge?.settings.pin || "031-45-154";
 
-                            switch(type) {
-                                case "room":
-                                    if (!layout.accessories[service.accessory_identifier]) layout.accessories[service.accessory_identifier] = [];
+                            const characteristic: { [key: string]: any } | undefined = service.characteristics.find((c: { [key: string]: any }) => c.type === type);
 
-                                    if (typeof value === "string" && value && sanitize(value) !== "default") {
-                                        room = layout.rooms.find((item: { [key: string]: any }) => item.id === sanitize(value));
-
-                                        if (!room) {
-                                            layout.rooms.unshift({
-                                                id: sanitize(value),
-                                                name: value,
-                                                sequence: 1,
-                                            });
-
-                                            for (let i = 0; i < layout.rooms.length; i += 1) {
-                                                layout.rooms[i].sequence = i + 1;
-                                            }
-                                        }
-
-                                        layout.accessories[service.accessory_identifier].room = room.id;
-                                    } else {
-                                        delete layout.accessories[service.accessory_identifier].room;
-                                    }
-
-                                    this.layout = layout;
+                            if (characteristic) {
+                                Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
+                                    characteristics: [{ aid: service._id, iid: characteristic._id, value }],
+                                }, {
+                                    headers: { "'Authorization'": State.homebridge?.settings.pin || "031-45-154" },
+                                }).then(() => {
                                     resolve(service);
-                                    break;
-                
-                                case "sequence":
-                                    if (!layout.accessories[service.accessory_identifier]) layout.accessories[service.accessory_identifier] = [];
-
-                                    if (!Number.isNaN(parseInt(value, 10))) {
-                                        layout.accessories[service.accessory_identifier].sequence = parseInt(value, 10);
-                                    } else {
-                                        delete layout.accessories[service.accessory_identifier].sequence;
-                                    }
-
-                                    this.layout = layout;
-                                    resolve(service);
-                                    break;
-                
-                                case "hidden":
-                                    if (!layout.accessories[service.accessory_identifier]) layout.accessories[service.accessory_identifier] = [];
-
-                                    if ((typeof value === "boolean" || typeof value === "number") && value) {
-                                        layout.accessories[service.accessory_identifier].hidden = true;
-                                    } else {
-                                        delete layout.accessories[service.accessory_identifier].hidden;
-                                    }
-
-                                    this.layout = layout;
-                                    resolve(service);
-                                    break;
-                
-                                case "name":
-                                    if (!layout.accessories[service.accessory_identifier]) layout.accessories[service.accessory_identifier] = [];
-
-                                    if (typeof value === "string" && value && value !== "") {
-                                        layout.accessories[service.accessory_identifier].name = value;
-                                    } else {
-                                        delete layout.accessories[service.accessory_identifier].name;
-                                    }
-
-                                    this.layout = layout;
-                                    resolve(service);
-                                    break;
-                
-                                case "icon":
-                                    if (!layout.accessories[service.accessory_identifier]) layout.accessories[service.accessory_identifier] = [];
-
-                                    if (typeof value === "string" && value && value !== "") {
-                                        layout.accessories[service.accessory_identifier].icon = value;
-                                    } else {
-                                        delete layout.accessories[service.accessory_identifier].icon;
-                                    }
-
-                                    this.layout = layout;
-                                    resolve(service);
-                                    break;
-                
-                                default:
-                                    Request.defaults.headers.put.Authorization = State.homebridge?.settings.pin || "031-45-154";
-
-                                    const characteristic: { [key: string]: any } | undefined = service.characteristics.find((c: { [key: string]: any }) => c.type === type);
-
-                                    if (characteristic) {
-                                        Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
-                                            characteristics: [{ aid: service._id, iid: characteristic._id, value }],
-                                        }, {
-                                            headers: { "'Authorization'": State.homebridge?.settings.pin || "031-45-154" },
-                                        }).then(() => {
-                                            resolve(service);
-                                        }).catch((error) => {
-                                            reject(error);
-                                        });
-                                    } else {
-                                        reject(new Error("type not found"));
-                                    }
-                
-                                    break;
+                                }).catch((error) => {
+                                    reject(error);
+                                });
+                            } else {
+                                reject(new Error("type not found"));
                             }
                         });
 
