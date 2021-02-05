@@ -34,7 +34,7 @@ export default class AccessoriesController {
 
     list(_request: SocketRequest, response: SocketResponse): void {
         this.services().then((accessories) => {
-            response.send(accessories)
+            response.send(accessories);
         });
     }
 
@@ -71,7 +71,7 @@ export default class AccessoriesController {
             results.sort((a: string, b: string) => {
                 if (a < b) return -1;
                 if (a > b) return 1;
-    
+
                 return 0;
             });
         }).finally(() => response.send(results));
@@ -80,12 +80,10 @@ export default class AccessoriesController {
     service(id: string): Promise<any> {
         return new Promise((resolve) => {
             State.homebridge?.client.accessory(id).then((response: any) => {
-                let service = response;
-
-                if (service) {
-                    service.refresh((results: any) => {
-                        service.values = results.values;
-                    }).finally(() => resolve(<{ [key: string]: any }>this.cleanse(service)));
+                if (response) {
+                    response.refresh((results: any) => {
+                        response.values = results.values;
+                    }).finally(() => resolve(<{ [key: string]: any }> this.cleanse(response)));
                 } else {
                     resolve(undefined);
                 }
@@ -98,21 +96,21 @@ export default class AccessoriesController {
             const results: { [key: string]: any }[] = [];
 
             for (let i = 0; i < value.length; i += 1) {
-                results.push(<{ [key: string]: any }>this.cleanse(value[i]));
-            }
-
-            return results;
-        } else {
-            const results =  { ...value };
-
-            delete results._id;
-
-            for (let i = 0; i < results.characteristics.length; i += 1) {
-                delete results.characteristics[i]._id;
+                results.push(<{ [key: string]: any }> this.cleanse(value[i]));
             }
 
             return results;
         }
+
+        const results = { ...value };
+
+        delete results.id;
+
+        for (let i = 0; i < results.characteristics.length; i += 1) {
+            delete results.characteristics[i].id;
+        }
+
+        return results;
     }
 
     services(): Promise<{ [key: string]: any }[]> {
@@ -124,11 +122,11 @@ export default class AccessoriesController {
                 const queue: Promise<void>[] = [];
 
                 for (let i = 0; i < services.length; i += 1) {
-                    queue.push(new Promise((resolve) => {
+                    queue.push(new Promise((complete) => {
                         services[i].refresh((results: { [key: string]: any }) => {
                             services[i].values = results.values;
                         }).finally(() => {
-                            resolve();
+                            complete();
                         });
                     }));
                 }
@@ -137,14 +135,14 @@ export default class AccessoriesController {
                     services = [...services];
 
                     for (let i = 0; i < services.length; i += 1) {
-                        delete services[i]._id;
+                        delete services[i].id;
 
                         for (let j = 0; j < services[i].characteristics.length; j += 1) {
-                            delete services[i].characteristics[j]._id;
+                            delete services[i].characteristics[j].id;
                         }
                     }
 
-                    resolve(<{ [key: string]: any }[]>this.cleanse(services));
+                    resolve(<{ [key: string]: any }[]> this.cleanse(services));
                 });
             });
         });

@@ -63,11 +63,11 @@ export default class Client {
 
             for (let j = 0; j < accessories[i].services.length; j += 1) {
                 if (accessories[i].services[j].type !== "3E" && accessories[i].services[j].type !== "49FB9D4D-0FEA-4BF1-8FA6-E7B18AB86DCE") {
-                    let service: { [key: string]: any } = services.find((item) => item._id === accessories[i].aid) || {};
+                    let service: { [key: string]: any } = services.find((item) => item.id === accessories[i].aid) || {};
 
-                    if (!service._id) {
+                    if (!service.id) {
                         service = {
-                            _id: accessories[i].aid,
+                            id: accessories[i].aid,
                             accessory_identifier: "",
                             bridge_identifier: Client.identifier(State.id),
                             bridge: State.id,
@@ -97,11 +97,11 @@ export default class Client {
                         }
 
                         service.refresh = (): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
-                            const _ids = service.characteristics.map((characteristic: { [key: string]: any }) => characteristic._id);
+                            const identifiers = service.characteristics.map((characteristic: { [key: string]: any }) => characteristic.id);
 
-                            Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${_ids.map((_id: string) => `${service._id}.${_id}`).join(",")}`).then((response) => {
+                            Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${identifiers.map((id: string) => `${service.id}.${id}`).join(",")}`).then((response) => {
                                 response.data.characteristics.forEach((characteristic: { [key: string]: any }) => {
-                                    const idx = service.characteristics.findIndex((item: { [key: string]: any }) => item._id === characteristic.iid);
+                                    const idx = service.characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
 
                                     service.characteristics[idx].value = characteristic.value;
                                 });
@@ -119,7 +119,7 @@ export default class Client {
 
                             if (characteristic) {
                                 Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
-                                    characteristics: [{ aid: service._id, iid: characteristic._id, value }],
+                                    characteristics: [{ aid: service.id, iid: characteristic.id, value }],
                                 }, {
                                     headers: { "'Authorization'": State.homebridge?.settings.pin || "031-45-154" },
                                 }).then(() => {
@@ -140,7 +140,7 @@ export default class Client {
                     for (let k = 0; k < accessories[i].services[j].characteristics.length; k += 1) {
                         if (accessories[i].services[j].characteristics[k].type !== "23") {
                             const characteristic: { [key: string]: any } = {
-                                _id: accessories[i].services[j].characteristics[k].iid,
+                                id: accessories[i].services[j].characteristics[k].iid,
                                 type: Characteristics[accessories[i].services[j].characteristics[k].type] || accessories[i].services[j].characteristics[k].type,
                                 service_type: Services[accessories[i].services[j].type] || accessories[i].services[j].type,
                                 value: accessories[i].services[j].characteristics[k].value,

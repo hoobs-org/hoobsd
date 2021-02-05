@@ -99,23 +99,23 @@ export default class AccessoriesController {
         if (request.params.bridge && request.params.bridge !== "") {
             response.send(await Socket.fetch(request.params.bridge, "accessories:list"));
         } else {
-            const layout = this.layout;
+            const working = this.layout;
             const accessories = (await this.accessories()).filter((item) => item.type !== "bridge");
 
-            for (let i = 0; i < layout.rooms.length; i += 1) {
-                layout.rooms[i] = this.properties(layout.rooms[i], accessories, true, false);
+            for (let i = 0; i < working.rooms.length; i += 1) {
+                working.rooms[i] = this.properties(working.rooms[i], accessories, true, false);
             }
 
             const unassigned = accessories.filter((item) => !item.room || item.room === "" || item.room === "default");
 
             if (unassigned.length > 0) {
-                layout.rooms.push(this.properties({
+                working.rooms.push(this.properties({
                     id: "default",
-                    sequence: layout.rooms.length + 1,
+                    sequence: working.rooms.length + 1,
                 }, accessories, true, false));
             }
 
-            response.send(layout.rooms);
+            response.send(working.rooms);
         }
     }
 
@@ -124,90 +124,90 @@ export default class AccessoriesController {
     }
 
     async set(request: Request, response: Response): Promise<void> {
-        const layout = this.layout;
+        const working = this.layout;
 
-        let room = undefined;
+        let room;
         let { value } = request.body;
 
         if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
 
-        switch(request.params.service) {
+        switch (request.params.service) {
             case "room":
-                if (!layout.accessories[request.params.id]) layout.accessories[request.params.id] = [];
+                if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
                 if (typeof value === "string" && value && sanitize(value) !== "default") {
-                    room = layout.rooms.find((item: { [key: string]: any }) => item.id === sanitize(value));
+                    room = working.rooms.find((item: { [key: string]: any }) => item.id === sanitize(value));
 
                     if (!room) {
-                        layout.rooms.unshift({
+                        working.rooms.unshift({
                             id: sanitize(value),
                             name: value,
                             sequence: 1,
                         });
 
-                        for (let i = 0; i < layout.rooms.length; i += 1) {
-                            layout.rooms[i].sequence = i + 1;
+                        for (let i = 0; i < working.rooms.length; i += 1) {
+                            working.rooms[i].sequence = i + 1;
                         }
                     }
 
-                    layout.accessories[request.params.id].room = room.id;
+                    working.accessories[request.params.id].room = room.id;
                 } else {
-                    delete layout.accessories[request.params.id].room;
+                    delete working.accessories[request.params.id].room;
                 }
 
-                this.layout = layout;
+                this.layout = working;
                 this.get(request, response);
                 break;
 
             case "sequence":
-                if (!layout.accessories[request.params.id]) layout.accessories[request.params.id] = [];
+                if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
                 if (!Number.isNaN(parseInt(value, 10))) {
-                    layout.accessories[request.params.id].sequence = parseInt(value, 10);
+                    working.accessories[request.params.id].sequence = parseInt(value, 10);
                 } else {
-                    delete layout.accessories[request.params.id].sequence;
+                    delete working.accessories[request.params.id].sequence;
                 }
 
-                this.layout = layout;
+                this.layout = working;
                 this.get(request, response);
                 break;
 
             case "hidden":
-                if (!layout.accessories[request.params.id]) layout.accessories[request.params.id] = [];
+                if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
                 if ((typeof value === "boolean" || typeof value === "number") && value) {
-                    layout.accessories[request.params.id].hidden = true;
+                    working.accessories[request.params.id].hidden = true;
                 } else {
-                    delete layout.accessories[request.params.id].hidden;
+                    delete working.accessories[request.params.id].hidden;
                 }
 
-                this.layout = layout;
+                this.layout = working;
                 this.get(request, response);
                 break;
 
             case "name":
-                if (!layout.accessories[request.params.id]) layout.accessories[request.params.id] = [];
+                if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
                 if (typeof value === "string" && value && value !== "") {
-                    layout.accessories[request.params.id].name = value;
+                    working.accessories[request.params.id].name = value;
                 } else {
-                    delete layout.accessories[request.params.id].name;
+                    delete working.accessories[request.params.id].name;
                 }
 
-                this.layout = layout;
+                this.layout = working;
                 this.get(request, response);
                 break;
 
             case "icon":
-                if (!layout.accessories[request.params.id]) layout.accessories[request.params.id] = [];
+                if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
                 if (typeof value === "string" && value && value !== "") {
-                    layout.accessories[request.params.id].icon = value;
+                    working.accessories[request.params.id].icon = value;
                 } else {
-                    delete layout.accessories[request.params.id].icon;
+                    delete working.accessories[request.params.id].icon;
                 }
 
-                this.layout = layout;
+                this.layout = working;
                 this.get(request, response);
                 break;
 
@@ -222,33 +222,33 @@ export default class AccessoriesController {
     }
 
     async rooms(_request: Request, response: Response): Promise<Response> {
-        const layout = this.layout;
+        const working = this.layout;
         const accessories = (await this.accessories()).filter((item) => item.type !== "bridge");
 
-        for (let i = 0; i < layout.rooms.length; i += 1) {
-            layout.rooms[i] = this.properties(layout.rooms[i], accessories, false, true);
+        for (let i = 0; i < working.rooms.length; i += 1) {
+            working.rooms[i] = this.properties(working.rooms[i], accessories, false, true);
         }
 
         const unassigned = accessories.filter((item) => !item.room || item.room === "" || item.room === "default");
 
         if (unassigned.length > 0) {
-            layout.rooms.push(this.properties({
+            working.rooms.push(this.properties({
                 id: "default",
-                sequence: layout.rooms.length + 1,
+                sequence: working.rooms.length + 1,
             }, accessories, false, true));
         }
 
-        return response.send(layout.rooms);
+        return response.send(working.rooms);
     }
 
     async room(request: Request, response: Response): Promise<Response> {
         const id = sanitize(request.params.id);
-        const layout = this.layout;
+        const working = this.layout;
 
-        let room: { [key: string]: any } | undefined = { id, sequence: layout.rooms.length };
+        let room: { [key: string]: any } | undefined = { id, sequence: working.rooms.length };
 
-        if (id !== "default") room = layout.rooms.find((item: { [key: string]: any }) => item.id === id);
-        if (!room) return response.send({ error: "room not found"});
+        if (id !== "default") room = working.rooms.find((item: { [key: string]: any }) => item.id === id);
+        if (!room) return response.send({ error: "room not found" });
 
         return response.send(this.properties(room, (await this.accessories()).filter((item: { [key: string]: any }) => item.type !== "bridge"), true, true));
     }
@@ -315,90 +315,90 @@ export default class AccessoriesController {
 
     async remove(request: Request, response: Response): Promise<Response> {
         const id = sanitize(request.params.id);
-        const layout = this.layout;
+        const working = this.layout;
 
-        const index = layout.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
+        const index = working.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
 
         if (index === -1) return response.send({ error: "room not found" });
 
-        for (let i = 0; i < layout.rooms[index].accessories.length; i += 1) {
-            if (layout.accessories[layout.rooms[index].accessories[i].accessory_identifier]) delete layout.accessories[layout.rooms[index].accessories[i].accessory_identifier].room;
+        for (let i = 0; i < working.rooms[index].accessories.length; i += 1) {
+            if (working.accessories[working.rooms[index].accessories[i].accessory_identifier]) delete working.accessories[working.rooms[index].accessories[i].accessory_identifier].room;
         }
 
-        for (let i = 0; i < layout.rooms.length; i += 1) {
-            layout.rooms[i].sequence = i + 1;
+        for (let i = 0; i < working.rooms.length; i += 1) {
+            working.rooms[i].sequence = i + 1;
         }
 
-        layout.rooms.splice(index!, 1);
-        this.layout = layout;
+        working.rooms.splice(index!, 1);
+        this.layout = working;
 
-        return await this.rooms(request, response);
+        return this.rooms(request, response);
     }
 
     add(request: Request, response: Response): Response {
         const id = sanitize(request.body.name);
-        const layout = this.layout;
+        const working = this.layout;
         const sequence = parseInt(request.body.sequence, 10) || 1;
 
         if (id === "" || id === "default") return response.send({ error: "invalid room name" });
-        if (layout.rooms.findIndex((item: { [key: string]: any }) => item.id === id) >= 0) return response.send({ error: "room already exists" });
+        if (working.rooms.findIndex((item: { [key: string]: any }) => item.id === id) >= 0) return response.send({ error: "room already exists" });
 
-        for (let i = 0; i < layout.rooms.length; i += 1) {
-            if (layout.rooms[i].sequence >= sequence) layout.rooms[i].sequence += 1;
+        for (let i = 0; i < working.rooms.length; i += 1) {
+            if (working.rooms[i].sequence >= sequence) working.rooms[i].sequence += 1;
         }
 
-        layout.rooms.push({ id, name: request.body.name, sequence });
+        working.rooms.push({ id, name: request.body.name, sequence });
 
-        layout.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+        working.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
             if (a.name < b.name) return -1;
             if (a.name > b.name) return 1;
 
             return 0;
         });
 
-        layout.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+        working.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
             if (a.sequence < b.sequence) return -1;
             if (a.sequence > b.sequence) return 1;
 
             return 0;
         });
 
-        this.layout = layout;
+        this.layout = working;
 
-        return response.send(layout.rooms.find((item: { [key: string]: any }) => item.id === id));
+        return response.send(working.rooms.find((item: { [key: string]: any }) => item.id === id));
     }
 
     async update(request: Request, response: Response): Promise<Response> {
         const id = sanitize(request.params.id);
-        const layout = this.layout;
-        const index = layout.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
+        const working = this.layout;
+        const index = working.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
 
         if (index === -1) return response.send({ error: "room not found" });
 
         let room: { [key: string]: any } = {};
-        let value: any = undefined;
+        let value: any;
 
         switch (request.params.service) {
             case "name":
                 value = request.body.value;
 
-                if (typeof value === "string" && value !== "") layout.rooms[index].name = value;
+                if (typeof value === "string" && value !== "") working.rooms[index].name = value;
 
-                layout.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+                working.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
                     if (a.name < b.name) return -1;
                     if (a.name > b.name) return 1;
-        
+
                     return 0;
                 });
-        
-                layout.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+
+                working.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
                     if (a.sequence < b.sequence) return -1;
                     if (a.sequence > b.sequence) return 1;
-        
+
                     return 0;
                 });
-        
-                this.layout = layout;
+
+                this.layout = working;
 
                 break;
 
@@ -406,33 +406,33 @@ export default class AccessoriesController {
                 value = parseInt(request.body.value, 10);
 
                 if (!Number.isNaN(value)) {
-                    for (let i = 0; i < layout.rooms.length; i += 1) {
-                        if (layout.rooms[i].sequence >= value) layout.rooms[i].sequence += 1;
+                    for (let i = 0; i < working.rooms.length; i += 1) {
+                        if (working.rooms[i].sequence >= value) working.rooms[i].sequence += 1;
                     }
 
-                    layout.rooms[index].sequence = value;
+                    working.rooms[index].sequence = value;
                 }
 
-                layout.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+                working.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
                     if (a.name < b.name) return -1;
                     if (a.name > b.name) return 1;
-        
+
                     return 0;
                 });
-        
-                layout.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
+
+                working.rooms.sort((a: { [key: string]: any }, b: { [key: string]: any }) => {
                     if (a.sequence < b.sequence) return -1;
                     if (a.sequence > b.sequence) return 1;
-        
+
                     return 0;
                 });
-        
-                this.layout = layout;
+
+                this.layout = working;
 
                 break;
 
             case "off":
-                room = this.properties(layout.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
+                room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
 
                 for (let i = 0; i < room.accessories.length; i += 1) {
                     if (this.controllable(room, room.accessories[i], "off")) {
@@ -443,7 +443,7 @@ export default class AccessoriesController {
                 break;
 
             default:
-                room = this.properties(layout.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
+                room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
                 value = request.body.value;
 
                 if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
@@ -457,7 +457,7 @@ export default class AccessoriesController {
                 break;
         }
 
-        return response.send(layout.rooms.find((item: { [key: string]: any }) => item.id === id));
+        return response.send(working.rooms.find((item: { [key: string]: any }) => item.id === id));
     }
 
     private controllable(room: { [key: string]: any }, accessory: { [key: string]: any }, service: string): boolean {
@@ -488,7 +488,7 @@ export default class AccessoriesController {
     }
 
     private async accessories(): Promise<any[]> {
-        const layout = this.layout;
+        const working = this.layout;
 
         let results: any[] = [];
 
@@ -503,8 +503,8 @@ export default class AccessoriesController {
         }
 
         for (let i = 0; i < results.length; i += 1) {
-            if (layout.accessories[results[i].accessory_identifier]) {
-                _.extend(results[i], layout.accessories[results[i].accessory_identifier]);
+            if (working.accessories[results[i].accessory_identifier]) {
+                _.extend(results[i], working.accessories[results[i].accessory_identifier]);
             }
         }
 
