@@ -192,7 +192,7 @@ export const Characteristics: { [key: string]: string } = {
     "32": "target_door_state",
     "BF": "target_fan_state",
     "B2": "target_heater_cooler_state",
-    "33": "target_geating_cooling_state",
+    "33": "target_heating_cooling_state",
     "7B": "target_horizontal_tilt_angle",
     "B4": "target_humidifier_dehumidifier_state",
     "7C": "target_position",

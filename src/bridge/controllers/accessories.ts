@@ -28,7 +28,7 @@ export default class AccessoriesController {
 
         State.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
         State.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
-        State.socket?.route("accessory:service", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
+        State.socket?.route("accessory:set", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
         State.socket?.route("accessory:characteristics", (request: SocketRequest, response: SocketResponse) => this.characteristics(request, response));
     }
 
@@ -50,13 +50,9 @@ export default class AccessoriesController {
         let accessory = {};
 
         this.service(request.params?.id).then((service) => {
-            let { value } = request.body;
+            Console.debug(`Update - ${request.params?.service}: ${request.body.value} (${typeof request.body.value})`);
 
-            if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
-
-            Console.debug(`Update - ${request.params?.service}: ${value} (${typeof value})`);
-
-            service.set(request.params?.service, value).then((results: any) => {
+            service.set(request.params?.service, request.body.value).then((results: any) => {
                 accessory = results;
             }).finally(() => response.send(accessory));
         }).catch(() => response.send(accessory));
@@ -102,15 +98,7 @@ export default class AccessoriesController {
             return results;
         }
 
-        const results = { ...value };
-
-        delete results.id;
-
-        for (let i = 0; i < results.characteristics.length; i += 1) {
-            delete results.characteristics[i].id;
-        }
-
-        return results;
+        return { ...value };
     }
 
     services(): Promise<{ [key: string]: any }[]> {
@@ -133,14 +121,6 @@ export default class AccessoriesController {
 
                 Promise.all(queue).then(() => {
                     services = [...services];
-
-                    for (let i = 0; i < services.length; i += 1) {
-                        delete services[i].id;
-
-                        for (let j = 0; j < services[i].characteristics.length; j += 1) {
-                            delete services[i].characteristics[j].id;
-                        }
-                    }
 
                     resolve(<{ [key: string]: any }[]> this.cleanse(services));
                 });

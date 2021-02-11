@@ -117,6 +117,8 @@ export default class Client {
 
                             const characteristic: { [key: string]: any } | undefined = service.characteristics.find((c: { [key: string]: any }) => c.type === type);
 
+                            if (typeof value === "boolean") value = value ? 1 : 0;
+
                             if (characteristic) {
                                 Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
                                     characteristics: [{ aid: service.id, iid: characteristic.id, value }],

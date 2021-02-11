@@ -127,21 +127,18 @@ export default class AccessoriesController {
         const working = this.layout;
 
         let room;
-        let { value } = request.body;
-
-        if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
 
         switch (request.params.service) {
             case "room":
                 if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
-                if (typeof value === "string" && value && sanitize(value) !== "default") {
-                    room = working.rooms.find((item: { [key: string]: any }) => item.id === sanitize(value));
+                if (typeof request.body.value === "string" && request.body.value && sanitize(request.body.value) !== "default") {
+                    room = working.rooms.find((item: { [key: string]: any }) => item.id === sanitize(request.body.value));
 
                     if (!room) {
                         working.rooms.unshift({
-                            id: sanitize(value),
-                            name: value,
+                            id: sanitize(request.body.value),
+                            name: request.body.value,
                             sequence: 1,
                         });
 
@@ -162,8 +159,8 @@ export default class AccessoriesController {
             case "sequence":
                 if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
-                if (!Number.isNaN(parseInt(value, 10))) {
-                    working.accessories[request.params.id].sequence = parseInt(value, 10);
+                if (!Number.isNaN(parseInt(request.body.value, 10))) {
+                    working.accessories[request.params.id].sequence = parseInt(request.body.value, 10);
                 } else {
                     delete working.accessories[request.params.id].sequence;
                 }
@@ -175,7 +172,7 @@ export default class AccessoriesController {
             case "hidden":
                 if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
-                if ((typeof value === "boolean" || typeof value === "number") && value) {
+                if ((typeof request.body.value === "boolean" || typeof request.body.value === "number") && request.body.value) {
                     working.accessories[request.params.id].hidden = true;
                 } else {
                     delete working.accessories[request.params.id].hidden;
@@ -188,8 +185,8 @@ export default class AccessoriesController {
             case "name":
                 if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
-                if (typeof value === "string" && value && value !== "") {
-                    working.accessories[request.params.id].name = value;
+                if (typeof request.body.value === "string" && request.body.value && request.body.value !== "") {
+                    working.accessories[request.params.id].name = request.body.value;
                 } else {
                     delete working.accessories[request.params.id].name;
                 }
@@ -201,8 +198,8 @@ export default class AccessoriesController {
             case "icon":
                 if (!working.accessories[request.params.id]) working.accessories[request.params.id] = [];
 
-                if (typeof value === "string" && value && value !== "") {
-                    working.accessories[request.params.id].icon = value;
+                if (typeof request.body.value === "string" && request.body.value && request.body.value !== "") {
+                    working.accessories[request.params.id].icon = request.body.value;
                 } else {
                     delete working.accessories[request.params.id].icon;
                 }
@@ -445,8 +442,6 @@ export default class AccessoriesController {
             default:
                 room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
                 value = request.body.value;
-
-                if (typeof request.body.value === "boolean") value = request.body.value ? 1 : 0;
 
                 for (let i = 0; i < room.accessories.length; i += 1) {
                     if (this.controllable(room, room.accessories[i], request.params.service)) {
