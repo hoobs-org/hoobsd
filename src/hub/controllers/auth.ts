@@ -17,8 +17,10 @@
  **************************************************************************************************/
 
 import { Request, Response } from "express-serve-static-core";
+import Axios from "axios";
 import State from "../../state";
 import Config from "../../services/config";
+import { Console } from "../../services/logger";
 import Users, { UserRecord } from "../../services/users";
 
 export default class AuthController {
@@ -28,6 +30,7 @@ export default class AuthController {
         State.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
         State.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
         State.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
+        State.app?.post("/api/auth/vendor/:vendor", (request, response) => this.vendor(request, response));
     }
 
     state(_request: Request, response: Response): Response {
@@ -117,5 +120,46 @@ export default class AuthController {
         return response.send({
             success: true,
         });
+    }
+
+    async vendor(request: Request, response: Response): Promise<void> {
+        let results;
+
+        const { username, password, verification } = request.body;
+
+        console.log(request.body);
+
+        switch (request.params.vendor) {
+            case "ring":
+                try {
+                    results = await Axios.post("https://oauth.ring.com/oauth/token", {
+                        client_id: "ring_official_android",
+                        scope: "client",
+                        grant_type: "password",
+                        password,
+                        username,
+                    },
+                    { headers: { "content-type": "application/json", "2fa-support": "true", "2fa-code": verification || "" } });
+
+                    response.send(results.data);
+                } catch (error) {
+                    if (error.response && error.response.status === 412) {
+                        response.send({ status: 412 });
+                    } else if (error.response && error.response.data) {
+                        response.send(error.response.data);
+                    } else {
+                        Console.error("ring login failed");
+                        Console.error(error.message);
+
+                        response.send({ error });
+                    }
+                }
+
+                break;
+
+            default:
+                response.send({ error: "invalid vendor" });
+                break;
+        }
     }
 }

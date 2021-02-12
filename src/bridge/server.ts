@@ -21,7 +21,7 @@ import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
 import storage, { LocalStorage } from "node-persist";
-import { existsSync } from "fs-extra";
+import { existsSync, writeFileSync, unlinkSync } from "fs-extra";
 
 import {
     Accessory,
@@ -66,14 +66,15 @@ import Config from "../services/config";
 import Client from "./services/client";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
+import { formatJson } from "../services/formatters";
 
 const INSTANCE_KILL_DELAY = 3000;
 const PERSISTED_CACHE: LocalStorage = storage.create();
 
+let STORAGE_PATH_SET = false;
+
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
-
-User.setStoragePath(Paths.data());
 
 export default class Server extends EventEmitter {
     public running: boolean;
@@ -111,6 +112,9 @@ export default class Server extends EventEmitter {
     constructor(port?: number) {
         super();
 
+        if (!STORAGE_PATH_SET) User.setStoragePath(Paths.data(State.id));
+
+        STORAGE_PATH_SET = true;
         Logger.setTimestampEnabled(false);
 
         if (State.debug) Logger.setDebugEnabled(true);
@@ -181,6 +185,7 @@ export default class Server extends EventEmitter {
         const promises: Promise<void>[] = [];
 
         Plugins.linkLibs();
+        writeFileSync(join(Paths.data(State.id), "config.json"), formatJson(this.config));
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
@@ -262,6 +267,7 @@ export default class Server extends EventEmitter {
             setTimeout(() => {
                 this.emit(Events.SHUTDOWN);
 
+                unlinkSync(join(Paths.data(State.id), "config.json"));
                 resolve();
             }, INSTANCE_KILL_DELAY);
         });
