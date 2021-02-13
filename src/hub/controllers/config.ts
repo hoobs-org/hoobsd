@@ -43,7 +43,7 @@ export default class ConfigController {
             "Configuration Changed",
             "The configuration for the API has changed.",
             NotificationType.WARN,
-            "settings",
+            "cog",
         );
 
         Config.saveConfig(request.body);
@@ -79,7 +79,7 @@ export default class ConfigController {
             "Configuration Changed",
             `The configuration for "${bridge?.display || "Undefined"}" has changed.`,
             NotificationType.WARN,
-            "settings",
+            "cog",
         );
 
         return response.send(await Socket.fetch(request.params.bridge, "config:save", request.params, request.body));

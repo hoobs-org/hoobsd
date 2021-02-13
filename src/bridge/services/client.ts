@@ -21,7 +21,7 @@ import _ from "lodash";
 import Request from "axios";
 import { createHash } from "crypto";
 import State from "../../state";
-import { Services, Characteristics } from "./types";
+import { Services, Characteristics, Precedence } from "./types";
 
 export default class Client {
     accessories(): Promise<{ [key: string]: any }[]> {
@@ -138,6 +138,8 @@ export default class Client {
 
                         services.push(service);
                     }
+
+                    if (Precedence[Services[accessories[i].services[j].type]] < Precedence[service.type]) service.type = Services[accessories[i].services[j].type];
 
                     for (let k = 0; k < accessories[i].services[j].characteristics.length; k += 1) {
                         if (accessories[i].services[j].characteristics[k].type !== "23") {

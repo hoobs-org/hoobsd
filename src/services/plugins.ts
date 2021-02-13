@@ -170,7 +170,7 @@ export default class Plugins {
                         "Plugin Installed",
                         `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
                         NotificationType.SUCCESS,
-                        "extension",
+                        "puzzle",
                     );
 
                     return resolve();
@@ -230,7 +230,7 @@ export default class Plugins {
                         "Plugin Uninstalled",
                         `${PluginManager.extractPluginName(name)} has been removed.`,
                         NotificationType.WARN,
-                        "extension",
+                        "puzzle",
                     );
 
                     return resolve();
@@ -273,7 +273,7 @@ export default class Plugins {
                     name ? "Plugin Upgraded" : "Plugins Upgraded",
                     name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
                     NotificationType.SUCCESS,
-                    "extension",
+                    "puzzle",
                 );
 
                 return resolve();

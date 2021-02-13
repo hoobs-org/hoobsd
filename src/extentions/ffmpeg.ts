@@ -72,7 +72,7 @@ export default class FFMPEG {
                 "FFMPEG Installed",
                 "FFMPEG has been installed and is ready to use.",
                 NotificationType.SUCCESS,
-                "build",
+                "wrench",
             );
 
             return {
@@ -402,7 +402,7 @@ export default class FFMPEG {
                 "FFMPEG Removed",
                 "FFMPEG has been removed.",
                 NotificationType.WARN,
-                "build",
+                "wrench",
             );
 
             return {
