@@ -93,6 +93,14 @@ export interface NavigationTheme {
     border: string;
 }
 
+export interface AccessoryTheme {
+    text: string;
+    background: string;
+    highlight: string;
+    input: string;
+    border: string;
+}
+
 export interface ElevationTheme {
     default: string;
     button: string;
@@ -110,6 +118,7 @@ export interface Theme {
     widget: WidgetTheme;
     menu: MenuTheme;
     navigation: NavigationTheme;
+    accessory: AccessoryTheme;
     backdrop: string;
     elevation: ElevationTheme;
 }
@@ -194,6 +203,13 @@ export const DarkTheme: Theme = {
         background: "#141414",
         highlight: "#feb400",
         border: "#4b4b4b",
+    },
+    accessory: {
+        text: "#ffffff3d",
+        background: "#302f2f",
+        highlight: "#fff",
+        input: "#414141",
+        border: "#444",
     },
     backdrop: "url('/defaults/backdrops/default.jpg')",
     elevation: {
@@ -283,6 +299,13 @@ export const LightTheme: Theme = {
         highlight: "#feb400",
         border: "#5a5a5a",
     },
+    accessory: {
+        text: "#0000003d",
+        background: "#e4e4e4",
+        highlight: "#fff",
+        input: "#f0f0f0",
+        border: "#dfdfdf",
+    },
     backdrop: "url('/defaults/backdrops/default.jpg')",
     elevation: {
         default: "0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12)",
@@ -349,6 +372,12 @@ export default class Themes {
         style += `    --navigation-background: ${base.navigation.background};\n`;
         style += `    --navigation-highlight: ${base.navigation.highlight};\n`;
         style += `    --navigation-border: ${base.navigation.border};\n`;
+
+        style += `    --accessory-text: ${base.accessory.text};\n`;
+        style += `    --accessory-background: ${base.accessory.background};\n`;
+        style += `    --accessory-highlight: ${base.accessory.highlight};\n`;
+        style += `    --accessory-input: ${base.accessory.input};\n`;
+        style += `    --accessory-border: ${base.accessory.border};\n`;
 
         style += `    --backdrop: ${base.backdrop};\n`;
 
