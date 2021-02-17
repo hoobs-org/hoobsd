@@ -380,6 +380,8 @@ export default class AccessoriesController {
 
         if (index === -1) return response.send({ error: "room not found" });
 
+        working.rooms[index].accessories = working.rooms[index].accessories || [];
+
         for (let i = 0; i < working.rooms[index].accessories.length; i += 1) {
             if (working.accessories[working.rooms[index].accessories[i].accessory_identifier]) delete working.accessories[working.rooms[index].accessories[i].accessory_identifier].room;
         }
@@ -518,6 +520,7 @@ export default class AccessoriesController {
 
             case "off":
                 room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
+                room.accessories = room.accessories || [];
 
                 for (let i = 0; i < room.accessories.length; i += 1) {
                     if (this.controllable(room, room.accessories[i], "off")) {
@@ -536,6 +539,7 @@ export default class AccessoriesController {
 
             default:
                 room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
+                room.accessories = room.accessories || [];
                 value = request.body.value;
 
                 for (let i = 0; i < room.accessories.length; i += 1) {

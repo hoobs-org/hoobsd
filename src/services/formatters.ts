@@ -24,6 +24,7 @@ import Chalk from "chalk";
 const reserved = [
     "new",
     "add",
+    "edit",
     "hidden",
     "bridge",
     "bridges",
