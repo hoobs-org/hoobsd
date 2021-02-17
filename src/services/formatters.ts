@@ -21,8 +21,19 @@ import { existsSync, readFileSync } from "fs-extra";
 import { createCipheriv, createDecipheriv } from "crypto";
 import Chalk from "chalk";
 
+const reserved = [
+    "new",
+    "add",
+    "hidden",
+    "bridge",
+    "bridges",
+    "library",
+    "advanced",
+];
+
 export function sanitize(value: string, prevent?: string): string {
     if (!value || value === "") return "default";
+    if (reserved.indexOf(value.toLowerCase()) >= 0) return "default";
     if (prevent && prevent !== "" && prevent.toLowerCase() === value.toLowerCase()) return "default";
 
     return Sanitize(value).toLowerCase().replace(/ /gi, "");

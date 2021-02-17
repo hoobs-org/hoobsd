@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 import _ from "lodash";
+
 import HTTP from "http";
 import Express from "express";
 import IO from "socket.io";
@@ -360,7 +361,18 @@ export default class API extends EventEmitter {
 
         this.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
         this.socket.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
-        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data));
+
+        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => {
+            const working = AccessoriesController.layout;
+            const { accessory } = data.data;
+
+            if (accessory && working.accessories[accessory.accessory_identifier]) {
+                _.extend(accessory, working.accessories[accessory.accessory_identifier]);
+            }
+
+            data.data.accessory = accessory;
+            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
+        });
 
         this.socket.start();
 
