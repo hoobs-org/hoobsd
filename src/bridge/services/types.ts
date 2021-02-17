@@ -122,6 +122,16 @@ export const Precedence: { [key: string]: number } = {
     "audio_stream": 39,
     "data_stream": 40,
     "data_tunnel": 41,
+    "leak_detected": 101,
+    "current_temperature": 102,
+    "current_relative_humidity": 103,
+    "carbon_dioxide_detected": 104,
+    "carbon_monoxide_detected": 105,
+    "contact_sensor_state": 106,
+    "current_door_state": 107,
+    "motion_detected": 108,
+    "obstruction_detected": 109,
+    "occupancy_detected": 110,
 };
 
 export const Characteristics: { [key: string]: string } = {

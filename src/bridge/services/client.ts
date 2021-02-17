@@ -139,7 +139,7 @@ export default class Client {
                         services.push(service);
                     }
 
-                    if (Precedence[Services[accessories[i].services[j].type]] < Precedence[service.type]) service.type = Services[accessories[i].services[j].type];
+                    if (Precedence[Services[accessories[i].services[j].type]] && Precedence[Services[accessories[i].services[j].type]] < Precedence[service.type]) service.type = Services[accessories[i].services[j].type];
 
                     for (let k = 0; k < accessories[i].services[j].characteristics.length; k += 1) {
                         if (accessories[i].services[j].characteristics[k].type !== "23") {
@@ -156,6 +156,8 @@ export default class Client {
                                 read: accessories[i].services[j].characteristics[k].perms.includes("pr"),
                                 write: accessories[i].services[j].characteristics[k].perms.includes("pw"),
                             };
+
+                            if (characteristic.service_type === "sensor" && (!service.main_sensor || Precedence[characteristic.type] < Precedence[service.main_sensor])) service.main_sensor = characteristic.type;
 
                             service.characteristics.push(characteristic);
                         }
