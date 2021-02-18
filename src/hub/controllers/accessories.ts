@@ -201,6 +201,13 @@ export default class AccessoriesController {
 
                     working.accessories[request.params.id].room = room.id;
                 } else {
+                    Console.emit(Events.ROOM_CHANGE, "hub", {
+                        room,
+                        action: "update",
+                        field: "room",
+                        value: request.body.value,
+                    });
+
                     delete working.accessories[request.params.id].room;
                 }
 
@@ -375,15 +382,13 @@ export default class AccessoriesController {
     async remove(request: Request, response: Response): Promise<Response> {
         const id = sanitize(request.params.id);
         const working = AccessoriesController.layout;
-
         const index = working.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
+        const accessories = Object.keys(working.accessories);
 
         if (index === -1) return response.send({ error: "room not found" });
 
-        working.rooms[index].accessories = working.rooms[index].accessories || [];
-
-        for (let i = 0; i < working.rooms[index].accessories.length; i += 1) {
-            if (working.accessories[working.rooms[index].accessories[i].accessory_identifier]) delete working.accessories[working.rooms[index].accessories[i].accessory_identifier].room;
+        for (let i = 0; i < accessories.length; i += 1) {
+            if (working.accessories[accessories[i]].room === working.rooms[index].id) delete working.accessories[accessories[i]].room;
         }
 
         for (let i = 0; i < working.rooms.length; i += 1) {
