@@ -243,6 +243,14 @@ export default class AccessoriesController {
                 }
 
                 AccessoriesController.layout = working;
+
+                Console.emit(Events.ROOM_CHANGE, "hub", {
+                    room,
+                    action: "update",
+                    field: "hidden",
+                    value: request.params.id,
+                });
+
                 this.get(request, response, true, request.body.value);
                 break;
 
