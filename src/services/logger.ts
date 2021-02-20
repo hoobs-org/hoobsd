@@ -393,22 +393,6 @@ class Logger {
 
 const system: Logger = new Logger();
 
-console.debug = function debug(message: string, ...parameters: any[]) {
-    system.debug(message, ...parameters);
-};
-
-console.log = function log(message: string, ...parameters: any[]) {
-    system.info(message, ...parameters);
-};
-
-console.warn = function warn(message: string, ...parameters: any[]) {
-    if (State.debug) system.warn(message, ...parameters);
-};
-
-console.error = function error(message: string, ...parameters: any[]) {
-    system.error(message, ...parameters);
-};
-
 export function Print(...parameters: any[]) {
     if (State.verbose) CONSOLE_LOG(...parameters);
 }

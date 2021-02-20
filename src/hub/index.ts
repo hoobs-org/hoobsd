@@ -289,7 +289,7 @@ export default class API extends EventEmitter {
         return api;
     }
 
-    launch(id: string, port: number): void {
+    launch(id: string, port: number, display?: string): void {
         const flags: string[] = [
             "bridge",
             "--mode", State.mode,
@@ -303,7 +303,35 @@ export default class API extends EventEmitter {
         if (!State.orphans) flags.push("--orphans");
 
         this.processes[id] = Process.spawn(join(__dirname, "../../../bin/hoobsd"), flags).on("exit", () => {
-            this.launch(id, port);
+            this.launch(id, port, display);
+        });
+
+        this.processes[id].stdout?.on("data", (data) => {
+            const messages: string[] = data.toString().split("\n");
+
+            for (let i = 0; i < messages.length; i += 1) {
+                Console.log(LogLevel.DEBUG, {
+                    level: LogLevel.DEBUG,
+                    bridge: id,
+                    display: display || id,
+                    timestamp: new Date().getTime(),
+                    message: messages[i].trim(),
+                });
+            }
+        });
+
+        this.processes[id].stderr?.on("data", (data) => {
+            const messages: string[] = data.toString().split("\n");
+
+            for (let i = 0; i < messages.length; i += 1) {
+                Console.log(LogLevel.ERROR, {
+                    level: LogLevel.ERROR,
+                    bridge: id,
+                    display: display || id,
+                    timestamp: new Date().getTime(),
+                    message: messages[i].trim(),
+                });
+            }
         });
     }
 
@@ -346,7 +374,7 @@ export default class API extends EventEmitter {
 
             for (let i = 0; i < bridges.length; i += 1) {
                 if (!this.processes[bridges[i].id] || this.processes[bridges[i].id].killed) {
-                    this.launch(bridges[i].id, bridges[i].port);
+                    this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
                 }
             }
 
@@ -393,7 +421,7 @@ export default class API extends EventEmitter {
             const bridges = State.bridges.filter((item) => item.type === "bridge");
 
             for (let i = 0; i < bridges.length; i += 1) {
-                this.launch(bridges[i].id, bridges[i].port);
+                this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
             }
         }, BRIDGE_LAUNCH_DELAY);
     }

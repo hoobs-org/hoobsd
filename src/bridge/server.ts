@@ -267,7 +267,12 @@ export default class Server extends EventEmitter {
             setTimeout(() => {
                 this.emit(Events.SHUTDOWN);
 
-                unlinkSync(join(Paths.data(State.id), "config.json"));
+                try {
+                    if (existsSync(join(Paths.data(State.id), "config.json"))) unlinkSync(join(Paths.data(State.id), "config.json"));
+                } catch (error) {
+                    Console.warn(error.message);
+                }
+
                 resolve();
             }, INSTANCE_KILL_DELAY);
         });

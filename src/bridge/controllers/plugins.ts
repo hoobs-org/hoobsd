@@ -40,7 +40,6 @@ export default class PluginsController {
             const identifier = plugin.getPluginIdentifier();
             const directory = plugin.getPluginPath();
             const pjson = Plugins.loadPackage(directory) || {};
-            const schema = Plugins.loadSchema(directory) || {};
             const details: any[] = (await Plugins.getPluginType(identifier, directory, pjson)) || [];
 
             const name = PluginManager.extractPluginName(identifier);
@@ -51,9 +50,10 @@ export default class PluginsController {
             let rating = 0;
             let icon = "";
 
-            try {
-                const definition = ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
+            const definition = await this.pluginDefinition(identifier);
+            const schema = await this.pluginSchema(identifier);
 
+            if (definition) {
                 if ((definition.tags || {}).latest) {
                     latest = (definition.tags.latest || "").replace(/v/gi, "");
                 } else if (definition.versions) {
@@ -63,8 +63,6 @@ export default class PluginsController {
                 certified = definition.certified;
                 rating = definition.rating;
                 icon = definition.icon;
-            } catch (_error) {
-                Console.warn("plugin site unavailable");
             }
 
             results.push({
@@ -72,7 +70,7 @@ export default class PluginsController {
                 scope,
                 name,
                 icon,
-                alias: schema.plugin_alias || schema.pluginAlias || details[0].alias || name,
+                alias: schema.alias || schema.plugin_alias || schema.pluginAlias || details[0].alias || name,
                 version: (plugin.version || "").replace(/v/gi, ""),
                 latest,
                 certified,
@@ -85,6 +83,44 @@ export default class PluginsController {
         }
 
         response.send(results);
+    }
+
+    private async pluginDefinition(identifier: string): Promise<{ [key: string]: any } | undefined> {
+        const key = `plugin/definition:${identifier}`;
+        const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+        if (cached) return cached;
+
+        try {
+            const definition = ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
+
+            State.cache?.set(key, definition, 60);
+
+            return definition;
+        } catch (_error) {
+            Console.warn("plugin site unavailable");
+        }
+
+        return undefined;
+    }
+
+    private async pluginSchema(identifier: string): Promise<{ [key: string]: any }> {
+        const key = `plugin/schema:${identifier}`;
+        const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+        if (cached) return cached;
+
+        try {
+            const schema = ((await Request.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {};
+
+            State.cache?.set(key, schema, 60);
+
+            return schema;
+        } catch (_error) {
+            Console.warn("plugin site unavailable");
+        }
+
+        return {};
     }
 
     install(request: SocketRequest, response: SocketResponse): void {
@@ -103,6 +139,9 @@ export default class PluginsController {
             tag = (name || "").split("@").pop();
             name = (name || "").split("@").shift();
         }
+
+        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
 
         Plugins.install((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
             response.send({
@@ -130,6 +169,9 @@ export default class PluginsController {
             name = (name || "").split("@").shift();
         }
 
+        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+
         Plugins.upgrade((scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
             response.send({
                 success: true,
@@ -150,6 +192,9 @@ export default class PluginsController {
         }
 
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
+
+        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
 
         Plugins.uninstall((scope || "") !== "" ? `@${scope}/${name}` : (name || "")).then(async () => {
             response.send({
