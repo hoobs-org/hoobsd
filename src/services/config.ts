@@ -17,7 +17,7 @@
  **************************************************************************************************/
 
 import _ from "lodash";
-import { HomebridgeConfig } from "homebridge/lib/server";
+import { HomebridgeConfig } from "homebridge/lib/bridgeService";
 import { join } from "path";
 import { existsSync, writeFileSync } from "fs-extra";
 import State from "../state";

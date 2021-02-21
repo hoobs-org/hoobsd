@@ -33,6 +33,8 @@ import {
     CharacteristicEventTypes,
     once,
     PublishInfo,
+    MacAddress,
+    MDNSAdvertiser,
     Service,
     uuid,
 } from "hap-nodejs";
@@ -51,12 +53,12 @@ import {
     StaticPlatformPlugin,
 } from "homebridge/lib/api";
 
-import { HomebridgeConfig, BridgeConfiguration, ExternalPortsConfiguration } from "homebridge/lib/server";
+import { HomebridgeConfig, BridgeConfiguration } from "homebridge/lib/bridgeService";
 import { PlatformAccessory, SerializedPlatformAccessory } from "homebridge/lib/platformAccessory";
+import { ExternalPortService } from "homebridge/lib/externalPortService";
 import { Logger, Logging } from "homebridge/lib/logger";
 import { User } from "homebridge/lib/user";
 import * as mac from "homebridge/lib/util/mac";
-import { MacAddress } from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
 import Paths from "../services/paths";
@@ -99,7 +101,7 @@ export default class Server extends EventEmitter {
 
     private readonly allowInsecureAccess: boolean;
 
-    private readonly externalPorts?: ExternalPortsConfiguration;
+    private readonly externalPortService: ExternalPortService;
 
     private nextExternalPort?: number;
 
@@ -136,6 +138,7 @@ export default class Server extends EventEmitter {
                 name: this.instance?.display || "HOOBS",
                 pin: this.instance?.pin || "031-45-154",
                 username: this.instance?.username || "",
+                advertiser: MDNSAdvertiser.BONJOUR,
             },
             plugins: [],
             accessories: [],
@@ -163,7 +166,7 @@ export default class Server extends EventEmitter {
         this.port = port || 51826;
         this.keepOrphanedCachedAccessories = false;
         this.allowInsecureAccess = true;
-        this.externalPorts = this.config.ports;
+        this.externalPortService = new ExternalPortService(this.config.ports);
         this.api = new HomebridgeAPI();
         this.client = new Client();
 
@@ -581,26 +584,13 @@ export default class Server extends EventEmitter {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 
-    private handlePublishExternalAccessories(accessories: PlatformAccessory[]): void {
+    private async handlePublishExternalAccessories(accessories: PlatformAccessory[]): Promise<void> {
         const accessoryPin = this.config.bridge.pin;
 
-        accessories.forEach((accessory) => {
-            let accessoryPort = 0;
-
-            if (this.externalPorts) {
-                if (this.nextExternalPort === undefined) this.nextExternalPort = this.externalPorts.start;
-
-                if (this.nextExternalPort <= this.externalPorts.end) {
-                    this.nextExternalPort += 1;
-
-                    accessoryPort = this.nextExternalPort;
-                } else {
-                    Console.warn("External port pool ran out of ports. Fallback to random assign.");
-                }
-            }
-
+        for (const accessory of accessories) {
             const hapAccessory = accessory._associatedHAPAccessory;
             const advertiseAddress = mac.generate(hapAccessory.UUID);
+            const accessoryPort = await this.externalPortService.requestPort(advertiseAddress);
 
             if (this.publishedExternalAccessories.has(advertiseAddress)) {
                 throw new Error(`Accessory ${hapAccessory.displayName} experienced an address collision.`);
@@ -629,6 +619,6 @@ export default class Server extends EventEmitter {
                 port: accessoryPort,
                 mdns: this.config.mdns,
             }, this.allowInsecureAccess);
-        });
+        }
     }
 }
