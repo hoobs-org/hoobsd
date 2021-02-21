@@ -16,18 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { existsSync, readdirSync, readJsonSync } from "fs-extra";
+import { readdirSync } from "fs-extra";
 import { join } from "path";
 import State from "../../state";
 import Paths from "../../services/paths";
+import Bridges from "../../services/bridges";
 import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
+import { loadJson } from "../../services/formatters";
 
 export default class CacheController {
     constructor() {
         State.socket?.route("cache:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
         State.socket?.route("cache:parings", (request: SocketRequest, response: SocketResponse) => this.parings(request, response));
         State.socket?.route("cache:accessories", (request: SocketRequest, response: SocketResponse) => this.accessories(request, response));
+        State.socket?.route("cache:purge", (request: SocketRequest, response: SocketResponse) => this.purge(request, response));
     }
 
     log(_request: SocketRequest, response: SocketResponse): void {
@@ -39,7 +42,7 @@ export default class CacheController {
         const results = [];
 
         for (let i = 0; i < pairings.length; i += 1) {
-            const pairing = readJsonSync(join(Paths.persist, pairings[i]));
+            const pairing = loadJson<{ [key: string]: any }>(join(Paths.persist, pairings[i]), {});
             const [, id] = pairings[i].split(".");
 
             results.push({
@@ -59,12 +62,17 @@ export default class CacheController {
     }
 
     accessories(_request: SocketRequest, response: SocketResponse): void {
-        const accessories = join(Paths.accessories, "cachedAccessories");
+        response.send(loadJson<{ [key: string]: any }>(join(Paths.accessories, "cachedAccessories"), {}));
+    }
 
-        if (existsSync(accessories)) {
-            response.send(readJsonSync(accessories));
-        } else {
-            response.send([]);
-        }
+    async purge(request: SocketRequest, response: SocketResponse): Promise<void> {
+        Bridges.purge(request.params?.uuid);
+
+        if (State.homebridge?.running) await State.bridge?.stop(true);
+        if (!State.homebridge?.running) State.bridge?.start(true, true);
+
+        response.send({
+            success: true,
+        });
     }
 }

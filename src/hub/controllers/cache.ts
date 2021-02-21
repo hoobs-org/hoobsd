@@ -26,6 +26,8 @@ export default class CacheController {
         State.app?.get("/api/cache/:bridge", (request, response) => this.list(request, response));
         State.app?.get("/api/cache/:bridge/parings", (request, response) => this.listParings(request, response));
         State.app?.get("/api/cache/:bridge/accessories", (request, response) => this.listAccessories(request, response));
+        State.app?.delete("/api/cache/:bridge/purge", (request, response) => this.purge(request, response));
+        State.app?.delete("/api/cache/:bridge/purge/:uuid", (request, response) => this.purge(request, response));
     }
 
     async all(request: Request, response: Response): Promise<Response> {
@@ -93,5 +95,16 @@ export default class CacheController {
         }
 
         return response.send(await Socket.fetch(request.params.bridge, "cache:accessories"));
+    }
+
+    async purge(request: Request, response: Response): Promise<Response> {
+        if (!request.user?.permissions.config) {
+            return response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+        }
+
+        return response.send(await Socket.fetch(request.params.bridge, "cache:purge", request.params));
     }
 }

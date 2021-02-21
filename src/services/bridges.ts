@@ -417,22 +417,34 @@ export default class Bridges {
         );
     }
 
-    static purge(): void {
-        if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+    static purge(uuid?: string): void {
+        if (uuid) {
+            const cache = loadJson<{ [key: string]: any }>(join(Paths.accessories, "cachedAccessories"), {});
 
-        ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+            cache.accessories = cache.accessories || [];
 
-        if (existsSync(join(Paths.data(), `${State.id}.accessories`))) removeSync(join(Paths.data(), `${State.id}.accessories`));
+            const index = cache.accessories.findINdex((item: { [key: string]: any }) => item.UUID === uuid);
 
-        ensureDirSync(join(Paths.data(), `${State.id}.accessories`));
+            if (index >= 0) cache.accessories.splice(index, 1);
 
-        Console.notify(
-            State.id,
-            "Caches Purged",
-            "Accessory and connection cache purged.",
-            NotificationType.SUCCESS,
-            "memory",
-        );
+            writeFileSync(join(Paths.accessories, "cachedAccessories"), formatJson(State.bridges));
+        } else {
+            if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+
+            ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+
+            if (existsSync(join(Paths.accessories, "cachedAccessories"))) removeSync(join(Paths.accessories, "cachedAccessories"));
+
+            ensureDirSync(join(Paths.accessories, "cachedAccessories"));
+
+            Console.notify(
+                State.id,
+                "Caches Purged",
+                "Accessory and connection cache purged.",
+                NotificationType.SUCCESS,
+                "memory",
+            );
+        }
     }
 
     static async reset(): Promise<void> {

@@ -27,7 +27,6 @@ export default class BridgeController {
         State.app?.post("/api/bridge/:bridge/start", (request, response) => this.start(request, response));
         State.app?.post("/api/bridge/:bridge/stop", (request, response) => this.stop(request, response));
         State.app?.post("/api/bridge/:bridge/restart", (request, response) => this.restart(request, response));
-        State.app?.post("/api/bridge/:bridge/purge", (request, response) => this.purge(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<Response> {
@@ -84,16 +83,5 @@ export default class BridgeController {
         }
 
         return response.send(await Socket.fetch(request.params.bridge, "bridge:restart"));
-    }
-
-    async purge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
-
-        return response.send(await Socket.fetch(request.params.bridge, "bridge:purge"));
     }
 }

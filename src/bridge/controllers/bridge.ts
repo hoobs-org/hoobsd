@@ -17,7 +17,6 @@
  **************************************************************************************************/
 
 import State from "../../state";
-import Bridges from "../../services/bridges";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class BridgeController {
@@ -25,7 +24,6 @@ export default class BridgeController {
         State.socket?.route("bridge:start", (request: SocketRequest, response: SocketResponse) => this.start(request, response));
         State.socket?.route("bridge:stop", (request: SocketRequest, response: SocketResponse) => this.stop(request, response));
         State.socket?.route("bridge:restart", (request: SocketRequest, response: SocketResponse) => this.restart(request, response));
-        State.socket?.route("bridge:purge", (request: SocketRequest, response: SocketResponse) => this.purge(request, response));
     }
 
     async start(_request: SocketRequest, response: SocketResponse): Promise<void> {
@@ -45,17 +43,6 @@ export default class BridgeController {
     }
 
     async restart(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        if (State.homebridge?.running) await State.bridge?.stop(true);
-        if (!State.homebridge?.running) State.bridge?.start(true, true);
-
-        response.send({
-            success: true,
-        });
-    }
-
-    async purge(_request: SocketRequest, response: SocketResponse): Promise<void> {
-        Bridges.purge();
-
         if (State.homebridge?.running) await State.bridge?.stop(true);
         if (!State.homebridge?.running) State.bridge?.start(true, true);
 
