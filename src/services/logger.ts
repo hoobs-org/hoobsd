@@ -151,6 +151,8 @@ class Logger {
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
 
         if (typeof message === "string") {
+            if (message.startsWith("Initializing HAP-NodeJS")) return;
+
             data = {
                 level,
                 bridge: State.id,
@@ -392,6 +394,38 @@ class Logger {
 }
 
 const system: Logger = new Logger();
+
+console.debug = function debug(message: string, ...parameters: any[]) {
+    if (typeof message === "string") {
+        system.debug(message, ...parameters);
+    } else {
+        system.debug(formatJson(message));
+    }
+};
+
+console.log = function log(message: string, ...parameters: any[]) {
+    if (typeof message === "string") {
+        system.info(message, ...parameters);
+    } else {
+        system.info(formatJson(message));
+    }
+};
+
+console.warn = function warn(message: string, ...parameters: any[]) {
+    if (typeof message === "string") {
+        system.warn(message, ...parameters);
+    } else {
+        system.warn(formatJson(message));
+    }
+};
+
+console.error = function error(message: string, ...parameters: any[]) {
+    if (typeof message === "string") {
+        system.error(message, ...parameters);
+    } else {
+        system.error(formatJson(message));
+    }
+};
 
 export function Print(...parameters: any[]) {
     if (State.verbose) CONSOLE_LOG(...parameters);

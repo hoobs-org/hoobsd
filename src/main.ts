@@ -23,6 +23,7 @@ import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
 import { existsSync } from "fs-extra";
+import { Console } from "./services/logger";
 import State from "./state";
 import Bridges from "./services/bridges";
 import Users from "./services/users";
@@ -31,7 +32,6 @@ import Cache from "./services/cache";
 import Paths from "./services/paths";
 import System from "./services/system";
 import Hub from "./hub";
-import { Console } from "./services/logger";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
 const PROCESS_KILL_DELAY = 1000;
