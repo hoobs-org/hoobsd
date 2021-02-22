@@ -544,7 +544,7 @@ export default class AccessoriesController {
                             value: 0,
                         });
 
-                        response.send(await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 }));
+                        await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
                     }
                 }
 
@@ -564,7 +564,7 @@ export default class AccessoriesController {
                             value,
                         });
 
-                        response.send(await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value }));
+                        await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
                     }
                 }
 
@@ -585,14 +585,14 @@ export default class AccessoriesController {
                 case "on":
                     index = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.type === service);
 
-                    if (index >= 0 && accessory.characteristics[index].write && accessory.type === "lightbulb") return true;
+                    if (index >= 0 && accessory.characteristics[index].write && accessory.type === "light") return true;
 
                     break;
 
                 case "off":
                     index = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.type === "on");
 
-                    if (index >= 0 && accessory.characteristics[index].write && (accessory.type === "lightbulb" || accessory.type === "switch" || accessory.type === "television" || accessory.type === "fan")) return true;
+                    if (index >= 0 && accessory.characteristics[index].write && (accessory.type === "light" || accessory.type === "switch" || accessory.type === "television" || accessory.type === "fan")) return true;
 
                     break;
             }
