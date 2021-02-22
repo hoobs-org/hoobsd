@@ -267,6 +267,14 @@ export default class SystemController {
             await System.cli.upgrade();
         }
 
+        data = await System.gui.info();
+
+        if (!data.gui_upgraded) {
+            Console.info("upgrading gui");
+
+            await System.gui.upgrade();
+        }
+
         data = await System.hoobsd.info();
 
         if (!data.hoobsd_upgraded) {

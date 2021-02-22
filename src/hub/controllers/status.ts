@@ -61,6 +61,7 @@ export default class StatusController {
         const system = await System.info();
 
         const cli = await System.cli.info();
+        const gui = await System.gui.info();
         const hoobsd = await System.hoobsd.info();
         const runtime = await System.runtime.info();
 
@@ -80,6 +81,9 @@ export default class StatusController {
             cli_version: cli.cli_version,
             cli_current: cli.cli_current,
             cli_upgraded: cli.cli_upgraded,
+            gui_version: gui.gui_version,
+            gui_current: gui.gui_current,
+            gui_upgraded: gui.gui_upgraded,
             node_version: runtime.node_version,
             node_current: runtime.node_current,
             node_upgraded: upgraded,

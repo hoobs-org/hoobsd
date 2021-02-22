@@ -25,6 +25,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
 import Releases from "./releases";
+import { loadJson } from "./formatters";
 
 export default class System {
     static async info(): Promise<{ [key: string]: any }> {
@@ -177,6 +178,70 @@ export default class System {
 
     static reboot(): void {
         if (!State.container && State.mode === "production") exec("shutdown -r now");
+    }
+
+    static get gui(): { [key: string]: any } {
+        const key = "system/gui";
+
+        return {
+            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+                const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+                if (cached) return cached;
+
+                let path = "/usr/lib/hoobs";
+                let installed = "";
+
+                if (!existsSync(path)) path = "";
+                if (path !== "") installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
+                if (!Semver.valid(installed)) installed = "";
+
+                const release = await System.gui.release(beta);
+                const download = release.download || "";
+
+                let current = release.version || "";
+
+                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
+                    current = installed;
+                }
+
+                const results = {
+                    gui_prefix: "/usr/",
+                    gui_version: installed,
+                    gui_current: current,
+                    gui_upgraded: installed === current ? true : !Semver.gt(current, installed),
+                    gui_download: download,
+                    gui_mode: "production",
+                };
+
+                State.cache?.set(key, results, 60);
+
+                return results;
+            },
+
+            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
+                const release = await Releases.fetch("gui", beta) || {};
+
+                return {
+                    version: release.version || "",
+                    download: release.download || "",
+                };
+            },
+
+            upgrade: async (beta: boolean): Promise<void> => {
+                const data = await System.gui.info(beta);
+
+                State.cache?.remove(key);
+
+                execSync(`curl -sL ${data.gui_download} --output ./gui.tar.gz`, { stdio: "ignore" });
+                execSync(`tar -xzf ./gui.tar.gz -C ${data.gui_prefix} --strip-components=1 --no-same-owner`, { stdio: "ignore" });
+                execSync("rm -f ./gui.tar.gz", { stdio: "ignore" });
+
+                if (data.gui_mode === "production") {
+                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.gui_prefix, "lib/hbs") });
+                }
+            },
+        };
     }
 
     static get cli(): { [key: string]: any } {
