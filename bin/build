@@ -77,8 +77,8 @@ Program.command("server", { isDefault: true })
             execSync(`tar -zcf ../hoobsd-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
-            if (!existsSync(join(root, "../builds")))  mkdirSync(join(root, "../builds"));
-            if (existsSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`))
+            if (!existsSync(join(root, "../builds"))) mkdirSync(join(root, "../builds"));
+            if (existsSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`));
 
             moveSync(join(root, `hoobsd-${pjson.version}.tar.gz`), join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`));
         }
