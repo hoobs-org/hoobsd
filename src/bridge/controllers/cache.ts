@@ -62,7 +62,7 @@ export default class CacheController {
     }
 
     accessories(_request: SocketRequest, response: SocketResponse): void {
-        response.send(loadJson<{ [key: string]: any }>(join(Paths.accessories, "cachedAccessories"), {}));
+        response.send(loadJson<{ [key: string]: any }[]>(join(Paths.accessories, "cachedAccessories"), []));
     }
 
     async purge(request: SocketRequest, response: SocketResponse): Promise<void> {

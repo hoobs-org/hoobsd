@@ -419,23 +419,20 @@ export default class Bridges {
 
     static purge(uuid?: string): void {
         if (uuid) {
-            const cache = loadJson<{ [key: string]: any }>(join(Paths.accessories, "cachedAccessories"), {});
+            const cache = loadJson<{ [key: string]: any }[]>(join(Paths.accessories, "cachedAccessories"), []);
+            const index = cache.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
-            cache.accessories = cache.accessories || [];
+            if (index >= 0) cache.splice(index, 1);
 
-            const index = cache.accessories.findINdex((item: { [key: string]: any }) => item.UUID === uuid);
-
-            if (index >= 0) cache.accessories.splice(index, 1);
-
-            writeFileSync(join(Paths.accessories, "cachedAccessories"), formatJson(State.bridges));
+            writeFileSync(join(Paths.accessories, "cachedAccessories"), formatJson(cache));
         } else {
-            if (existsSync(join(Paths.data(), `${State.id}.persist`))) removeSync(join(Paths.data(), `${State.id}.persist`));
+            if (existsSync(Paths.persist)) removeSync(Paths.persist);
 
             ensureDirSync(join(Paths.data(), `${State.id}.persist`));
 
-            if (existsSync(join(Paths.accessories, "cachedAccessories"))) removeSync(join(Paths.accessories, "cachedAccessories"));
+            if (existsSync(Paths.accessories)) removeSync(Paths.accessories);
 
-            ensureDirSync(join(Paths.accessories, "cachedAccessories"));
+            ensureDirSync(Paths.accessories);
 
             Console.notify(
                 State.id,
