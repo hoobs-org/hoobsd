@@ -133,7 +133,7 @@ export default class SystemController {
     async cpu(_request: Request, response: Response): Promise<Response> {
         return response.send({
             information: await SystemInfo.cpu(),
-            speed: await SystemInfo.cpuCurrentspeed(),
+            speed: await SystemInfo.cpuCurrentSpeed(),
             load: await SystemInfo.currentLoad(),
             cache: await SystemInfo.cpuCache(),
         });
@@ -226,10 +226,13 @@ export default class SystemController {
 
         const form = new Forms.IncomingForm();
 
+        form.multiples = false;
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
-            Bridges.restore(files.file.path, true).finally(() => {
+            const file = <Forms.File>files.file;
+
+            Bridges.restore(file.path, true).finally(() => {
                 this.reboot(request, response);
             });
         });

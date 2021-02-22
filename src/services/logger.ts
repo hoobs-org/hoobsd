@@ -139,8 +139,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 5000) {
-                CACHE.splice(0, CACHE.length - 5000);
+            if (CACHE.length > 20000) {
+                CACHE.splice(0, CACHE.length - 20000);
             }
         }
     }
@@ -173,8 +173,8 @@ class Logger {
         if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) {
             CACHE.push(data);
 
-            if (CACHE.length > 5000) {
-                CACHE.splice(0, CACHE.length - 5000);
+            if (CACHE.length > 20000) {
+                CACHE.splice(0, CACHE.length - 20000);
             }
 
             if (State.id === "hub") {
@@ -248,8 +248,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 5000) {
-                CACHE.splice(0, CACHE.length - 5000);
+            if (CACHE.length > 20000) {
+                CACHE.splice(0, CACHE.length - 20000);
             }
 
             writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));

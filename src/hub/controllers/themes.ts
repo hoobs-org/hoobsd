@@ -43,10 +43,12 @@ export default class ThemesController {
     backdrop(request: Request, response: Response): void {
         const form = new Forms.IncomingForm();
 
+        form.multiples = false;
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
-            const filename = Themes.backdrop(files.file.path, files.file.type);
+            const file = <Forms.File>files.file;
+            const filename = Themes.backdrop(file.path, file.type);
 
             response.send({
                 filename,

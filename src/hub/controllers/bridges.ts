@@ -98,7 +98,9 @@ export default class BridgesController {
         form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, fields, files) => {
-            Bridges.import(<string>fields.name, parseInt(<string>fields.port, 10), <string>fields.pin || "031-45-154", <string>fields.username || Config.generateUsername(), files.file.path, true).finally(() => {
+            const file: Forms.File = <Forms.File>files.file;
+
+            Bridges.import(<string>fields.name, parseInt(<string>fields.port, 10), <string>fields.pin || "031-45-154", <string>fields.username || Config.generateUsername(), file.path, true).finally(() => {
                 this.list(request, response);
             });
         });
