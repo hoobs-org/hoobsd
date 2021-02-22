@@ -103,8 +103,6 @@ export default class Server extends EventEmitter {
 
     private readonly externalPortService: ExternalPortService;
 
-    private nextExternalPort?: number;
-
     private cachedPlatformAccessories: PlatformAccessory[] = [];
 
     private cachedAccessoriesFileCreated = false;
@@ -275,6 +273,8 @@ export default class Server extends EventEmitter {
                 } catch (error) {
                     Console.warn(error.message);
                 }
+
+                this.cachedPlatformAccessories = [];
 
                 resolve();
             }, INSTANCE_KILL_DELAY);
