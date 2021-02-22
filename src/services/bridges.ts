@@ -419,12 +419,15 @@ export default class Bridges {
 
     static purge(uuid?: string): void {
         if (uuid) {
-            const cache = loadJson<{ [key: string]: any }[]>(join(Paths.accessories, "cachedAccessories"), []);
-            const index = cache.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+            const working = loadJson<{ [key: string]: any }[]>(join(Paths.accessories, "cachedAccessories"), []);
+            let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
-            if (index >= 0) cache.splice(index, 1);
+            while (index >= 0) {
+                working.splice(index, 1);
+                index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+            }
 
-            writeFileSync(join(Paths.accessories, "cachedAccessories"), formatJson(cache));
+            writeFileSync(join(Paths.accessories, "cachedAccessories"), formatJson(working));
         } else {
             if (existsSync(Paths.persist)) removeSync(Paths.persist);
 

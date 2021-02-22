@@ -66,9 +66,10 @@ export default class CacheController {
     }
 
     async purge(request: SocketRequest, response: SocketResponse): Promise<void> {
+        if (State.homebridge?.running) await State.bridge?.stop(true);
+
         Bridges.purge(request.params?.uuid);
 
-        if (State.homebridge?.running) await State.bridge?.stop(true);
         if (!State.homebridge?.running) State.bridge?.start(true, true);
 
         response.send({
