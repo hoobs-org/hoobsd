@@ -89,6 +89,10 @@ export default class Bridges {
 
     static extentions(): { [key: string]: string | boolean }[] {
         return [{
+            feature: "gui",
+            description: "enables the gui",
+            enabled: existsSync("/usr/lib/hoobs/package.json"),
+        }, {
             feature: "ffmpeg",
             description: "enables ffmpeg camera support",
             enabled: Paths.tryCommand("ffmpeg"),

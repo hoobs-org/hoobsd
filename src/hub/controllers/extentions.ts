@@ -20,6 +20,7 @@ import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Bridges from "../../services/bridges";
 import FFMPEG from "../../extentions/ffmpeg";
+import GUI from "../../extentions/gui";
 
 export default class ExtentionsController {
     constructor() {
@@ -56,6 +57,10 @@ export default class ExtentionsController {
                 results = FFMPEG.enable();
                 break;
 
+            case "gui":
+                results = GUI.enable();
+                break;
+
             default:
                 break;
         }
@@ -88,6 +93,10 @@ export default class ExtentionsController {
         switch ((request.params.name || "").toLowerCase()) {
             case "ffmpeg":
                 results = FFMPEG.disable();
+                break;
+
+            case "gui":
+                results = GUI.disable();
                 break;
 
             default:

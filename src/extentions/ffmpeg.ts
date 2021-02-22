@@ -18,113 +18,121 @@
 
 import { removeSync } from "fs-extra";
 import { execSync, ExecSyncOptions } from "child_process";
-import { join } from "path";
+import { join, basename } from "path";
 import { uname, Utsname } from "node-uname";
 import Paths from "../services/paths";
+import Releases from "../services/releases";
 import { Console, NotificationType } from "../services/logger";
 
 export default class FFMPEG {
     static enable(): { success: boolean, error?: string | undefined } {
-        const download = "https://github.com/hoobs-org/hoobs-build/raw/master/stage7/00-ffmpeg/files/ffmpeg.tar.gz";
+        const release: { [key: string]: any } = Releases.fetch("ffmpeg");
 
-        const packages = [
-            "libtool-bin",
-            "libtool",
-            "openssl",
-            "libopus-dev",
-            "libx264-dev",
-            "libvpx-dev",
-            "libvorbis-dev",
-            "libtheora-dev",
-            "libmp3lame-dev",
-            "libfreetype6-dev",
-            "libass-dev",
-            "libspeex-dev",
-            "libfontconfig-dev",
-            "frei0r-plugins-dev",
-            "libfribidi-dev",
-            "librubberband-dev",
-            "libsoxr-dev",
-            "libvidstab-dev",
-            "libwebp-dev",
-            "libxml2-dev",
-            "libxvidcore-dev",
-        ];
+        if (release) {
+            const packages = [
+                "libtool-bin",
+                "libtool",
+                "openssl",
+                "libopus-dev",
+                "libx264-dev",
+                "libvpx-dev",
+                "libvorbis-dev",
+                "libtheora-dev",
+                "libmp3lame-dev",
+                "libfreetype6-dev",
+                "libass-dev",
+                "libspeex-dev",
+                "libfontconfig-dev",
+                "frei0r-plugins-dev",
+                "libfribidi-dev",
+                "librubberband-dev",
+                "libsoxr-dev",
+                "libvidstab-dev",
+                "libwebp-dev",
+                "libxml2-dev",
+                "libxvidcore-dev",
+            ];
 
-        const options: ExecSyncOptions = {
-            cwd: join(Paths.data(), ".."),
-            stdio: ["inherit", "inherit", "inherit"],
-        };
-
-        const utsname: Utsname = uname();
-
-        if ((utsname.sysname || "").toLowerCase() === "linux" && ((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64") && Paths.tryCommand("apt-get")) {
-            execSync("apt-get update", options);
-            execSync(`apt-get install -y ${packages.join(" ")}`, options);
-            execSync(`wget ${download}`, options);
-            execSync("tar -xzf ./ffmpeg.tar.gz -C /usr/local --strip-components=1 --no-same-owner", options);
-            execSync("rm -f ./ffmpeg.tar.gz", options);
-            execSync("ldconfig -n /usr/local/lib", options);
-            execSync("ldconfig", options);
-
-            Console.notify(
-                "hub",
-                "FFMPEG Installed",
-                "FFMPEG has been installed and is ready to use.",
-                NotificationType.SUCCESS,
-                "wrench",
-            );
-
-            return {
-                success: true,
+            const options: ExecSyncOptions = {
+                cwd: join(Paths.data(), ".."),
+                stdio: ["inherit", "inherit", "inherit"],
             };
-        }
 
-        if ((utsname.sysname || "").toLowerCase() !== "linux") {
-            Console.notify(
-                "hub",
-                "FFMPEG Not Installed",
-                "This version of FFMPEG is only supported on linux.",
-                NotificationType.ERROR,
-            );
+            const utsname: Utsname = uname();
+
+            if ((utsname.sysname || "").toLowerCase() === "linux" && ((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64") && Paths.tryCommand("apt-get")) {
+                execSync("apt-get update", options);
+                execSync(`apt-get install -y ${packages.join(" ")}`, options);
+                execSync(`wget ${release.download}`, options);
+                execSync(`tar -xzf ./${basename(release.download)} -C /usr/local --strip-components=1 --no-same-owner`, options);
+                execSync(`rm -f ./${basename(release.download)}`, options);
+                execSync("ldconfig -n /usr/local/lib", options);
+                execSync("ldconfig", options);
+
+                Console.notify(
+                    "hub",
+                    "FFMPEG Installed",
+                    "FFMPEG has been installed and is ready to use.",
+                    NotificationType.SUCCESS,
+                    "wrench",
+                );
+
+                return {
+                    success: true,
+                };
+            }
+
+            if ((utsname.sysname || "").toLowerCase() !== "linux") {
+                Console.notify(
+                    "hub",
+                    "FFMPEG Not Installed",
+                    "This version of FFMPEG is only supported on linux.",
+                    NotificationType.ERROR,
+                );
+
+                return {
+                    success: false,
+                    error: "this version of ffmpeg is only supported on linux",
+                };
+            }
+
+            if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
+                Console.notify(
+                    "hub",
+                    "FFMPEG Not Installed",
+                    "This version of FFMPEG is only supported on ARM processors.",
+                    NotificationType.ERROR,
+                );
+
+                return {
+                    success: false,
+                    error: "this version of ffmpeg is only supported on arm processors",
+                };
+            }
+
+            if (!Paths.tryCommand("apt-get")) {
+                Console.notify(
+                    "hub",
+                    "FFMPEG Not Installed",
+                    "This version of FFMPEG requires the APT package manager.",
+                    NotificationType.ERROR,
+                );
+
+                return {
+                    success: false,
+                    error: "this version of ffmpeg requires the apt package manager",
+                };
+            }
 
             return {
                 success: false,
-                error: "this version of ffmpeg is only supported on linux",
-            };
-        }
-
-        if (!((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64")) {
-            Console.notify(
-                "hub",
-                "FFMPEG Not Installed",
-                "This version of FFMPEG is only supported on ARM processors.",
-                NotificationType.ERROR,
-            );
-
-            return {
-                success: false,
-                error: "this version of ffmpeg is only supported on arm processors",
-            };
-        }
-
-        if (!Paths.tryCommand("apt-get")) {
-            Console.notify(
-                "hub",
-                "FFMPEG Not Installed",
-                "This version of FFMPEG requires the APT package manager.",
-                NotificationType.ERROR,
-            );
-
-            return {
-                success: false,
-                error: "this version of ffmpeg requires the apt package manager",
+                error: "unhandled error",
             };
         }
 
         return {
             success: false,
-            error: "unhandled error",
+            error: "unable to fetch release",
         };
     }
 
@@ -132,12 +140,8 @@ export default class FFMPEG {
         const utsname: Utsname = uname();
 
         if ((utsname.sysname || "").toLowerCase() === "linux" && ((utsname.machine || "").toLowerCase() === "armv7l" || (utsname.machine || "").toLowerCase() === "aarch64") && Paths.tryCommand("apt-get")) {
-            console.log("removing ffmpeg binaries");
-
             Paths.tryUnlink("/usr/local/bin/ffmpeg");
             Paths.tryUnlink("/usr/local/bin/ffprobe");
-
-            console.log("removing fdk-aac includes");
 
             Paths.tryUnlink("/usr/local/include/fdk-aac/FDK_audio.h");
             Paths.tryUnlink("/usr/local/include/fdk-aac/aacdecoder_lib.h");
@@ -147,8 +151,6 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/include/fdk-aac/syslib_channelMapDescr.h");
 
             if (Paths.isEmpty("/usr/local/include/fdk-aac")) removeSync("/usr/local/include/fdk-aac");
-
-            console.log("removing libavcodec includes");
 
             Paths.tryUnlink("/usr/local/include/libavcodec/ac3_parser.h");
             Paths.tryUnlink("/usr/local/include/libavcodec/adts_parser.h");
@@ -171,14 +173,10 @@ export default class FFMPEG {
 
             if (Paths.isEmpty("/usr/local/include/libavcodec")) removeSync("/usr/local/include/libavcodec");
 
-            console.log("removing libavdevice includes");
-
             Paths.tryUnlink("/usr/local/include/libavdevice/avdevice.h");
             Paths.tryUnlink("/usr/local/include/libavdevice/version.h");
 
             if (Paths.isEmpty("/usr/local/include/libavdevice")) removeSync("/usr/local/include/libavdevice");
-
-            console.log("removing libavfilter includes");
 
             Paths.tryUnlink("/usr/local/include/libavfilter/avfilter.h");
             Paths.tryUnlink("/usr/local/include/libavfilter/buffersink.h");
@@ -187,15 +185,11 @@ export default class FFMPEG {
 
             if (Paths.isEmpty("/usr/local/include/libavfilter")) removeSync("/usr/local/include/libavfilter");
 
-            console.log("removing libavformat includes");
-
             Paths.tryUnlink("/usr/local/include/libavformat/avformat.h");
             Paths.tryUnlink("/usr/local/include/libavformat/avio.h");
             Paths.tryUnlink("/usr/local/include/libavformat/version.h");
 
             if (Paths.isEmpty("/usr/local/include/libavformat")) removeSync("/usr/local/include/libavformat");
-
-            console.log("removing libavutil includes");
 
             Paths.tryUnlink("/usr/local/include/libavutil/adler32.h");
             Paths.tryUnlink("/usr/local/include/libavutil/aes.h");
@@ -283,28 +277,20 @@ export default class FFMPEG {
 
             if (Paths.isEmpty("/usr/local/include/libavutil")) removeSync("/usr/local/include/libavutil");
 
-            console.log("removing libpostproc includes");
-
             Paths.tryUnlink("/usr/local/include/libpostproc/postprocess.h");
             Paths.tryUnlink("/usr/local/include/libpostproc/version.h");
 
             if (Paths.isEmpty("/usr/local/include/libpostproc")) removeSync("/usr/local/include/libpostproc");
-
-            console.log("removing libswresample includes");
 
             Paths.tryUnlink("/usr/local/include/libswresample/swresample.h");
             Paths.tryUnlink("/usr/local/include/libswresample/version.h");
 
             if (Paths.isEmpty("/usr/local/include/libswresample")) removeSync("/usr/local/include/libswresample");
 
-            console.log("removing libswscale includes");
-
             Paths.tryUnlink("/usr/local/include/libswscale/swscale.h");
             Paths.tryUnlink("/usr/local/include/libswscale/version.h");
 
             if (Paths.isEmpty("/usr/local/include/libswscale")) removeSync("/usr/local/include/libswscale");
-
-            console.log("removing ffmpeg codecs");
 
             Paths.tryUnlink("/usr/local/lib/libavcodec.a");
             Paths.tryUnlink("/usr/local/lib/libavdevice.a");
@@ -320,8 +306,6 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/lib/libswresample.a");
             Paths.tryUnlink("/usr/local/lib/libswscale.a");
 
-            console.log("removing ffmpeg pkgconfig");
-
             Paths.tryUnlink("/usr/local/lib/pkgconfig/fdk-aac.pc");
             Paths.tryUnlink("/usr/local/lib/pkgconfig/libavcodec.pc");
             Paths.tryUnlink("/usr/local/lib/pkgconfig/libavdevice.pc");
@@ -331,8 +315,6 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/lib/pkgconfig/libpostproc.pc");
             Paths.tryUnlink("/usr/local/lib/pkgconfig/libswresample.pc");
             Paths.tryUnlink("/usr/local/lib/pkgconfig/libswscale.pc");
-
-            console.log("removing ffmpeg examples");
 
             Paths.tryUnlink("/usr/local/share/ffmpeg/examples/Makefile");
             Paths.tryUnlink("/usr/local/share/ffmpeg/examples/README");
@@ -362,8 +344,6 @@ export default class FFMPEG {
 
             if (Paths.isEmpty("/usr/local/share/ffmpeg/examples")) removeSync("/usr/local/share/ffmpeg/examples");
 
-            console.log("removing ffmpeg shared");
-
             Paths.tryUnlink("/usr/local/share/ffmpeg/ffprobe.xsd");
             Paths.tryUnlink("/usr/local/share/ffmpeg/libvpx-1080p.ffpreset");
             Paths.tryUnlink("/usr/local/share/ffmpeg/libvpx-1080p50_60.ffpreset");
@@ -372,8 +352,6 @@ export default class FFMPEG {
             Paths.tryUnlink("/usr/local/share/ffmpeg/libvpx-720p50_60.ffpreset");
 
             if (Paths.isEmpty("/usr/local/share/ffmpeg")) removeSync("/usr/local/share/ffmpeg");
-
-            console.log("removing ffmpeg man pages");
 
             Paths.tryUnlink("/usr/local/share/man/man1/ffmpeg-all.1");
             Paths.tryUnlink("/usr/local/share/man/man1/ffmpeg-bitstream-filters.1");
