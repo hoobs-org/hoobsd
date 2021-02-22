@@ -207,9 +207,9 @@ export default class System {
 
                 const results = {
                     gui_prefix: "/usr/",
-                    gui_version: installed,
+                    gui_version: installed || current,
                     gui_current: current,
-                    gui_upgraded: installed === current ? true : !Semver.gt(current, installed),
+                    gui_upgraded: (installed || current) === current ? true : !Semver.gt(current, installed),
                     gui_download: download,
                     gui_mode: "production",
                 };
