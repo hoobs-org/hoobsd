@@ -25,7 +25,6 @@ import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
 import Releases from "./releases";
-import { Console } from "./logger";
 
 export default class System {
     static async info(): Promise<{ [key: string]: any }> {
