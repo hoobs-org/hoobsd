@@ -243,13 +243,11 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        let gui: string | undefined = Plugins.findModule("@hoobs/gui");
+        let gui: string | undefined = "/usr/lib/hoobs";
+        let touch: string | undefined = "/usr/lib/hoobs-touch";
 
-        if (gui && existsSync(join(gui, "lib"))) gui = join(gui, "lib");
-
-        let touch: string | undefined = Plugins.findModule("@hoobs/touch");
-
-        if (touch && existsSync(join(touch, "lib"))) touch = join(touch, "lib");
+        if (existsSync(gui)) gui = undefined;
+        if (existsSync(touch)) touch = undefined;
 
         State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
         State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));

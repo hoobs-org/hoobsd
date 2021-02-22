@@ -16,13 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { spawn, execSync } from "child_process";
+import { spawn } from "child_process";
 import { join } from "path";
 
 import {
     existsSync,
     readFileSync,
-    realpathSync,
 } from "fs-extra";
 
 import {
@@ -373,57 +372,6 @@ export default class Plugins {
         if (!pjson) throw new Error(`Plugin ${path} does not contain a proper package.json.`);
 
         return pjson;
-    }
-
-    static verifyModule(path: string, name: string): string | undefined {
-        if (existsSync(path) && existsSync(join(path, "package.json"))) {
-            try {
-                if (JSON.parse(readFileSync(join(path, "package.json")).toString())?.name === name) return path;
-            } catch (_error) {
-                return undefined;
-            }
-        }
-
-        return undefined;
-    }
-
-    static findModule(name: string): string | undefined {
-        let path: string | undefined;
-        let prefix: string | undefined;
-
-        if (process.platform === "linux" || process.platform === "darwin") {
-            prefix = undefined;
-
-            try {
-                prefix = (`${execSync("npm config get prefix") || ""}`).trim();
-            } catch (error) {
-                prefix = undefined;
-            }
-
-            if (prefix && prefix !== "") path = Plugins.verifyModule(join(join(prefix, "lib", "node_modules"), name), name);
-
-            if (!path) {
-                prefix = undefined;
-
-                try {
-                    prefix = (`${execSync(`${Paths.yarn} global dir`)}`).trim();
-                } catch (error) {
-                    prefix = undefined;
-                }
-
-                if (prefix && prefix !== "") path = Plugins.verifyModule(join(join(prefix, "node_modules"), name), name);
-            }
-
-            if (path) {
-                try {
-                    path = realpathSync(path);
-                } catch (_error) {
-                    return undefined;
-                }
-            }
-        }
-
-        return path;
     }
 
     static loadPackage(directory: string): any {
