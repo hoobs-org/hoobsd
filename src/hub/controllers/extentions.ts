@@ -40,7 +40,7 @@ export default class ExtentionsController {
         return response.send(Bridges.extentions());
     }
 
-    enable(request: Request, response: Response): Response {
+    async enable(request: Request, response: Response): Promise<Response> {
         if (!request.user?.permissions.controller) {
             return response.send({
                 token: false,
@@ -54,11 +54,11 @@ export default class ExtentionsController {
 
         switch ((request.params.name || "").toLowerCase()) {
             case "ffmpeg":
-                results = FFMPEG.enable();
+                results = await FFMPEG.enable();
                 break;
 
             case "gui":
-                results = GUI.enable();
+                results = await GUI.enable();
                 break;
 
             default:

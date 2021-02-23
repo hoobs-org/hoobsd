@@ -24,8 +24,8 @@ import Paths from "../services/paths";
 import Releases from "../services/releases";
 
 export default class GUI {
-    static enable(): { success: boolean, error?: string | undefined } {
-        const release: { [key: string]: any } = Releases.fetch("gui");
+    static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
+        const release: { [key: string]: any } = await Releases.fetch("gui");
 
         if (release) {
             const options: ExecSyncOptions = {

@@ -25,8 +25,8 @@ import Releases from "../services/releases";
 import { Console, NotificationType } from "../services/logger";
 
 export default class FFMPEG {
-    static enable(): { success: boolean, error?: string | undefined } {
-        const release: { [key: string]: any } = Releases.fetch("ffmpeg");
+    static async enable(): Promise<{ success: boolean, error?: string | undefined }> {
+        const release: { [key: string]: any } = await Releases.fetch("ffmpeg");
 
         if (release) {
             const packages = [

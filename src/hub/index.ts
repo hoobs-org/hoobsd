@@ -246,8 +246,8 @@ export default class API extends EventEmitter {
         let gui: string | undefined = "/usr/lib/hoobs";
         let touch: string | undefined = "/usr/lib/hoobs-touch";
 
-        if (existsSync(gui)) gui = undefined;
-        if (existsSync(touch)) touch = undefined;
+        if (!existsSync(gui)) gui = undefined;
+        if (!existsSync(touch)) touch = undefined;
 
         State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
         State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));
