@@ -190,28 +190,26 @@ export default class SystemController {
         }));
     }
 
-    async restore(request: Request, response: Response): Promise<Response> {
+    async restore(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions.reboot) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         if (existsSync(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)))) {
             await Bridges.restore(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)));
 
             this.reboot(request, response);
-
-            return response.send({
-                success: true,
+        } else {
+            response.send({
+                success: false,
+                error: "Backup file doesent exist",
             });
         }
-
-        return response.send({
-            success: false,
-            error: "Backup file doesent exist",
-        });
     }
 
     upload(request: Request, response: Response): void {
@@ -238,12 +236,14 @@ export default class SystemController {
         });
     }
 
-    async upgrade(request: Request, response: Response): Promise<Response> {
+    async upgrade(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions.reboot) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         await Bridges.backup();
@@ -285,40 +285,44 @@ export default class SystemController {
             reboot = true;
         }
 
-        if (reboot) System.restart();
-
-        return response.send({
+        response.send({
             success: true,
         });
+
+        if (reboot) System.restart();
     }
 
-    reboot(request: Request, response: Response): Response {
+    reboot(request: Request, response: Response): void {
         if (!request.user?.permissions.reboot) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
+
+        response.send({
+            success: true,
+        });
 
         System.reboot();
-
-        return response.send({
-            success: true,
-        });
     }
 
-    async reset(request: Request, response: Response): Promise<Response> {
+    reset(request: Request, response: Response): void {
         if (!request.user?.permissions.reboot) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
-        await Bridges.reset();
-
-        return response.send({
+        response.send({
             success: true,
         });
+
+        Bridges.reset();
     }
 }

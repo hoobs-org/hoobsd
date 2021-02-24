@@ -567,7 +567,7 @@ export default class Bridges {
         for (let i = 0; i < entries.length; i += 1) {
             const path = join(directory, entries[i]);
 
-            if (basename(path) !== "node_modules" && basename(path) !== "cache") {
+            if (basename(path) !== "node_modules" && basename(path) !== "cache" && basename(path) !== "config.json") {
                 if (lstatSync(path).isDirectory()) {
                     archive.directory(path, join(basename(directory), entries[i]));
                 } else {
@@ -583,24 +583,31 @@ export default class Bridges {
 
             createReadStream(file).pipe(Unzip.Parse()).on("entry", (entry) => {
                 const filename = entry.path;
+                const { type } = entry;
 
-                if (filename === "meta") {
+                if (type === "File" && filename === "meta") {
                     entry.buffer().then((content: any) => {
                         try {
                             results = JSON.parse(content);
                         } catch (_error) {
                             results = {};
                         }
-
-                        return resolve(results);
                     });
+                } else {
+                    entry.autodrain();
                 }
-            }).on("finish", () => resolve(results));
+            }).on("finish", () => {
+                Console.info(`restore type "${results.type}"`);
+
+                resolve(results);
+            });
         });
     }
 
     static import(name: string, port: number, pin: string, username: string, file: string, remove?: boolean): Promise<void> {
         return new Promise((resolve) => {
+            Console.warn("performing bridge import");
+
             Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "bridge") {
                     const id = sanitize(name);
@@ -652,6 +659,8 @@ export default class Bridges {
 
     static restore(file: string, remove?: boolean): Promise<void> {
         return new Promise((resolve) => {
+            Console.warn("performing restore");
+
             Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "full") {
                     const filename = join(Paths.data(), `restore-${new Date().getTime()}.zip`);
@@ -675,10 +684,10 @@ export default class Bridges {
                         copySync(file, filename);
                     }
 
-                    createReadStream(filename).pipe(Unzip.Extract({
-                        path: Paths.data(),
-                    })).on("finish", () => {
+                    createReadStream(filename).pipe(Unzip.Extract({ path: Paths.data() })).on("finish", () => {
                         unlinkSync(filename);
+
+                        Console.info("restore complete");
 
                         setTimeout(() => {
                             const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);

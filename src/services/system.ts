@@ -25,6 +25,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
 import Releases from "./releases";
+import { Console } from "./logger";
 import { loadJson } from "./formatters";
 
 export default class System {
@@ -173,10 +174,14 @@ export default class System {
     }
 
     static restart(): void {
+        Console.warn("service restart command received");
+
         if (!State.container && State.mode === "production") exec(`${join(__dirname, "../../../bin/hoobsd")} service restart`);
     }
 
     static reboot(): void {
+        Console.warn("device reboot command received");
+
         if (!State.container && State.mode === "production") exec("shutdown -r now");
     }
 
