@@ -46,6 +46,7 @@ import {
     formatJson,
     sanitize,
 } from "./formatters";
+import System from "./system";
 
 const BRIDGE_TEARDOWN_DELAY = 1000;
 
@@ -693,10 +694,10 @@ export default class Bridges {
                             const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
+                                System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
                                     cwd: Paths.data(bridges[i].id),
                                     stdio: "inherit",
-                                });
+                                }, 3);
                             }
 
                             if (bridges.find((item) => item.type === "hub")) Bridges.install();

@@ -20,7 +20,7 @@
 /* eslint-disable prefer-destructuring */
 
 import { join } from "path";
-import { exec, execSync } from "child_process";
+import { exec, execSync, ExecSyncOptionsWithBufferEncoding } from "child_process";
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
@@ -157,6 +157,18 @@ export default class System {
                 }
             });
         });
+    }
+
+    static execPersistSync(command: string, options: ExecSyncOptionsWithBufferEncoding, retries: number) {
+        try {
+            execSync(command, options);
+        } catch (_error) {
+            if (retries > 0) {
+                setTimeout(() => {
+                    System.execPersistSync(command, options, retries - 1);
+                }, 1000);
+            }
+        }
     }
 
     static shellSync(command: string, multiline?: boolean): string {
