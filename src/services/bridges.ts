@@ -39,6 +39,7 @@ import { join, basename } from "path";
 import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
+import System from "./system";
 import { Console, NotificationType } from "./logger";
 
 import {
@@ -46,7 +47,6 @@ import {
     formatJson,
     sanitize,
 } from "./formatters";
-import System from "./system";
 
 const BRIDGE_TEARDOWN_DELAY = 1000;
 
@@ -641,10 +641,7 @@ export default class Bridges {
                                 if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
                                 if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.bridges, formatJson(bridges));
 
-                                execSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
-                                    cwd: Paths.data(id),
-                                    stdio: "inherit",
-                                });
+                                System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id), stdio: "inherit" }, 3);
                             }
 
                             removeSync(join(Paths.backups, "stage"));
@@ -694,10 +691,7 @@ export default class Bridges {
                             const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, {
-                                    cwd: Paths.data(bridges[i].id),
-                                    stdio: "inherit",
-                                }, 3);
+                                System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id), stdio: "inherit" }, 3);
                             }
 
                             if (bridges.find((item) => item.type === "hub")) Bridges.install();

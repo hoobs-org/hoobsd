@@ -38,6 +38,7 @@ import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
 import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
+import System from "./system";
 import { Console, NotificationType } from "./logger";
 import { loadJson } from "./formatters";
 
@@ -81,21 +82,9 @@ export default class Plugins {
     static linkLibs(): Promise<void> {
         return new Promise((resolve) => {
             if (!existsSync(join(Paths.data(State.id), "node_modules", "hap-nodejs"))) {
-                const flags = [];
+                System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(State.id), stdio: "ignore" }, 3);
 
-                flags.push("add");
-                flags.push("--unsafe-perm");
-                flags.push("--ignore-engines");
-                flags.push("hap-nodejs");
-
-                const proc = spawn(Paths.yarn, flags, {
-                    cwd: Paths.data(State.id),
-                    stdio: "ignore",
-                });
-
-                proc.on("close", () => {
-                    resolve();
-                });
+                resolve();
             } else {
                 resolve();
             }
@@ -106,35 +95,23 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            const flags = [];
+            System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(State.id), stdio: ["inherit", "inherit", "inherit"] }, 3);
 
-            flags.push("add");
-            flags.push("--unsafe-perm");
-            flags.push("--ignore-engines");
-            flags.push(`${name}@${tag}`);
+            Plugins.linkLibs();
 
-            const proc = spawn(Paths.yarn, flags, {
-                cwd: Paths.data(State.id),
-                stdio: ["inherit", "inherit", "inherit"],
-            });
+            const path = join(Plugins.directory, name);
 
-            proc.on("close", async () => {
-                Plugins.linkLibs();
+            if (existsSync(path) && existsSync(join(path, "package.json"))) {
+                const pjson = Plugins.loadPackage(path);
+                const config = Config.configuration();
 
-                const path = join(Plugins.directory, name);
+                config.plugins?.push(name);
+                config.plugins = [...new Set(config.plugins)];
 
-                if (existsSync(path) && existsSync(join(path, "package.json"))) {
-                    const pjson = Plugins.loadPackage(path);
-                    const config = Config.configuration();
-
-                    config.plugins?.push(name);
-                    config.plugins = [...new Set(config.plugins)];
-
-                    if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
+                if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
+                    Plugins.getPluginType(name, path, pjson).then((details: any[]) => {
                         let found = false;
                         let alias = "";
-
-                        const details: any[] = await Plugins.getPluginType(name, path, pjson) || [];
 
                         for (let i = 0; i < details.length; i += 1) {
                             if (details[i].type === "platform") {
@@ -160,8 +137,20 @@ export default class Plugins {
                                 },
                             });
                         }
-                    }
+                    }).finally(() => {
+                        Config.saveConfig(config, true);
 
+                        Console.notify(
+                            State.id,
+                            "Plugin Installed",
+                            `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
+                            NotificationType.SUCCESS,
+                            "puzzle",
+                        );
+
+                        resolve();
+                    });
+                } else {
                     Config.saveConfig(config, true);
 
                     Console.notify(
@@ -172,9 +161,9 @@ export default class Plugins {
                         "puzzle",
                     );
 
-                    return resolve();
+                    resolve();
                 }
-
+            } else {
                 Console.notify(
                     State.id,
                     "Plugin Not Installed",
@@ -182,59 +171,50 @@ export default class Plugins {
                     NotificationType.ERROR,
                 );
 
-                return reject();
-            });
+                reject();
+            }
         });
     }
 
     static uninstall(name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            const flags = [];
+            System.execPersistSync(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(State.id), stdio: ["inherit", "inherit", "inherit"] }, 3);
 
-            flags.push("remove");
-            flags.push(name);
+            Plugins.linkLibs();
 
-            const proc = spawn(Paths.yarn, flags, {
-                cwd: Paths.data(State.id),
-                stdio: ["inherit", "inherit", "inherit"],
-            });
+            if (!existsSync(join(Plugins.directory, name, "package.json"))) {
+                const config = Config.configuration();
 
-            proc.on("close", () => {
-                Plugins.linkLibs();
+                let index = config.plugins?.indexOf(name);
 
-                if (!existsSync(join(Plugins.directory, name, "package.json"))) {
-                    const config = Config.configuration();
-                    let index = config.plugins?.indexOf(name);
+                if (index! > -1) config.plugins?.splice(index!, 1);
 
-                    if (index! > -1) config.plugins?.splice(index!, 1);
+                index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
 
+                while (index >= 0) {
+                    config.platforms.splice(index, 1);
                     index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-
-                    while (index >= 0) {
-                        config.platforms.splice(index, 1);
-                        index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-                    }
-
-                    index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
-
-                    while (index >= 0) {
-                        config.accessories.splice(index, 1);
-                        index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
-                    }
-
-                    Config.saveConfig(config);
-
-                    Console.notify(
-                        State.id,
-                        "Plugin Uninstalled",
-                        `${PluginManager.extractPluginName(name)} has been removed.`,
-                        NotificationType.WARN,
-                        "puzzle",
-                    );
-
-                    return resolve();
                 }
 
+                index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+
+                while (index >= 0) {
+                    config.accessories.splice(index, 1);
+                    index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+                }
+
+                Config.saveConfig(config);
+
+                Console.notify(
+                    State.id,
+                    "Plugin Uninstalled",
+                    `${PluginManager.extractPluginName(name)} has been removed.`,
+                    NotificationType.WARN,
+                    "puzzle",
+                );
+
+                resolve();
+            } else {
                 Console.notify(
                     State.id,
                     "Plugin Not Uninstalled",
@@ -242,8 +222,8 @@ export default class Plugins {
                     NotificationType.ERROR,
                 );
 
-                return reject();
-            });
+                reject();
+            }
         });
     }
 
@@ -258,36 +238,25 @@ export default class Plugins {
 
             if (name) flags.push(`${name}@${tag}`);
 
-            const proc = spawn(Paths.yarn, flags, {
-                cwd: Paths.data(State.id),
-                stdio: ["inherit", "inherit", "inherit"],
-            });
+            System.execPersistSync(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(State.id), stdio: ["inherit", "inherit", "inherit"] }, 3);
 
-            proc.on("close", () => {
-                Plugins.linkLibs();
-                Config.touchConfig();
+            Plugins.linkLibs();
+            Config.touchConfig();
 
-                Console.notify(
-                    State.id,
-                    name ? "Plugin Upgraded" : "Plugins Upgraded",
-                    name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
-                    NotificationType.SUCCESS,
-                    "puzzle",
-                );
+            Console.notify(
+                State.id,
+                name ? "Plugin Upgraded" : "Plugins Upgraded",
+                name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                NotificationType.SUCCESS,
+                "puzzle",
+            );
 
-                return resolve();
-            });
+            resolve();
         });
     }
 
     static async getPluginType(name: string, path: string, pjson: any): Promise<any[]> {
-        if (
-            State.plugins[name]
-         && Array.isArray(State.plugins[name])
-         && State.plugins[name].length > 0
-        ) {
-            return State.plugins[name];
-        }
+        if (State.plugins[name] && Array.isArray(State.plugins[name]) && State.plugins[name].length > 0) return State.plugins[name];
 
         const registered: any[] = [];
         const schema = Plugins.loadSchema(path);

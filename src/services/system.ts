@@ -255,7 +255,7 @@ export default class System {
                 execSync("rm -f ./gui.tar.gz", { stdio: "ignore" });
 
                 if (data.gui_mode === "production") {
-                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.gui_prefix, "lib/hbs") });
+                    System.execPersistSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.gui_prefix, "lib/hbs") }, 3);
                 }
             },
         };
@@ -339,7 +339,7 @@ export default class System {
                 execSync("rm -f ./hbs.tar.gz", { stdio: "ignore" });
 
                 if (data.cli_mode === "production") {
-                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.cli_prefix, "lib/hbs") });
+                    System.execPersistSync("yarn install --force --production", { stdio: "ignore", cwd: join(data.cli_prefix, "lib/hbs") }, 3);
                 }
             },
         };
@@ -424,7 +424,7 @@ export default class System {
                 execSync("rm -f ./hoobsd.tar.gz", { stdio: "ignore" });
 
                 if (version.hoobsd_mode === "production") {
-                    execSync("yarn install --force --production", { stdio: "ignore", cwd: join(version.hoobsd_prefix, "lib/hoobsd") });
+                    System.execPersistSync("yarn install --force --production", { stdio: "ignore", cwd: join(version.hoobsd_prefix, "lib/hoobsd") }, 3);
                 }
             },
         };
@@ -503,7 +503,7 @@ export default class System {
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
                     execSync("apt-get update", { stdio: "ignore" });
-                    execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs yarn", { stdio: "ignore" });
+                    execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs", { stdio: "ignore" });
                 }
             },
         };
