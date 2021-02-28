@@ -74,13 +74,13 @@ Program.command("server", { isDefault: true })
             writeFileSync(join(root, "dist/lib/hoobsd", "package.json"), JSON.stringify(pjson, null, 4));
 
             execSync(`chmod 755 ${join(root, "dist/bin", "hoobsd")}`, { cwd: root, stdio: "inherit" });
-            execSync(`tar -zcf ../hoobsd-${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
+            execSync(`tar -zcf ../hoobsd-v${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
             if (!existsSync(join(root, "../builds"))) mkdirSync(join(root, "../builds"));
-            if (existsSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`));
+            if (existsSync(join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`));
 
-            moveSync(join(root, `hoobsd-${pjson.version}.tar.gz`), join(root, "../builds", `hoobsd-${pjson.version}.tar.gz`));
+            moveSync(join(root, `hoobsd-v${pjson.version}.tar.gz`), join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`));
         }
     });
 
