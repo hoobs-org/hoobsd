@@ -61,7 +61,6 @@ export default class SystemController {
 
         system.manufacturer = system.manufacturer || operating.distro || operating.hostname;
         system.model = system.model || operating.platform;
-        system.distribution = distro.distribution;
         system.version = distro.version || system.version || operating.release;
 
         if (distro.mdns) {
@@ -72,6 +71,9 @@ export default class SystemController {
 
         delete system.serial;
         delete system.uuid;
+        delete system.virtual;
+        delete system.distribution;
+        delete system.raspberry;
 
         const data = {
             mac: await this.mac(),

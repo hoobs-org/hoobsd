@@ -160,8 +160,10 @@ export default class AccessoriesController {
         const working = AccessoriesController.layout;
         const accessory = await Socket.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
 
-        if (working.accessories[accessory.accessory_identifier]) _.extend(accessory, working.accessories[accessory.accessory_identifier]);
-        if (push) Console.emit(Events.ACCESSORY_CHANGE, request.params.bridge, { accessory, value });
+        if (accessory) {
+            if (working.accessories[accessory.accessory_identifier]) _.extend(accessory, working.accessories[accessory.accessory_identifier]);
+            if (push) Console.emit(Events.ACCESSORY_CHANGE, request.params.bridge, { accessory, value });
+        }
 
         response.send(accessory);
     }
