@@ -24,17 +24,11 @@ import IO from "socket.io";
 import Parser from "body-parser";
 import CORS from "cors";
 import Process from "child_process";
+import Path from "path";
 import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { LogLevel } from "homebridge/lib/logger";
-
-import {
-    join,
-    extname,
-    basename,
-    resolve,
-} from "path";
 
 import {
     existsSync,
@@ -126,8 +120,8 @@ export default class API extends EventEmitter {
         const paths = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].plugins && existsSync(join(<string>State.bridges[i].plugins, ".bin"))) {
-                paths.push(join(<string>State.bridges[i].plugins, ".bin"));
+            if (State.bridges[i].plugins && existsSync(Path.join(<string>State.bridges[i].plugins, ".bin"))) {
+                paths.push(Path.join(<string>State.bridges[i].plugins, ".bin"));
             }
         }
 
@@ -255,14 +249,14 @@ export default class API extends EventEmitter {
         if (!existsSync(gui)) gui = undefined;
         if (!existsSync(touch)) touch = undefined;
 
-        State.app?.use("/", Express.static(this.settings.gui_path || gui || join(__dirname, "../static")));
-        State.app?.use("/touch", Express.static(this.settings.touch_path || touch || join(__dirname, "../static")));
+        State.app?.use("/", Express.static(this.settings.gui_path || gui || Path.join(__dirname, "../static")));
+        State.app?.use("/touch", Express.static(this.settings.touch_path || touch || Path.join(__dirname, "../static")));
         State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
             setHeaders: (response, path) => {
-                if (extname(path) === ".bridge") response.set("content-disposition", `attachment; filename="${basename(path).split("_")[0]}.bridge"`);
-                if (extname(path) === ".backup") response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
+                if (Path.extname(path) === ".bridge") response.set("content-disposition", `attachment; filename="${Path.basename(path).split("_")[0]}.bridge"`);
+                if (Path.extname(path) === ".backup") response.set("content-disposition", "attachment; filename=\"hoobs.backup\"");
             },
         }));
 
@@ -273,8 +267,8 @@ export default class API extends EventEmitter {
                 Plugins.load(State.bridges[i].id, (identifier, _name, _scope, directory) => {
                     const route = `/ui/plugin/${identifier.replace(/[^a-zA-Z0-9-_]/, "")}`;
 
-                    if (defined.indexOf(route) === -1 && existsSync(join(directory, "static"))) {
-                        State.app?.use(route, Express.static(join(directory, "static")));
+                    if (defined.indexOf(route) === -1 && existsSync(Path.join(directory, "static"))) {
+                        State.app?.use(route, Express.static(Path.join(directory, "static")));
 
                         defined.push(route);
                     }
@@ -283,7 +277,7 @@ export default class API extends EventEmitter {
         }
 
         State.app?.get("*", (_request, response) => {
-            response.sendFile(resolve(join(this.settings.gui_path || gui || join(__dirname, "../static"), "index.html")));
+            response.sendFile(Path.resolve(Path.join(this.settings.gui_path || gui || Path.join(__dirname, "../static"), "index.html")));
         });
     }
 
@@ -310,7 +304,7 @@ export default class API extends EventEmitter {
         if (State.container) flags.push("--container");
         if (!State.orphans) flags.push("--orphans");
 
-        this.processes[id] = Process.spawn(join(__dirname, "../../../bin/hoobsd"), flags).on("exit", () => {
+        this.processes[id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).on("exit", () => {
             this.launch(id, port, display);
         });
 
@@ -373,11 +367,11 @@ export default class API extends EventEmitter {
             }
 
             const bridges = State.bridges.filter((item) => item.type === "bridge");
-            const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(join(Paths.data(), item)).isDirectory());
+            const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(Path.join(Paths.data(), item)).isDirectory());
             const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {
-                removeSync(join(Paths.data(), remove[i]));
+                removeSync(Path.join(Paths.data(), remove[i]));
             }
 
             for (let i = 0; i < bridges.length; i += 1) {
