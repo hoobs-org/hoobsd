@@ -27,8 +27,14 @@ import Process from "child_process";
 import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
-import { join, extname, basename } from "path";
 import { LogLevel } from "homebridge/lib/logger";
+
+import {
+    join,
+    extname,
+    basename,
+    resolve,
+} from "path";
 
 import {
     existsSync,
@@ -139,7 +145,7 @@ export default class API extends EventEmitter {
                 let shell: IPty;
 
                 try {
-                    shell = spawn(process.env.SHELL || "sh", [], {
+                    shell = spawn(existsSync("/bin/bash") ? "/bin/bash" : process.env.SHELL || "sh", [], {
                         name: "xterm-color",
                         cwd: Paths.data(),
                         env: _.create(process.env, this.enviornment),
@@ -275,6 +281,10 @@ export default class API extends EventEmitter {
                 });
             }
         }
+
+        State.app?.get("*", (_request, response) => {
+            response.sendFile(resolve(join(this.settings.gui_path || gui || join(__dirname, "../static"), "index.html")));
+        });
     }
 
     static createServer(port: number): API {
