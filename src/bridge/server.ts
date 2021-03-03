@@ -495,6 +495,7 @@ export default class Server extends EventEmitter {
         }
 
         const informationService = accessory.getService(Service.AccessoryInformation)!;
+        const identifier = plugin.getPluginIdentifier();
 
         informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
 
@@ -513,7 +514,7 @@ export default class Server extends EventEmitter {
             informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
         }
 
-        informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, accessory.UUID);
+        informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory.UUID}`);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
             this.client.accessory(Client.identifier(State.id, accessory.UUID)).then((service) => {
@@ -542,6 +543,7 @@ export default class Server extends EventEmitter {
 
             if (plugin) {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
+                const identifier = plugin.getPluginIdentifier();
 
                 informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
 
@@ -549,7 +551,7 @@ export default class Server extends EventEmitter {
                     informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
                 }
 
-                informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, accessory._associatedHAPAccessory.UUID);
+                informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory._associatedHAPAccessory.UUID}`);
 
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 

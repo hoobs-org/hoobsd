@@ -181,7 +181,26 @@ export default class PluginsController {
         }));
     }
 
-    uninstall(request: SocketRequest, response: SocketResponse): void {
+    accessories(plugin: string): Promise<string[]> {
+        return new Promise((resolve) => {
+            State.homebridge?.client.accessories().then((services: { [key: string]: any }[]) => {
+                if (!services) {
+                    resolve([]);
+
+                    return;
+                }
+
+                if (!Array.isArray(services)) services = [services];
+
+                services = [...services];
+                services = services.filter((item) => item.plugin === plugin);
+
+                resolve(services.map((item) => item.accessory_identifier));
+            });
+        });
+    }
+
+    async uninstall(request: SocketRequest, response: SocketResponse): Promise<void> {
         let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
         let scope: string | undefined = "";
 
@@ -193,12 +212,16 @@ export default class PluginsController {
 
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
-        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
-        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        const plugin = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+        const accessories = await this.accessories(plugin);
 
-        Plugins.uninstall((scope || "") !== "" ? `@${scope}/${name}` : (name || "")).then(async () => {
+        State.cache?.remove(`plugin/definition:${plugin}`);
+        State.cache?.remove(`plugin/schema:${plugin}`);
+
+        Plugins.uninstall(plugin).then(async () => {
             response.send({
                 success: true,
+                accessories,
             });
         }).catch(() => response.send({
             error: "plugin can not be removed",

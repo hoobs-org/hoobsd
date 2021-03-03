@@ -21,6 +21,7 @@ import { existsSync } from "fs-extra";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Socket from "../services/socket";
+import Config from "../../services/config";
 import Plugins from "../../services/plugins";
 
 export default class PluginsController {
@@ -47,10 +48,12 @@ export default class PluginsController {
             name = name.split("/").pop();
         }
 
+        const plugin = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type === "bridge") {
                 Plugins.load(State.bridges[i].id, (identifier, _name, _scope, directory) => {
-                    if (!response.headersSent && identifier === `@${scope}/${name}`) response.sendFile(join(directory, "static", request.params[0] ? request.params[0] : "index.html"));
+                    if (!response.headersSent && identifier === plugin) response.sendFile(join(directory, "static", request.params[0] ? request.params[0] : "index.html"));
                 });
             }
         }
@@ -114,6 +117,24 @@ export default class PluginsController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "plugins:uninstall", request.params));
+        const results = await Socket.fetch(request.params.bridge, "plugins:uninstall", request.params);
+
+        if (results.success && Array.isArray(results.accessories && State.hub?.config.dashboard && State.hub?.config.dashboard.items)) {
+            const { ...config } = State.hub?.config;
+
+            for (let i = 0; i < results.accessories.length; i += 1) {
+                let index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === results.accessories[i]);
+
+                while (index >= 0) {
+                    config.dashboard.items.splice(index, 1);
+
+                    index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === results.accessories[i]);
+                }
+            }
+
+            Config.saveConfig(config);
+        }
+
+        return response.send(results);
     }
 }

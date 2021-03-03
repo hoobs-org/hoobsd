@@ -36,14 +36,6 @@ export default class ConfigController {
     }
 
     async saveConsole(request: Request, response: Response): Promise<Response> {
-        Console.notify(
-            State.id,
-            "Configuration Changed",
-            "The configuration for the API has changed.",
-            NotificationType.WARN,
-            "cog",
-        );
-
         Config.saveConfig(request.body);
 
         Console.emit(Events.CONFIG_CHANGE, "hub", Config.configuration());

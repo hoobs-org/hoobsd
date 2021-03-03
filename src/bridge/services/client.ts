@@ -71,6 +71,7 @@ export default class Client {
                             accessory_identifier: "",
                             bridge_identifier: Client.identifier(State.id),
                             bridge: State.id,
+                            plugin: "",
                             room: "default",
                             sequence: 0,
                             hidden: false,
@@ -85,7 +86,12 @@ export default class Client {
                             service[keys[k]] = details[keys[k]];
                         }
 
-                        service.accessory_identifier = Client.identifier(State.id, service.accessory_identifier);
+                        const data: string[] = (service.accessory_identifier || "").split("|");
+                        const uuid = data.pop();
+                        const plugin = data[0];
+
+                        service.accessory_identifier = Client.identifier(State.id, uuid);
+                        service.plugin = plugin;
 
                         if (service.accessory_identifier === service.bridge_identifier) {
                             delete service.bridge_identifier;
