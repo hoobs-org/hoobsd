@@ -71,6 +71,30 @@ export default class StatusController {
         if (system.product === "box" || system.product === "card") product = system.product;
         if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = runtime.node_upgraded;
 
+        if (gui.gui_version) {
+            return response.send({
+                product,
+                mdns: system.mdns,
+                broadcast: system.mdns_broadcast,
+                version: hoobsd.hoobsd_version,
+                current: hoobsd.hoobsd_current,
+                upgraded: hoobsd.hoobsd_upgraded,
+                cli_version: cli.cli_version,
+                cli_current: cli.cli_current,
+                cli_upgraded: cli.cli_upgraded,
+                gui_version: gui.gui_version,
+                gui_current: gui.gui_current,
+                gui_upgraded: gui.gui_upgraded,
+                node_version: runtime.node_version,
+                node_current: runtime.node_current,
+                node_upgraded: upgraded,
+                bridges: results,
+                cpu: await SystemInfo.currentLoad(),
+                memory: await SystemInfo.mem(),
+                temp: await SystemInfo.cpuTemperature(),
+            });
+        }
+
         return response.send({
             product,
             mdns: system.mdns,
@@ -81,9 +105,6 @@ export default class StatusController {
             cli_version: cli.cli_version,
             cli_current: cli.cli_current,
             cli_upgraded: cli.cli_upgraded,
-            gui_version: gui.gui_version,
-            gui_current: gui.gui_current,
-            gui_upgraded: gui.gui_upgraded,
             node_version: runtime.node_version,
             node_current: runtime.node_current,
             node_upgraded: upgraded,

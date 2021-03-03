@@ -206,29 +206,35 @@ export default class System {
 
                 if (cached) return cached;
 
-                let path = "/usr/lib/hoobs";
-                let installed = "";
+                let path: string | undefined = "/usr/lib/hoobs";
+                let installed: string | undefined = "";
 
-                if (!existsSync(path)) path = "";
-                if (path !== "") installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
-                if (!Semver.valid(installed)) installed = "";
+                if (!existsSync(join(path, "package.json"))) path = join(__dirname, "../../../../gui");
+                if (!existsSync(join(path, "package.json"))) path = undefined;
+                if (path) installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
+                if (!Semver.valid(installed)) installed = undefined;
 
                 const release = await System.gui.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
 
-                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
+                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed || "", current)) || !Semver.valid(current)) {
                     current = installed;
                 }
 
+                let mode = "none";
+
+                if (path === "/usr/lib/hoobs") mode = "production";
+                if (path === join(__dirname, "../../../../gui")) mode = "development";
+
                 const results = {
                     gui_prefix: "/usr/",
-                    gui_version: installed || current,
+                    gui_version: installed,
                     gui_current: current,
-                    gui_upgraded: (installed || current) === current ? true : !Semver.gt(current, installed),
+                    gui_upgraded: (installed || current) === current ? true : !Semver.gt(current, installed || ""),
                     gui_download: download,
-                    gui_mode: "production",
+                    gui_mode: mode,
                 };
 
                 State.cache?.set(key, results, 60);

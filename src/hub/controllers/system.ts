@@ -271,7 +271,7 @@ export default class SystemController {
 
         data = await System.gui.info();
 
-        if (!data.gui_upgraded) {
+        if (data.gui_version && !data.gui_upgraded) {
             Console.info("upgrading gui");
 
             await System.gui.upgrade();
