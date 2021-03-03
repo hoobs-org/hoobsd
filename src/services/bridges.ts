@@ -61,6 +61,7 @@ export interface BridgeRecord {
     autostart?: number;
     host?: string;
     plugins?: string;
+    advertiser?: string;
 }
 
 export default class Bridges {
@@ -194,7 +195,7 @@ export default class Bridges {
 
     static update(name: string): { [key: string]: any } {
         return {
-            info: (display: string, pin?: string, username?: string, autostart?: number): Promise<boolean> => new Promise((resolve) => {
+            info: (display: string, pin?: string, username?: string, autostart?: number, advertiser?: string): Promise<boolean> => new Promise((resolve) => {
                 if (!name) return resolve(false);
 
                 const id = sanitize(name);
@@ -205,6 +206,7 @@ export default class Bridges {
                     State.bridges[index].pin = pin || State.bridges[index].pin || "031-45-154";
                     State.bridges[index].username = username || State.bridges[index].username || Config.generateUsername();
                     State.bridges[index].autostart = autostart || 0;
+                    State.bridges[index].advertiser = advertiser || State.bridges[index].advertiser || "bonjour";
 
                     writeFileSync(Paths.bridges, formatJson(State.bridges));
 
@@ -352,7 +354,7 @@ export default class Bridges {
         return true;
     }
 
-    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number) {
+    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string) {
         const bridges: BridgeRecord[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
@@ -367,6 +369,7 @@ export default class Bridges {
                     pin: bridge.pin,
                     username: bridge.username,
                     autostart: 0,
+                    advertiser: undefined,
                 });
             } else {
                 bridges.push({
@@ -378,6 +381,7 @@ export default class Bridges {
                     username: bridge.username,
                     ports: bridge.ports,
                     autostart: bridge.autostart,
+                    advertiser: bridge.advertiser,
                 });
             }
         }
@@ -391,6 +395,7 @@ export default class Bridges {
                 pin,
                 username,
                 autostart: 0,
+                advertiser: undefined,
             });
         } else {
             bridges.push({
@@ -401,17 +406,18 @@ export default class Bridges {
                 pin,
                 username,
                 autostart: autostart || 0,
+                advertiser,
             });
         }
 
         writeFileSync(Paths.bridges, formatJson(bridges));
     }
 
-    static create(name: string, port: number, pin: string, username: string): void {
+    static create(name: string, port: number, pin: string, username: string, advertiser: string): void {
         if (sanitize(name) === "hub") Bridges.install();
         if (!existsSync(Paths.bridges)) writeFileSync(Paths.bridges, "[]");
 
-        Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0);
+        Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0, advertiser);
 
         Console.notify(
             "hub",
@@ -484,6 +490,7 @@ export default class Bridges {
                     type: bridge?.type,
                     ports: bridge?.ports,
                     autostart: bridge?.autostart,
+                    advertiser: bridge?.advertiser,
                 },
                 product: "hoobs",
                 generator: "hoobsd",
@@ -605,7 +612,7 @@ export default class Bridges {
         });
     }
 
-    static import(name: string, port: number, pin: string, username: string, file: string, remove?: boolean): Promise<void> {
+    static import(name: string, port: number, pin: string, username: string, advertiser: string, file: string, remove?: boolean): Promise<void> {
         return new Promise((resolve) => {
             Console.warn("performing bridge import");
 
@@ -631,7 +638,7 @@ export default class Bridges {
                             copySync(join(Paths.backups, "stage", `${metadata.data.name}.conf`), join(Paths.data(), `${id}.conf`));
                             copySync(join(Paths.backups, "stage", metadata.data.name), join(Paths.data(), id));
 
-                            Bridges.create(name, port, pin, username);
+                            Bridges.create(name, port, pin, username, advertiser);
 
                             const bridges = Bridges.list();
                             const index = bridges.findIndex((n) => n.id === id);

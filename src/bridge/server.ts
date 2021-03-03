@@ -136,7 +136,7 @@ export default class Server extends EventEmitter {
                 name: this.instance?.display || "HOOBS",
                 pin: this.instance?.pin || "031-45-154",
                 username: this.instance?.username || "",
-                advertiser: MDNSAdvertiser.BONJOUR,
+                advertiser: this.getAdvertiser(this.instance?.advertiser),
             },
             plugins: [],
             accessories: [],
@@ -285,6 +285,16 @@ export default class Server extends EventEmitter {
         return this.bridge.setupURI();
     }
 
+    private getAdvertiser(value?: string): MDNSAdvertiser {
+        switch (value) {
+            case "ciao":
+                return MDNSAdvertiser.CIAO;
+
+            default:
+                return MDNSAdvertiser.BONJOUR;
+        }
+    }
+
     private publishBridge(): void {
         const info = this.bridge.getService(Service.AccessoryInformation)!;
 
@@ -303,6 +313,8 @@ export default class Server extends EventEmitter {
             pincode: this.settings.pin,
             category: Categories.BRIDGE,
             mdns: this.config.mdns,
+            addIdentifyingMaterial: true,
+            advertiser: this.settings.advertiser,
         };
 
         if (this.settings.setupID && this.settings.setupID.length === 4) publishInfo.setupID = this.settings.setupID;

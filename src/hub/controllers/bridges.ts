@@ -52,7 +52,7 @@ export default class BridgesController {
             });
         }
 
-        Bridges.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername());
+        Bridges.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.advertiser || "bonjour");
 
         return this.list(request, response);
     }
@@ -65,7 +65,13 @@ export default class BridgesController {
             });
         }
 
-        await Bridges.update(request.params.id).info(request.body.display, request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.autostart || 0);
+        await Bridges.update(request.params.id).info(
+            request.body.display,
+            request.body.pin || "031-45-154",
+            request.body.username || Config.generateUsername(),
+            request.body.autostart || 0,
+            request.body.advertiser,
+        );
 
         return this.list(request, response);
     }
@@ -100,7 +106,14 @@ export default class BridgesController {
         form.parse(request, (_error, fields, files) => {
             const file: Forms.File = <Forms.File>files.file;
 
-            Bridges.import(<string>fields.name, parseInt(<string>fields.port, 10), <string>fields.pin || "031-45-154", <string>fields.username || Config.generateUsername(), file.path, true).finally(() => {
+            Bridges.import(
+                <string>fields.name,
+                parseInt(<string>fields.port, 10),
+                <string>fields.pin || "031-45-154",
+                <string>fields.username || Config.generateUsername(),
+                <string>fields.advertiser || "bonjour",
+                file.path, true,
+            ).finally(() => {
                 this.list(request, response);
             });
         });
