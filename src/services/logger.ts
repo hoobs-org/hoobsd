@@ -152,6 +152,9 @@ class Logger {
 
         if (typeof message === "string") {
             if (message.startsWith("Initializing HAP-NodeJS")) return;
+            if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
 
             data = {
                 level,
