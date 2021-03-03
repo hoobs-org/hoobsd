@@ -36,8 +36,6 @@ export default class ConfigController {
     }
 
     async saveConsole(request: Request, response: Response): Promise<Response> {
-        Console.emit(Events.CONFIG_CHANGE, "hub", Config.configuration());
-
         Console.notify(
             State.id,
             "Configuration Changed",
@@ -47,6 +45,8 @@ export default class ConfigController {
         );
 
         Config.saveConfig(request.body);
+
+        Console.emit(Events.CONFIG_CHANGE, "hub", Config.configuration());
 
         return response.send({
             success: true,

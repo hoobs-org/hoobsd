@@ -81,10 +81,7 @@ export = function Daemon(): void {
                 });
 
                 Watcher.watch(Paths.config).on("change", () => {
-                    State.hub?.stop().then(() => {
-                        State.hub = Hub.createServer(command.port || bridge.port);
-                        State.hub.start();
-                    });
+                    State.hub?.reload();
                 });
 
                 State.hub.start();

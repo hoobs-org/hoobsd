@@ -71,9 +71,9 @@ export default class API extends EventEmitter {
 
     declare running: boolean;
 
-    declare readonly config: any;
+    declare config: any;
 
-    declare readonly settings: any;
+    declare settings: any;
 
     declare readonly port: number;
 
@@ -243,14 +243,8 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        let gui: string | undefined = "/usr/lib/hoobs";
-        let touch: string | undefined = "/usr/lib/hoobs-touch";
-
-        if (!existsSync(gui)) gui = undefined;
-        if (!existsSync(touch)) touch = undefined;
-
-        State.app?.use("/", Express.static(this.settings.gui_path || gui || Path.join(__dirname, "../static")));
-        State.app?.use("/touch", Express.static(this.settings.touch_path || touch || Path.join(__dirname, "../static")));
+        State.app?.use("/", Express.static(this.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
+        State.app?.use("/touch", Express.static(this.settings.touch_path || existsSync("/usr/lib/hoobs-touch") ? "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
         State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
@@ -260,24 +254,8 @@ export default class API extends EventEmitter {
             },
         }));
 
-        const defined: string[] = [];
-
-        for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") {
-                Plugins.load(State.bridges[i].id, (identifier, _name, _scope, directory) => {
-                    const route = `/ui/plugin/${identifier.replace(/[^a-zA-Z0-9-_]/, "")}`;
-
-                    if (defined.indexOf(route) === -1 && existsSync(Path.join(directory, "static"))) {
-                        State.app?.use(route, Express.static(Path.join(directory, "static")));
-
-                        defined.push(route);
-                    }
-                });
-            }
-        }
-
         State.app?.get("*", (_request, response) => {
-            response.sendFile(Path.resolve(Path.join(this.settings.gui_path || gui || Path.join(__dirname, "../static"), "index.html")));
+            response.sendFile(Path.resolve(Path.join(this.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : Path.join(__dirname, "../static"), "index.html")));
         });
     }
 
@@ -289,6 +267,11 @@ export default class API extends EventEmitter {
         });
 
         return api;
+    }
+
+    reload() {
+        this.config = Config.configuration();
+        this.settings = (this.config || {}).api || {};
     }
 
     launch(id: string, port: number, display?: string): void {
