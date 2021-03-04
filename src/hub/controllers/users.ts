@@ -24,25 +24,19 @@ import Security from "../../services/security";
 export default class UsersController {
     constructor() {
         State.app?.get("/api/users", (request, response) => this.list(request, response));
-        State.app?.put("/api/users", Security, (request, response) => this.create(request, response));
+        State.app?.put("/api/users", (request, response) => this.create(request, response));
         State.app?.get("/api/users/:id", Security, (request, response) => this.get(request, response));
         State.app?.post("/api/users/:id", Security, (request, response) => this.update(request, response));
         State.app?.delete("/api/users/:id", Security, (request, response) => this.delete(request, response));
     }
 
-    async list(request: Request, response: Response): Promise<void> {
-        if (Users.count() === 0) {
-            response.send([]);
-        } else {
-            Security(request, response, () => {
-                response.send(Users.list().map((item) => ({
-                    id: item.id,
-                    username: item.username,
-                    name: item.name,
-                    permissions: item.permissions,
-                })));
-            });
-        }
+    async list(_request: Request, response: Response): Promise<void> {
+        response.send(Users.list().map((item) => ({
+            id: item.id,
+            username: item.username,
+            name: item.name,
+            permissions: item.permissions,
+        })));
     }
 
     get(request: Request, response: Response): void {
