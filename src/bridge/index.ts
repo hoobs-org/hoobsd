@@ -71,9 +71,11 @@ export default class Bridge extends EventEmitter {
         new PluginsController();
         new AccessoriesController();
 
-        Plugins.load(State.id, (identifier, name, _scope, directory, _pjson, library) => {
-            if (existsSync(join(directory, library, "routes.js"))) {
-                const plugin = require(join(directory, library, "routes.js"));
+        const plugins = Plugins.load(State.id);
+
+        for (let i = 0; i < plugins.length; i += 1) {
+            if (existsSync(join(plugins[i].directory, plugins[i].library, "routes.js"))) {
+                const plugin = require(join(plugins[i].directory, plugins[i].library, "routes.js"));
 
                 let initializer;
 
@@ -85,17 +87,17 @@ export default class Bridge extends EventEmitter {
 
                 if (initializer) {
                     try {
-                        const api = new Plugin(identifier, name);
-                        const logger = Prefixed(identifier, api.display);
-                        const config = new Config(name);
+                        const api = new Plugin(plugins[i].identifier, plugins[i].name);
+                        const logger = Prefixed(plugins[i].identifier, api.display);
+                        const config = new Config(plugins[i].name);
 
                         initializer(logger, config, api);
                     } catch (_error) {
-                        Console.error(`Error loading plugin ${identifier}`);
+                        Console.error(`Error loading plugin ${plugins[i].identifier}`);
                     }
                 }
             }
-        });
+        }
     }
 
     start(soft?: boolean, override?: boolean): void {

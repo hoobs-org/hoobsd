@@ -33,22 +33,22 @@ export default async function Plugin(request: Request, response: Response, next:
         name = name.split("/").pop();
     }
 
-    const plugin = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+    const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
     for (let i = 0; i < State.bridges.length; i += 1) {
         if (State.bridges[i].type === "bridge") {
-            Plugins.load(State.bridges[i].id, (identifier, _name, _scope, directory, _pjson, library) => {
-                if (!found && identifier === plugin) {
-                    response.locals.bridge = State.bridges[i].id;
-                    response.locals.identifier = identifier;
-                    response.locals.directory = directory;
-                    response.locals.library = library;
+            const plugin: { [key: string]: any } | undefined = Plugins.load(State.bridges[i].id).find((item) => item.identifier === identifier);
 
-                    found = true;
+            if (plugin) {
+                response.locals.bridge = State.bridges[i].id;
+                response.locals.identifier = plugin.identifier;
+                response.locals.directory = plugin.directory;
+                response.locals.library = plugin.library;
 
-                    next();
-                }
-            });
+                found = true;
+
+                next();
+            }
         }
     }
 

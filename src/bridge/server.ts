@@ -190,45 +190,47 @@ export default class Server extends EventEmitter {
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
-        Plugins.load(State.id, (identifier, name, scope, directory, pjson, library) => {
-            if ((this.config.plugins || []).indexOf(identifier) >= 0 && existsSync(join(directory, library))) {
+        const plugins = Plugins.load(State.id);
+
+        for (let i = 0; i < plugins.length; i += 1) {
+            if ((this.config.plugins || []).indexOf(plugins[i].identifier) >= 0 && existsSync(join(plugins[i].directory, plugins[i].library))) {
                 // @ts-ignore
-                if (!this.pluginManager.plugins.get(identifier)) {
-                    const plugin = new Plugin(name, directory, pjson, scope);
+                if (!this.pluginManager.plugins.get(plugins[i].identifier)) {
+                    const plugin = new Plugin(plugins[i].name, plugins[i].directory, plugins[i].pjson, plugins[i].scope);
 
                     // @ts-ignore
-                    this.pluginManager.plugins.set(identifier, plugin);
+                    this.pluginManager.plugins.set(plugins[i].identifier, plugin);
 
                     try {
                         plugin.load();
                     } catch (error) {
-                        Console.error(`Error loading plugin "${identifier}"`);
+                        Console.error(`Error loading plugin "${plugins[i].identifier}"`);
                         Console.error(error.stack);
 
                         // @ts-ignore
-                        this.pluginManager.plugins.delete(identifier);
+                        this.pluginManager.plugins.delete(plugins[i].identifier);
                     }
 
-                    Console.info(`Loaded plugin '${identifier}'`);
+                    Console.info(`Loaded plugin '${plugins[i].identifier}'`);
 
                     // @ts-ignore
-                    if (this.pluginManager.plugins.get(identifier)) {
+                    if (this.pluginManager.plugins.get(plugins[i].identifier)) {
                         try {
                             // @ts-ignore
                             this.pluginManager.currentInitializingPlugin = plugin;
 
                             plugin.initialize(this.api);
                         } catch (error) {
-                            Console.error(`Error initializing plugin '${identifier}'`);
+                            Console.error(`Error initializing plugin '${plugins[i].identifier}'`);
                             Console.error(error.stack);
 
                             // @ts-ignore
-                            this.pluginManager.plugins.delete(identifier);
+                            this.pluginManager.plugins.delete(plugins[i].identifier);
                         }
                     }
                 }
             }
-        });
+        }
 
         // @ts-ignore
         this.pluginManager.currentInitializingPlugin = undefined;

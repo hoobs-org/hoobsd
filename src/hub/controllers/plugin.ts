@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { join, resolve } from "path";
+import { join } from "path";
 import { existsSync } from "fs-extra";
-import { Request, Response } from "express-serve-static-core";
+import { Request, Response, NextFunction } from "express-serve-static-core";
 import State from "../../state";
 import Socket from "../services/socket";
 import Plugin from "../services/plugin";
@@ -26,21 +26,31 @@ import Security from "../../services/security";
 
 export default class PluginController {
     constructor() {
-        State.app?.get("/ui/plugin/:name/*", Plugin, (request, response) => this.ui(request, response));
-        State.app?.get("/ui/plugin/:scope/:name/*", Plugin, (request, response) => this.ui(request, response));
-        State.app?.get("/api/plugin/:name/:action", Security, Plugin, (request, response) => this.execute(request, response));
-        State.app?.get("/api/plugin/:scope/:name/:action", Security, Plugin, (request, response) => this.execute(request, response));
+        State.app?.get("/ui/plugin/:name/*", Plugin, (request, response, next) => this.ui(request, response, next));
+        State.app?.get("/ui/plugin/:scope/:name/*", Plugin, (request, response, next) => this.ui(request, response, next));
+        State.app?.get("/api/plugin/:name/:action", Security, Plugin, (request, response, next) => this.execute(request, response, next));
+        State.app?.get("/api/plugin/:scope/:name/:action", Security, Plugin, (request, response, next) => this.execute(request, response, next));
     }
 
-    ui(request: Request, response: Response): void {
-        response.sendFile(join(response.locals.directory, "static", request.params[0] ? request.params[0] : "index.html"));
-    }
+    ui(request: Request, response: Response, next: NextFunction): void {
+        const filename = join(response.locals.directory, "static", request.params[0] ? request.params[0] : "index.html");
 
-    async execute(request: Request, response: Response): Promise<void> {
-        if (existsSync(join(response.locals.directory, response.locals.library, "routes.js"))) {
-            response.send(await Socket.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body));
+        if (existsSync(filename)) {
+            response.sendFile(filename);
+
+            return;
         }
 
-        response.sendFile(resolve(join(State.hub?.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : join(__dirname, "../../static"), "index.html")));
+        next();
+    }
+
+    async execute(request: Request, response: Response, next: NextFunction): Promise<void> {
+        if (existsSync(join(response.locals.directory, response.locals.library, "routes.js"))) {
+            response.send(await Socket.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body));
+
+            return;
+        }
+
+        next();
     }
 }

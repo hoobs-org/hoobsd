@@ -47,35 +47,35 @@ export default class Plugins {
     }
 
     static installed(bridge?: string): Plugin[] {
-        const results: Plugin[] = [];
-
-        Plugins.load(bridge || State.id, (_identifier, name, scope, directory, pjson) => {
-            results.push(new Plugin(name, directory, pjson, scope));
-        });
-
-        return results;
+        return Plugins.load(bridge || State.id).map((item) => new Plugin(item.name, item.directory, item.pjson, item.scope));
     }
 
-    static load(bridge: string, callback: (identifier: string, name: string, scope: string, directory: string, pjson: PackageJSON, library: string) => void): void {
+    static load(bridge: string): { [key: string]: any }[] {
+        const results: { [key: string]: any }[] = [];
+
         if (existsSync(join(Paths.data(bridge), "package.json"))) {
             const plugins = Object.keys(loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {
-                    const directory = join(Plugins.directory, plugins[i]);
+                    const directory = join(Paths.data(bridge), "node_modules", plugins[i]);
                     const pjson = Plugins.loadPackage(directory);
 
                     if (existsSync(directory) && pjson) {
-                        const identifier: string = pjson.name;
-                        const name: string = PluginManager.extractPluginName(identifier);
-                        const scope: string = PluginManager.extractPluginScope(identifier);
-                        const library: string = pjson.main || "./index.js";
-
-                        callback(identifier, name, scope, directory, pjson, library);
+                        results.push({
+                            identifier: pjson.name,
+                            name: PluginManager.extractPluginName(pjson.name),
+                            scope: PluginManager.extractPluginScope(pjson.name),
+                            directory,
+                            pjson,
+                            library: pjson.main || "./index.js",
+                        });
                     }
                 }
             }
         }
+
+        return results;
     }
 
     static linkLibs(): Promise<void> {
