@@ -72,16 +72,22 @@ export = function Daemon(): void {
                 State.hub = Hub.createServer(command.port || bridge.port);
 
                 Watcher.watch(Paths.bridges).on("change", () => {
-                    State.bridges = Bridges.list();
-                    State.hub?.sync();
+                    if (!State.restoring) {
+                        State.bridges = Bridges.list();
+                        State.hub?.sync();
+                    }
                 });
 
                 Watcher.watch(join(Paths.data(), "access")).on("change", () => {
-                    State.users = Users.list();
+                    if (!State.restoring) {
+                        State.users = Users.list();
+                    }
                 });
 
                 Watcher.watch(Paths.config).on("change", () => {
-                    State.hub?.reload();
+                    if (!State.restoring) {
+                        State.hub?.reload();
+                    }
                 });
 
                 State.hub.start();

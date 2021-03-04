@@ -206,7 +206,11 @@ export default class SystemController {
         if (existsSync(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)))) {
             await Bridges.restore(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)));
 
-            this.reboot(request, response);
+            response.send({
+                success: true,
+            });
+
+            System.restart();
         } else {
             response.send({
                 success: false,
@@ -234,7 +238,11 @@ export default class SystemController {
             const file = <Forms.File>files.file;
 
             Bridges.restore(file.path, true).finally(() => {
-                this.reboot(request, response);
+                response.send({
+                    success: true,
+                });
+
+                System.restart();
             });
         });
     }
@@ -253,7 +261,7 @@ export default class SystemController {
 
         const system = await System.info();
 
-        let reboot = false;
+        let restart = false;
         let data = await System.runtime.info();
 
         if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !data.node_upgraded) {
@@ -285,14 +293,14 @@ export default class SystemController {
 
             await System.hoobsd.upgrade();
 
-            reboot = true;
+            restart = true;
         }
 
         response.send({
             success: true,
         });
 
-        if (reboot) System.restart();
+        if (restart) System.restart();
     }
 
     reboot(request: Request, response: Response): void {
@@ -312,7 +320,7 @@ export default class SystemController {
         System.reboot();
     }
 
-    reset(request: Request, response: Response): void {
+    async reset(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions.reboot) {
             response.send({
                 token: false,
@@ -326,6 +334,8 @@ export default class SystemController {
             success: true,
         });
 
-        Bridges.reset();
+        await Bridges.reset();
+
+        System.restart();
     }
 }

@@ -315,6 +315,12 @@ export default class API extends EventEmitter {
 
     sync(): Promise<void> {
         return new Promise((resolve) => {
+            if (State.restoring) {
+                resolve();
+
+                return;
+            }
+
             const waiters: Promise<void>[] = [];
             const current = Object.keys(this.processes);
 

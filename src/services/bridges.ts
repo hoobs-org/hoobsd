@@ -48,7 +48,7 @@ import {
     sanitize,
 } from "./formatters";
 
-const BRIDGE_TEARDOWN_DELAY = 1000;
+const BRIDGE_TEARDOWN_DELAY = 2000;
 
 export interface BridgeRecord {
     id: string;
@@ -269,7 +269,7 @@ export default class Bridges {
     }
 
     static install(): boolean {
-        if (existsSync("/etc/systemd/system")) {
+        if (State.mode === "production" && existsSync("/etc/systemd/system")) {
             try {
                 if (existsSync("/etc/systemd/system/hoobsd.service")) {
                     execSync("systemctl stop hoobsd.service");
@@ -305,7 +305,7 @@ export default class Bridges {
             }
         }
 
-        if (existsSync("/Library/LaunchDaemons")) {
+        if (State.mode === "production" && existsSync("/Library/LaunchDaemons")) {
             try {
                 if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
                     execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
@@ -689,10 +689,11 @@ export default class Bridges {
                         copySync(file, filename);
                     }
 
-                    createReadStream(filename).pipe(Unzip.Extract({ path: Paths.data() })).on("finish", () => {
-                        unlinkSync(filename);
+                    State.restoring = true;
 
-                        Console.info("restore complete");
+                    createReadStream(filename).pipe(Unzip.Extract({ path: Paths.data() })).on("finish", () => {
+                        if (existsSync(filename)) unlinkSync(filename);
+                        if (existsSync(join(Paths.data(), "meta"))) unlinkSync(join(Paths.data(), "meta"));
 
                         setTimeout(() => {
                             const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
@@ -702,6 +703,10 @@ export default class Bridges {
                             }
 
                             if (bridges.find((item) => item.type === "hub")) Bridges.install();
+
+                            State.restoring = false;
+
+                            Console.info("restore complete");
 
                             resolve();
                         }, BRIDGE_TEARDOWN_DELAY);

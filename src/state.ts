@@ -59,6 +59,7 @@ export interface Application {
     loggers: Loggers;
 
     plugins: { [key: string]: any };
+    restoring: boolean;
 }
 
 const bridge: Application = {
@@ -89,6 +90,7 @@ const bridge: Application = {
     loggers: {},
 
     plugins: {},
+    restoring: false,
 };
 
 export default bridge;
