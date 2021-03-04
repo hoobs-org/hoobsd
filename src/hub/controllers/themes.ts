@@ -20,12 +20,13 @@ import { Request, Response } from "express-serve-static-core";
 import Forms from "formidable";
 import State from "../../state";
 import Themes from "../services/themes";
+import Security from "../../services/security";
 
 export default class ThemesController {
     constructor() {
         State.app?.get("/api/theme/:name", (request, response) => this.get(request, response));
-        State.app?.post("/api/theme/:name", (request, response) => this.save(request, response));
-        State.app?.post("/api/themes/backdrop", (request, response) => this.backdrop(request, response));
+        State.app?.post("/api/theme/:name", Security, (request, response) => this.save(request, response));
+        State.app?.post("/api/themes/backdrop", Security, (request, response) => this.backdrop(request, response));
     }
 
     get(request: Request, response: Response): void {

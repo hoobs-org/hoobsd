@@ -21,10 +21,11 @@ import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Socket from "../services/socket";
 import System from "../../services/system";
+import Security from "../../services/security";
 
 export default class StatusController {
     constructor() {
-        State.app?.get("/api/status", (request, response) => this.status(request, response));
+        State.app?.get("/api/status", Security, (request, response) => this.status(request, response));
     }
 
     async status(_request: Request, response: Response): Promise<Response> {

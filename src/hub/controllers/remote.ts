@@ -19,14 +19,15 @@
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Remote from "../services/remote";
+import Security from "../../services/security";
 
 export default class RemoteController {
     declare client: Remote;
 
     constructor() {
-        State.app?.get("/api/remote", (request, response) => this.status(request, response));
-        State.app?.get("/api/remote/start", (request, response) => this.start(request, response));
-        State.app?.get("/api/remote/disconnect", (request, response) => this.disconnect(request, response));
+        State.app?.get("/api/remote", Security, (request, response) => this.status(request, response));
+        State.app?.get("/api/remote/start", Security, (request, response) => this.start(request, response));
+        State.app?.get("/api/remote/disconnect", Security, (request, response) => this.disconnect(request, response));
     }
 
     status(_request: Request, response: Response): Response {

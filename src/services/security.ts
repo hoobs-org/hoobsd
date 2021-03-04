@@ -16,30 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { Request, Response } from "express-serve-static-core";
-import State from "../../state";
-import Weather from "../services/weather";
-import Security from "../../services/security";
+import { Request, Response, NextFunction } from "express-serve-static-core";
+import State from "../state";
+import Users from "./users";
 
-export default class ThemesController {
-    constructor() {
-        State.app?.get("/api/weather/location", Security, (request, response) => this.search(request, response));
-        State.app?.get("/api/weather/current", Security, (request, response) => this.current(request, response));
-        State.app?.get("/api/weather/forecast", Security, (request, response) => this.forecast(request, response));
+export default async function Security(request: Request, response: Response, next: NextFunction, deny?: NextFunction): Promise<void> {
+    if (State.hub?.settings.disable_auth) {
+        next();
+
+        return;
     }
 
-    async search(request: Request, response: Response): Promise<void> {
-        const position = await Weather.geocode(decodeURIComponent(`${request.query.query}`));
-        const results = await Weather.search(position, parseInt(`${request.query.count || 5}`, 10));
+    if ((!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
+        if (deny) {
+            deny();
+        } else {
+            response.status(403).json({
+                error: "unauthorized",
+            });
+        }
 
-        response.send(results);
+        return;
     }
 
-    async current(_request: Request, response: Response): Promise<void> {
-        response.send((await Weather.current()));
-    }
-
-    async forecast(_request: Request, response: Response): Promise<void> {
-        response.send((await Weather.forecast()));
-    }
+    next();
 }

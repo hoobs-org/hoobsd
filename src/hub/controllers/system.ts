@@ -26,26 +26,27 @@ import State from "../../state";
 import Paths from "../../services/paths";
 import System from "../../services/system";
 import Bridges from "../../services/bridges";
+import Security from "../../services/security";
 import { Console } from "../../services/logger";
 
 export default class SystemController {
     constructor() {
-        State.app?.get("/api/system", (request, response) => this.info(request, response));
-        State.app?.get("/api/system/hostname", (request, response) => this.hostname("get", request, response));
-        State.app?.post("/api/system/hostname", (request, response) => this.hostname("post", request, response));
-        State.app?.get("/api/system/cpu", (request, response) => this.cpu(request, response));
-        State.app?.get("/api/system/memory", (request, response) => this.memory(request, response));
-        State.app?.get("/api/system/network", (request, response) => this.network(request, response));
-        State.app?.get("/api/system/filesystem", (request, response) => this.filesystem(request, response));
-        State.app?.get("/api/system/activity", (request, response) => this.activity(request, response));
-        State.app?.get("/api/system/temp", (request, response) => this.temp(request, response));
-        State.app?.get("/api/system/backup", (request, response) => this.backup(request, response));
-        State.app?.get("/api/system/backup/catalog", (request, response) => this.catalog(request, response));
-        State.app?.get("/api/system/restore", (request, response) => this.restore(request, response));
-        State.app?.post("/api/system/restore", (request, response) => this.upload(request, response));
-        State.app?.post("/api/system/upgrade", (request, response) => this.upgrade(request, response));
-        State.app?.put("/api/system/reboot", (request, response) => this.reboot(request, response));
-        State.app?.put("/api/system/reset", (request, response) => this.reset(request, response));
+        State.app?.get("/api/system", Security, (request, response) => this.info(request, response));
+        State.app?.get("/api/system/hostname", Security, (request, response) => this.hostname("get", request, response));
+        State.app?.post("/api/system/hostname", Security, (request, response) => this.hostname("post", request, response));
+        State.app?.get("/api/system/cpu", Security, (request, response) => this.cpu(request, response));
+        State.app?.get("/api/system/memory", Security, (request, response) => this.memory(request, response));
+        State.app?.get("/api/system/network", Security, (request, response) => this.network(request, response));
+        State.app?.get("/api/system/filesystem", Security, (request, response) => this.filesystem(request, response));
+        State.app?.get("/api/system/activity", Security, (request, response) => this.activity(request, response));
+        State.app?.get("/api/system/temp", Security, (request, response) => this.temp(request, response));
+        State.app?.get("/api/system/backup", Security, (request, response) => this.backup(request, response));
+        State.app?.get("/api/system/backup/catalog", Security, (request, response) => this.catalog(request, response));
+        State.app?.get("/api/system/restore", Security, (request, response) => this.restore(request, response));
+        State.app?.post("/api/system/restore", Security, (request, response) => this.upload(request, response));
+        State.app?.post("/api/system/upgrade", Security, (request, response) => this.upgrade(request, response));
+        State.app?.put("/api/system/reboot", Security, (request, response) => this.reboot(request, response));
+        State.app?.put("/api/system/reset", Security, (request, response) => this.reset(request, response));
     }
 
     async info(_request: Request, response: Response): Promise<Response> {

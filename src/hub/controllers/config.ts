@@ -20,27 +20,37 @@ import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Config from "../../services/config";
 import Socket from "../services/socket";
+import Security from "../../services/security";
 import { Console, Events, NotificationType } from "../../services/logger";
 import { BridgeRecord } from "../../services/bridges";
 
 export default class ConfigController {
     constructor() {
         State.app?.get("/api/config", (request, response) => this.getConsole(request, response));
-        State.app?.post("/api/config", (request, response) => this.saveConsole(request, response));
-        State.app?.get("/api/config/:bridge", (request, response) => this.getBridge(request, response));
-        State.app?.post("/api/config/:bridge", (request, response) => this.saveBridge(request, response));
+        State.app?.post("/api/config", Security, (request, response) => this.saveConsole(request, response));
+        State.app?.get("/api/config/:bridge", Security, (request, response) => this.getBridge(request, response));
+        State.app?.post("/api/config/:bridge", Security, (request, response) => this.saveBridge(request, response));
     }
 
-    async getConsole(_request: Request, response: Response): Promise<Response> {
-        return response.send(State.hub?.config);
+    getConsole(request: Request, response: Response): void {
+        Security(request, response, () => {
+            response.send(State.hub?.config);
+        }, () => {
+            const { ...config } = State.hub?.config;
+
+            delete config.weather;
+            delete config.dashboard;
+
+            response.send(config);
+        });
     }
 
-    async saveConsole(request: Request, response: Response): Promise<Response> {
+    saveConsole(request: Request, response: Response): void {
         Config.saveConfig(request.body);
 
         Console.emit(Events.CONFIG_CHANGE, "hub", Config.configuration());
 
-        return response.send({
+        response.send({
             success: true,
         });
     }

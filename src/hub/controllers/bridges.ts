@@ -21,17 +21,18 @@ import Forms from "formidable";
 import State from "../../state";
 import Bridges from "../../services/bridges";
 import Config from "../../services/config";
+import Security from "../../services/security";
 
 export default class BridgesController {
     constructor() {
-        State.app?.get("/api/bridges", (request, response) => this.list(request, response));
-        State.app?.put("/api/bridges", (request, response) => this.create(request, response));
+        State.app?.get("/api/bridges", Security, (request, response) => this.list(request, response));
+        State.app?.put("/api/bridges", Security, (request, response) => this.create(request, response));
         State.app?.get("/api/bridges/count", (request, response) => this.count(request, response));
-        State.app?.post("/api/bridges/import", (request, response) => this.import(request, response));
-        State.app?.post("/api/bridge/:id", (request, response) => this.update(request, response));
-        State.app?.post("/api/bridge/:id/ports", (request, response) => this.ports(request, response));
-        State.app?.get("/api/bridge/:id/export", (request, response) => this.export(request, response));
-        State.app?.delete("/api/bridge/:id", (request, response) => this.remove(request, response));
+        State.app?.post("/api/bridges/import", Security, (request, response) => this.import(request, response));
+        State.app?.post("/api/bridge/:id", Security, (request, response) => this.update(request, response));
+        State.app?.post("/api/bridge/:id/ports", Security, (request, response) => this.ports(request, response));
+        State.app?.get("/api/bridge/:id/export", Security, (request, response) => this.export(request, response));
+        State.app?.delete("/api/bridge/:id", Security, (request, response) => this.remove(request, response));
     }
 
     list(_request: Request, response: Response): Response {

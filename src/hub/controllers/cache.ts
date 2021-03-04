@@ -19,15 +19,16 @@
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Socket from "../services/socket";
+import Security from "../../services/security";
 
 export default class CacheController {
     constructor() {
-        State.app?.get("/api/cache", (request, response) => this.all(request, response));
-        State.app?.get("/api/cache/:bridge", (request, response) => this.list(request, response));
-        State.app?.get("/api/cache/:bridge/parings", (request, response) => this.listParings(request, response));
-        State.app?.get("/api/cache/:bridge/accessories", (request, response) => this.listAccessories(request, response));
-        State.app?.delete("/api/cache/:bridge/purge", (request, response) => this.purge(request, response));
-        State.app?.delete("/api/cache/:bridge/purge/:uuid", (request, response) => this.purge(request, response));
+        State.app?.get("/api/cache", Security, (request, response) => this.all(request, response));
+        State.app?.get("/api/cache/:bridge", Security, (request, response) => this.list(request, response));
+        State.app?.get("/api/cache/:bridge/parings", Security, (request, response) => this.listParings(request, response));
+        State.app?.get("/api/cache/:bridge/accessories", Security, (request, response) => this.listAccessories(request, response));
+        State.app?.delete("/api/cache/:bridge/purge", Security, (request, response) => this.purge(request, response));
+        State.app?.delete("/api/cache/:bridge/purge/:uuid", Security, (request, response) => this.purge(request, response));
     }
 
     async all(request: Request, response: Response): Promise<Response> {

@@ -19,42 +19,53 @@
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Users from "../../services/users";
+import Security from "../../services/security";
 
 export default class UsersController {
     constructor() {
         State.app?.get("/api/users", (request, response) => this.list(request, response));
-        State.app?.put("/api/users", (request, response) => this.create(request, response));
-        State.app?.get("/api/users/:id", (request, response) => this.get(request, response));
-        State.app?.post("/api/users/:id", (request, response) => this.update(request, response));
-        State.app?.delete("/api/users/:id", (request, response) => this.delete(request, response));
+        State.app?.put("/api/users", Security, (request, response) => this.create(request, response));
+        State.app?.get("/api/users/:id", Security, (request, response) => this.get(request, response));
+        State.app?.post("/api/users/:id", Security, (request, response) => this.update(request, response));
+        State.app?.delete("/api/users/:id", Security, (request, response) => this.delete(request, response));
     }
 
-    list(request: Request, response: Response): Response {
-        return response.send(Users.list().map((item) => ({
-            id: item.id,
-            username: item.username,
-            name: item.name,
-            permissions: item.permissions,
-        })));
+    async list(request: Request, response: Response): Promise<void> {
+        if (Users.count() === 0) {
+            response.send([]);
+        } else {
+            Security(request, response, () => {
+                response.send(Users.list().map((item) => ({
+                    id: item.id,
+                    username: item.username,
+                    name: item.name,
+                    permissions: item.permissions,
+                })));
+            });
+        }
     }
 
-    get(request: Request, response: Response): Response {
+    get(request: Request, response: Response): void {
         if (!request.user?.permissions.users) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         const user = Users.list().filter((u) => u.id === parseInt(request.params.id, 10))[0];
 
         if (!user) {
-            return response.send({
+            response.send({
                 error: "user not found",
             });
+
+            return;
         }
 
-        return response.send({
+        response.send({
             id: user.id,
             username: user.username,
             name: user.name,
@@ -62,26 +73,32 @@ export default class UsersController {
         });
     }
 
-    async create(request: Request, response: Response): Promise<Response> {
+    async create(request: Request, response: Response): Promise<void> {
         if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.permissions.users)) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         if (!request.body.username || request.body.username === "" || request.body.username.length < 3) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Invalid username.",
             });
+
+            return;
         }
 
         if (request.body.password && request.body.password.length < 5) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Password too weak.",
             });
+
+            return;
         }
 
         if (Users.count() === 0) {
@@ -108,59 +125,71 @@ export default class UsersController {
             config: false,
         });
 
-        return this.list(request, response);
+        this.list(request, response);
     }
 
-    async update(request: Request, response: Response): Promise<Response> {
+    async update(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions.users && request.user?.id !== parseInt(request.params.id, 10)) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         if (!request.body.username || request.body.username === "" || request.body.username.length < 3) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Invalid username.",
             });
+
+            return;
         }
 
         if (request.body.password && request.body.password.length < 5) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Password too weak.",
             });
+
+            return;
         }
 
         if (Users.count() === 0) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "No users exist.",
             });
+
+            return;
         }
 
         const user = await Users.update(parseInt(request.params.id, 10), request.body.name, request.body.username, request.body.password, request.body.permissions);
 
         if (!user) {
-            return response.send({
+            response.send({
                 error: "unable to update user",
             });
+
+            return;
         }
 
-        return this.list(request, response);
+        this.list(request, response);
     }
 
-    delete(request: Request, response: Response): Response {
+    delete(request: Request, response: Response): void {
         if (!request.user?.permissions.users) {
-            return response.send({
+            response.send({
                 token: false,
                 error: "Unauthorized.",
             });
+
+            return;
         }
 
         Users.delete(parseInt(request.params.id, 10));
 
-        return this.list(request, response);
+        this.list(request, response);
     }
 }

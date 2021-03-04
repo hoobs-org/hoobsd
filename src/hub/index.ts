@@ -43,7 +43,6 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
-import Plugins from "../services/plugins";
 import { Console, Events } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -195,32 +194,8 @@ export default class API extends EventEmitter {
             });
         }
 
-        State.app?.use(async (request, response, next) => {
+        State.app?.use(async (request, _response, next) => {
             request.user = Users.decodeToken(request.headers.authorization);
-
-            if (this.settings.disable_auth) {
-                next();
-
-                return;
-            }
-
-            if (request.url.indexOf("/api") === 0 && [
-                "/api",
-                "/api/log",
-                "/api/auth",
-                "/api/auth/disable",
-                "/api/auth/validate",
-                "/api/bridges/count",
-                Users.count() > 0 ? "/api/auth/logon" : false,
-                Users.count() > 0 ? "/api/auth/logout" : false,
-                Users.count() === 0 ? "/api/users" : false,
-            ].filter((item) => item).indexOf(request.url) === -1 && (!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
-                response.status(403).json({
-                    error: "unauthorized",
-                });
-
-                return;
-            }
 
             next();
         });
