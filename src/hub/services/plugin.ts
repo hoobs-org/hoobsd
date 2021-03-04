@@ -16,31 +16,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { join, resolve } from "path";
 import { existsSync } from "fs-extra";
-import { Request, Response } from "express-serve-static-core";
+import { join, resolve } from "path";
+import { Request, Response, NextFunction } from "express-serve-static-core";
 import State from "../../state";
-import Socket from "../services/socket";
-import Plugin from "../services/plugin";
-import Security from "../../services/security";
+import Plugins from "../../services/plugins";
 
-export default class PluginController {
-    constructor() {
-        State.app?.get("/ui/plugin/:name/*", Plugin, (request, response) => this.ui(request, response));
-        State.app?.get("/ui/plugin/:scope/:name/*", Plugin, (request, response) => this.ui(request, response));
-        State.app?.get("/api/plugin/:name/:action", Security, Plugin, (request, response) => this.execute(request, response));
-        State.app?.get("/api/plugin/:scope/:name/:action", Security, Plugin, (request, response) => this.execute(request, response));
+export default async function Plugin(request: Request, response: Response, next: NextFunction): Promise<void> {
+    let found = false;
+    let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
+    let scope: string | undefined = "";
+
+    if ((name || "").startsWith("@")) {
+        name = (name || "").substring(1);
+        scope = name.split("/").shift();
+        name = name.split("/").pop();
     }
 
-    ui(request: Request, response: Response): void {
-        response.sendFile(join(response.locals.directory, "static", request.params[0] ? request.params[0] : "index.html"));
-    }
+    const plugin = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
-    async execute(request: Request, response: Response): Promise<void> {
-        if (existsSync(join(response.locals.directory, response.locals.library, "routes.js"))) {
-            response.send(await Socket.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body));
+    for (let i = 0; i < State.bridges.length; i += 1) {
+        if (State.bridges[i].type === "bridge") {
+            Plugins.load(State.bridges[i].id, (identifier, _name, _scope, directory, _pjson, library) => {
+                if (!found && identifier === plugin) {
+                    response.locals.bridge = State.bridges[i].id;
+                    response.locals.identifier = identifier;
+                    response.locals.directory = directory;
+                    response.locals.library = library;
+
+                    found = true;
+
+                    next();
+                }
+            });
         }
+    }
 
+    if (!found) {
         response.sendFile(resolve(join(State.hub?.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : join(__dirname, "../../static"), "index.html")));
     }
 }
