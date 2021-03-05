@@ -45,7 +45,6 @@ export default class ThemesController {
         const form = new Forms.IncomingForm();
 
         form.multiples = false;
-        form.maxFileSize = 5 * 1024 * 1024 * 1024;
 
         form.parse(request, (_error, _fields, files) => {
             const file = <Forms.File>files.file;

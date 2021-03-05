@@ -21,7 +21,6 @@ import _ from "lodash";
 import HTTP from "http";
 import Express from "express";
 import IO from "socket.io";
-import Parser from "body-parser";
 import CORS from "cors";
 import Process from "child_process";
 import Path from "path";
@@ -184,7 +183,7 @@ export default class API extends EventEmitter {
             });
         });
 
-        State.app?.use(Parser.json());
+        State.app?.use(Express.json({ limit: "2gb" }));
 
         if (State.debug) {
             State.app?.use((request, _response, next) => {
