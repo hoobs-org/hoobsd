@@ -668,6 +668,8 @@ export default class Bridges {
 
             Bridges.metadata(file).then((metadata) => {
                 if (metadata.type === "full") {
+                    State.restoring = true;
+
                     const filename = join(Paths.data(), `restore-${new Date().getTime()}.zip`);
                     const entries = readdirSync(Paths.data());
 
@@ -689,8 +691,6 @@ export default class Bridges {
                         copySync(file, filename);
                     }
 
-                    State.restoring = true;
-
                     createReadStream(filename).pipe(Unzip.Extract({ path: Paths.data() })).on("finish", () => {
                         if (existsSync(filename)) unlinkSync(filename);
                         if (existsSync(join(Paths.data(), "meta"))) unlinkSync(join(Paths.data(), "meta"));
@@ -702,7 +702,7 @@ export default class Bridges {
                                 System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id), stdio: "inherit" }, 3);
                             }
 
-                            if (bridges.find((item) => item.type === "hub")) Bridges.install();
+                            if (bridges.find((item) => item.type === "hub") && State.mode === "production") Bridges.install();
 
                             State.restoring = false;
 
