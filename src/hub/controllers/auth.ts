@@ -21,6 +21,8 @@ import State from "../../state";
 import Config from "../../services/config";
 import Users, { UserRecord } from "../../services/users";
 
+import Ring from "../../partner/ring";
+
 export default class AuthController {
     constructor() {
         State.app?.get("/api/auth", (request, response) => this.state(request, response));
@@ -121,15 +123,9 @@ export default class AuthController {
     }
 
     async vendor(request: Request, response: Response): Promise<void> {
-        let component: any;
-        let results: any;
-
         switch (request.params.vendor) {
             case "ring":
-                component = await import("../../partner/ring");
-                response = await component.login(request.body.username, request.body.password, request.body.verification);
-
-                response.send(results);
+                response.send(await Ring.login(request.body.username, request.body.password, request.body.verification));
                 break;
 
             default:

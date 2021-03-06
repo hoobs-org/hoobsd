@@ -20,7 +20,7 @@ import Axios from "axios";
 import { Console } from "../services/logger";
 
 export default class Ring {
-    static async login(username: string, password: string, verification?: string) {
+    static async login(username: string, password: string, verification?: string): Promise<any> {
         let results;
 
         try {
