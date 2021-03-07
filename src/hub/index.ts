@@ -377,7 +377,7 @@ export default class API extends EventEmitter {
         this.socket.start();
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") Console.import((await Socket.fetch(State.bridges[i].id, "cache:log")) || []);
+            if (State.bridges[i].type === "bridge") Console.import((await Socket.fetch(State.bridges[i].id, "status:log")) || []);
         }
 
         this.listner?.listen(this.port, () => {

@@ -19,7 +19,6 @@
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Config from "../../services/config";
-import Socket from "../services/socket";
 import Security from "../../services/security";
 import { Console, Events, NotificationType } from "../../services/logger";
 import { BridgeRecord } from "../../services/bridges";

@@ -18,11 +18,13 @@
 
 import State from "../../state";
 import Paths from "../../services/paths";
+import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class StatusController {
     constructor() {
         State.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
+        State.socket?.route("status:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
     }
 
     status(_request: SocketRequest, response: SocketResponse): void {
@@ -41,5 +43,9 @@ export default class StatusController {
             setup_id: State.homebridge?.setupURI(),
             bridge_path: Paths.data(State.id),
         });
+    }
+
+    log(_request: SocketRequest, response: SocketResponse): void {
+        response.send(Console.cache());
     }
 }

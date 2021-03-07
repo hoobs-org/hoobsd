@@ -428,9 +428,37 @@ export default class Bridges {
         );
     }
 
-    static purge(uuid?: string): void {
+    static accessories(bridge: string): { [key: string]: any }[] {
+        return loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), []);
+    }
+
+    static parings(bridge: string): { [key: string]: any }[] {
+        const pairings = readdirSync(join(Paths.data(), `${bridge}.persist`)).filter((d) => d.match(/AccessoryInfo\.([A-F,a-f,0-9]+)\.json/));
+        const results = [];
+
+        for (let i = 0; i < pairings.length; i += 1) {
+            const pairing = loadJson<{ [key: string]: any }>(join(Paths.data(), `${bridge}.persist`, pairings[i]), {});
+            const [, id] = pairings[i].split(".");
+
+            results.push({
+                id,
+                version: pairing.configVersion,
+                username: ((id || "").match(/.{1,2}/g) || []).join(":"),
+                display: pairing.displayName,
+                category: pairing.category,
+                setup_pin: pairing.pincode,
+                setup_id: pairing.setupID,
+                clients: pairing.pairedClients,
+                permissions: pairing.pairedClientsPermission,
+            });
+        }
+
+        return results;
+    }
+
+    static purge(bridge: string, uuid?: string): void {
         if (uuid) {
-            const working = loadJson<{ [key: string]: any }[]>(join(Paths.accessories, "cachedAccessories"), []);
+            const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), []);
             let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
             while (index >= 0) {
@@ -438,18 +466,18 @@ export default class Bridges {
                 index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
             }
 
-            writeFileSync(join(Paths.accessories, "cachedAccessories"), formatJson(working));
+            writeFileSync(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), formatJson(working));
         } else {
-            if (existsSync(Paths.persist)) removeSync(Paths.persist);
+            if (existsSync(join(Paths.data(), `${bridge}.persist`))) removeSync(join(Paths.data(), `${bridge}.persist`));
 
-            ensureDirSync(join(Paths.data(), `${State.id}.persist`));
+            ensureDirSync(join(Paths.data(), `${bridge}.persist`));
 
-            if (existsSync(Paths.accessories)) removeSync(Paths.accessories);
+            if (existsSync(join(Paths.data(), `${bridge}.accessories`))) removeSync(join(Paths.data(), `${bridge}.accessories`));
 
-            ensureDirSync(Paths.accessories);
+            ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
 
             Console.notify(
-                State.id,
+                bridge,
                 "Caches Purged",
                 "Accessory and connection cache purged.",
                 NotificationType.SUCCESS,

@@ -34,7 +34,6 @@ import {
     Events,
 } from "../services/logger";
 
-import CacheController from "./controllers/cache";
 import StatusController from "./controllers/status";
 import AccessoriesController from "./controllers/accessories";
 
@@ -61,7 +60,6 @@ export default class Bridge extends EventEmitter {
 
         State.socket = new Socket(State.id);
 
-        new CacheController();
         new StatusController();
         new AccessoriesController();
 

@@ -18,7 +18,7 @@
 
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
-import Socket from "../services/socket";
+import Bridges from "../../services/bridges";
 import Security from "../../services/security";
 
 export default class CacheController {
@@ -31,7 +31,7 @@ export default class CacheController {
         State.app?.delete("/api/cache/:bridge/purge/:uuid", Security, (request, response) => this.purge(request, response));
     }
 
-    async all(request: Request, response: Response): Promise<Response> {
+    all(request: Request, response: Response): Response {
         if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
@@ -43,8 +43,8 @@ export default class CacheController {
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type === "bridge") {
-                const parings = await Socket.fetch(State.bridges[i].id, "cache:parings");
-                const accessories = await Socket.fetch(State.bridges[i].id, "cache:accessories");
+                const parings = Bridges.parings(State.bridges[i].id);
+                const accessories = Bridges.accessories(State.bridges[i].id);
 
                 if (parings || accessories) {
                     results.push({
@@ -59,7 +59,7 @@ export default class CacheController {
         return response.send(results);
     }
 
-    async list(request: Request, response: Response): Promise<Response> {
+    list(request: Request, response: Response): Response {
         if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
@@ -67,8 +67,8 @@ export default class CacheController {
             });
         }
 
-        const parings = await Socket.fetch(request.params.bridge, "cache:parings");
-        const accessories = await Socket.fetch(request.params.bridge, "cache:accessories");
+        const parings = Bridges.parings(request.params.bridge);
+        const accessories = Bridges.accessories(request.params.bridge);
 
         return response.send({
             parings,
@@ -76,7 +76,7 @@ export default class CacheController {
         });
     }
 
-    async listParings(request: Request, response: Response): Promise<Response> {
+    listParings(request: Request, response: Response): Response {
         if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
@@ -84,10 +84,10 @@ export default class CacheController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "cache:parings"));
+        return response.send(Bridges.parings(request.params.bridge));
     }
 
-    async listAccessories(request: Request, response: Response): Promise<Response> {
+    listAccessories(request: Request, response: Response): Response {
         if (!request.user?.permissions.config) {
             return response.send({
                 token: false,
@@ -95,7 +95,7 @@ export default class CacheController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "cache:accessories"));
+        return response.send(Bridges.accessories(request.params.bridge));
     }
 
     async purge(request: Request, response: Response): Promise<Response> {
@@ -106,6 +106,21 @@ export default class CacheController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "cache:purge", request.params));
+        const bridge = State.bridges.find((item) => item.id === request.params.bridge);
+
+        if (bridge) {
+            await State.hub?.teardown(bridge.id);
+
+            Bridges.purge(bridge.id, request.params?.uuid);
+            State.hub?.launch(bridge.id, bridge.port, bridge.display);
+
+            return response.send({
+                success: true,
+            });
+        }
+
+        return response.send({
+            error: "bridge not found",
+        });
     }
 }

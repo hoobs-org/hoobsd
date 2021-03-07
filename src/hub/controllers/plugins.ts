@@ -20,7 +20,6 @@ import Axios from "axios";
 import { Request, Response } from "express-serve-static-core";
 import { PluginManager } from "homebridge/lib/pluginManager";
 import State from "../../state";
-import Socket from "../services/socket";
 import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
