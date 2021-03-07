@@ -17,10 +17,9 @@
  **************************************************************************************************/
 
 import { removeSync } from "fs-extra";
-import { execSync, ExecSyncOptions } from "child_process";
-import { join, basename } from "path";
+import { execSync } from "child_process";
 import { uname, Utsname } from "node-uname";
-import Paths from "../services/paths";
+import System from "../services/system";
 import Releases from "../services/releases";
 
 export default class GUI {
@@ -28,17 +27,12 @@ export default class GUI {
         const release: { [key: string]: any } = await Releases.fetch("gui");
 
         if (release) {
-            const options: ExecSyncOptions = {
-                cwd: join(Paths.data(), ".."),
-                stdio: ["inherit", "inherit", "inherit"],
-            };
-
             const utsname: Utsname = uname();
+            const system = await System.info();
 
-            if ((utsname.sysname || "").toLowerCase() === "linux") {
-                execSync(`wget ${release.download}`, options);
-                execSync(`tar -xzf ./${basename(release.download)} -C /usr --strip-components=1 --no-same-owner`, options);
-                execSync(`rm -f ./${basename(release.download)}`, options);
+            if ((utsname.sysname || "").toLowerCase() === "linux" && system.package_manager === "apt-get") {
+                execSync("apt-get update", { stdio: "ignore" });
+                execSync("apt-get install -y hoobs-gui", { stdio: "ignore" });
 
                 return {
                     success: true,

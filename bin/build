@@ -61,26 +61,57 @@ Program.command("server", { isDefault: true })
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
 
             mkdirSync(join(root, "dist"));
-            mkdirSync(join(root, "dist/bin"));
+            mkdirSync(join(root, "dist/usr"));
+            mkdirSync(join(root, "dist/usr/bin"));
 
-            copyFileSync(join(root, "bin", "hoobsd"), join(root, "dist/bin", "hoobsd"));
-            copySync(join(root, "lib"), join(root, "dist/lib"));
+            copyFileSync(join(root, "bin", "hoobsd"), join(root, "dist/usr/bin", "hoobsd"));
+            copySync(join(root, "lib"), join(root, "dist/usr/lib"));
 
             delete pjson.scripts;
             delete pjson.devDependencies;
 
             pjson.main = "cli.js";
 
-            writeFileSync(join(root, "dist/lib/hoobsd", "package.json"), JSON.stringify(pjson, null, 4));
+            writeFileSync(join(root, "dist/usr/lib/hoobsd", "package.json"), JSON.stringify(pjson, null, 4));
 
-            execSync(`chmod 755 ${join(root, "dist/bin", "hoobsd")}`, { cwd: root, stdio: "inherit" });
-            execSync(`tar -zcf ../hoobsd-v${pjson.version}.tar.gz .`, { cwd: join(root, "dist"), stdio: "inherit" });
+            execSync(`chmod 755 ${join(root, "dist/usr/bin", "hoobsd")}`, { cwd: root, stdio: "inherit" });
+            execSync(`tar -zcf ../hoobsd-v${pjson.version}.tar.gz .`, { cwd: join(root, "dist/usr"), stdio: "inherit" });
 
-            if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
             if (!existsSync(join(root, "../builds"))) mkdirSync(join(root, "../builds"));
             if (existsSync(join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`));
 
-            moveSync(join(root, `hoobsd-v${pjson.version}.tar.gz`), join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`));
+            moveSync(join(root, "dist", `hoobsd-v${pjson.version}.tar.gz`), join(root, "../builds", `hoobsd-v${pjson.version}.tar.gz`));
+            mkdirSync(join(root, "dist/DEBIAN"));
+
+            let control = "";
+
+            control += "Package: hoobsd\n";
+            control += `Version: ${pjson.version}\n`;
+            control += "Section: base\n";
+            control += "Priority: optional\n";
+            control += "Architecture: all\n";
+            control += "Installed-Size: 65\n";
+            control += "Depends: nodejs (>= 14.15.0), yarn (>= 1.22.0), git, python3, make, gcc, g++\n";
+            control += "Maintainer: HOOBS Maintainers <info@hoobs.org>\n";
+            control += "Homepage: https://hoobs.org\n";
+            control += "Description: Server component for the certified HOOBS smart home stack.\n";
+
+            writeFileSync(join(root, "dist/DEBIAN/control"), control);
+            copyFileSync(join(root, "bin", "prerm"), join(root, "dist/DEBIAN", "prerm"));
+            copyFileSync(join(root, "bin", "postrm"), join(root, "dist/DEBIAN", "postrm"));
+            copyFileSync(join(root, "bin", "postinst"), join(root, "dist/DEBIAN", "postinst"));
+
+            execSync(`chmod 755 ${join(root, "dist/DEBIAN", "prerm")}`, { cwd: root, stdio: "inherit" });
+            execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postrm")}`, { cwd: root, stdio: "inherit" });
+            execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postinst")}`, { cwd: root, stdio: "inherit" });
+            execSync("dpkg-deb --build dist", { cwd: root, stdio: "inherit" });
+
+            if (existsSync(join(root, "../builds", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../builds", `hoobsd-v${pjson.version}.deb`));
+
+            moveSync(join(root, "dist.deb"), join(root, "../builds", `hoobsd-v${pjson.version}.deb`));
+            execSync(`dpkg-sig --sign builder ${join(root, "../builds", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+
+            if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
         }
     });
 

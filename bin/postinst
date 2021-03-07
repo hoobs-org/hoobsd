@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd /usr/lib/hoobsd
+rm -fR /usr/lib/hoobsd/node_modules
+yarn install --force --production
