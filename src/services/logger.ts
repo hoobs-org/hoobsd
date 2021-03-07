@@ -78,6 +78,7 @@ export const enum Events {
     SHELL_CONNECT = "shell_connect",
     SHELL_DISCONNECT = "shell_disconnect",
     SHUTDOWN = "shutdown",
+    RESTART = "restart",
 }
 
 interface IntermediateLogger {

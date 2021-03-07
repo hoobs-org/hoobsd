@@ -51,22 +51,27 @@ export default class Socket extends EventEmitter {
 
                 this.pipe.server.on(Events.LOG, (payload: any, socket: any) => {
                     this.emit(Events.LOG, payload.body);
-                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
+                    this.pipe.server.emit(socket, payload.session, Events.COMPLETE);
                 });
 
                 this.pipe.server.on(Events.NOTIFICATION, (payload: any, socket: any) => {
                     this.emit(Events.NOTIFICATION, payload.body);
-                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
+                    this.pipe.server.emit(socket, payload.session, Events.COMPLETE);
                 });
 
                 this.pipe.server.on(Events.ACCESSORY_CHANGE, (payload: any, socket: any) => {
                     this.emit(Events.ACCESSORY_CHANGE, payload.body);
-                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
+                    this.pipe.server.emit(socket, payload.session, Events.COMPLETE);
                 });
 
                 this.pipe.server.on(Events.HEARTBEAT, (payload: any, socket: any) => {
                     this.emit(Events.HEARTBEAT, payload.body);
-                    this.pipe.server.emit(socket, payload.socket, Events.COMPLETE);
+                    this.pipe.server.emit(socket, payload.session, Events.COMPLETE);
+                });
+
+                this.pipe.server.on(Events.RESTART, (payload: any, socket: any) => {
+                    this.emit(Events.RESTART, payload.body);
+                    this.pipe.server.emit(socket, payload.session, Events.COMPLETE);
                 });
             }
 

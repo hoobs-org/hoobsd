@@ -185,7 +185,7 @@ export default class Server extends EventEmitter {
     public async start(): Promise<void> {
         const promises: Promise<void>[] = [];
 
-        Plugins.linkLibs();
+        Plugins.linkLibs(State.id);
         writeFileSync(join(Paths.data(State.id), "config.json"), formatJson(this.config));
 
         this.loadCachedPlatformAccessoriesFromDisk();
@@ -519,7 +519,7 @@ export default class Server extends EventEmitter {
         informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory.UUID}`);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-            this.client.accessory(Client.identifier(State.id, accessory.UUID)).then((service) => {
+            this.client.accessory(State.id, Client.identifier(State.id, accessory.UUID)).then((service) => {
                 if (service) {
                     service.refresh((results: any) => {
                         service.values = results.values;
@@ -565,7 +565,7 @@ export default class Server extends EventEmitter {
             }
 
             accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                this.client.accessory(Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
                     if (service) {
                         service.refresh((results: any) => {
                             service.values = results.values;

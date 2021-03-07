@@ -63,7 +63,7 @@ export default class ConfigController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "config:get"));
+        return response.send(Config.configuration(request.params.bridge));
     }
 
     async saveBridge(request: Request, response: Response): Promise<Response> {
@@ -84,6 +84,10 @@ export default class ConfigController {
             "cog",
         );
 
-        return response.send(await Socket.fetch(request.params.bridge, "config:save", request.params, request.body));
+        Config.saveConfig(request.body, request.params.bridge);
+
+        return response.send({
+            success: true,
+        });
     }
 }

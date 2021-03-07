@@ -24,22 +24,30 @@ import State from "../../state";
 import { Services, Characteristics, Precedence } from "./types";
 
 export default class Client {
-    accessories(): Promise<{ [key: string]: any }[]> {
+    accessories(bridge: string): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
-            Request.get(`http://127.0.0.1:${State.homebridge?.port}/accessories`).then((response) => {
-                resolve(this.process(response.data.accessories));
+            const data = State.bridges.find((item) => item.id === bridge);
+
+            if (!data) {
+                resolve([]);
+
+                return;
+            }
+
+            Request.get(`http://127.0.0.1:${data.port}/accessories`).then((response) => {
+                resolve(this.process(bridge, response.data.accessories));
             }).catch(() => {
                 resolve([]);
             });
         });
     }
 
-    accessory(value: string): Promise<{ [key: string]: any } | undefined> {
+    accessory(bridge: string, value: string): Promise<{ [key: string]: any } | undefined> {
         return new Promise((resolve) => {
             if (!value || value === "") {
                 resolve(undefined);
             } else {
-                this.accessories().then((services) => {
+                this.accessories(bridge).then((services) => {
                     resolve(services.find((item) => item.accessory_identifier === value));
                 }).catch(() => {
                     resolve(undefined);
@@ -48,7 +56,7 @@ export default class Client {
         });
     }
 
-    process(accessories: { [key: string]: any }[]): { [key: string]: any }[] {
+    process(bridge: string, accessories: { [key: string]: any }[]): { [key: string]: any }[] {
         const services: { [key: string]: any }[] = [];
 
         for (let i = 0; i < accessories.length; i += 1) {
@@ -69,8 +77,8 @@ export default class Client {
                         service = {
                             id: accessories[i].aid,
                             accessory_identifier: "",
-                            bridge_identifier: Client.identifier(State.id),
-                            bridge: State.id,
+                            bridge_identifier: Client.identifier(bridge),
+                            bridge,
                             plugin: "",
                             room: "default",
                             sequence: 0,
@@ -90,7 +98,7 @@ export default class Client {
                         const uuid = data.pop();
                         const plugin = data[0];
 
-                        service.accessory_identifier = Client.identifier(State.id, uuid);
+                        service.accessory_identifier = Client.identifier(bridge, uuid);
                         service.plugin = plugin;
 
                         if (service.accessory_identifier === service.bridge_identifier) {

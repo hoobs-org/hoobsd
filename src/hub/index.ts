@@ -367,6 +367,13 @@ export default class API extends EventEmitter {
             State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
         });
 
+        this.socket.on(Events.RESTART, async (data: any) => {
+            const bridge = State.bridges.find((item) => item.id === data);
+
+            if (bridge) await this.teardown(bridge.id);
+            if (bridge) this.launch(bridge.id, bridge.port, bridge.display);
+        });
+
         this.socket.start();
 
         for (let i = 0; i < State.bridges.length; i += 1) {

@@ -61,7 +61,9 @@ export default class Config {
         return value;
     }
 
-    static configuration(): HomebridgeConfig {
+    static configuration(bridge?: string): HomebridgeConfig {
+        const id = bridge || State.id;
+
         let pjson = {
             name: "plugins",
             description: "HOOBS Plugins",
@@ -69,13 +71,13 @@ export default class Config {
             dependencies: {},
         };
 
-        if (existsSync(join(Paths.data(State.id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.data(State.id), "package.json"), {}));
+        if (existsSync(join(Paths.data(id), "package.json"))) pjson = _.extend(pjson, loadJson<any>(join(Paths.data(id), "package.json"), {}));
 
         Config.savePackage(pjson);
 
         let config: any = {};
 
-        if (State.id === "hub") {
+        if (id === "hub") {
             config = {
                 api: {
                     origin: "*",
@@ -89,29 +91,31 @@ export default class Config {
             };
         }
 
-        if (existsSync(Paths.config)) config = _.extend(config, loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        if (existsSync(join(Paths.data(), `${id}.conf`))) config = _.extend(config, loadJson<any>(join(Paths.data(), `${id}.conf`), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
 
-        if (State.id !== "hub") {
+        if (id !== "hub") {
             let bridges: any = [];
 
             if (existsSync(Paths.bridges)) bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
-            const index = bridges.findIndex((n: any) => n.id === State.id);
+            const index = bridges.findIndex((n: any) => n.id === id);
 
             if (index >= 0) State.display = bridges[index].display;
         }
 
-        Config.saveConfig(config);
+        Config.saveConfig(config, bridge);
 
         return config;
     }
 
-    static saveConfig(config: any, touch?: boolean): void {
+    static saveConfig(config: any, bridge?: string, touch?: boolean): void {
+        const id = bridge || State.id;
+
         let current: any = {};
 
-        if (existsSync(Paths.config)) current = loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        if (existsSync(join(Paths.data(), `${id}.conf`))) current = loadJson<any>(join(Paths.data(), `${id}.conf`), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        if (State.id !== "hub") {
+        if (id !== "hub") {
             config.accessories = config?.accessories || [];
             config.platforms = config?.platforms || [];
 
@@ -120,18 +124,20 @@ export default class Config {
         }
 
         if (!jsonEquals(current, config)) {
-            writeFileSync(Paths.config, formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+            writeFileSync(join(Paths.data(), `${id}.conf`), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
         } else if (touch) {
-            Config.touchConfig();
+            Config.touchConfig(bridge);
         }
     }
 
-    static touchConfig(): void {
+    static touchConfig(bridge?: string): void {
+        const id = bridge || State.id;
+
         let config: any = {};
 
-        if (existsSync(Paths.config)) config = loadJson<any>(Paths.config, {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        if (existsSync(join(Paths.data(), `${id}.conf`))) config = loadJson<any>(join(Paths.data(), `${id}.conf`), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
 
-        writeFileSync(Paths.config, formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
+        writeFileSync(join(Paths.data(), `${id}.conf`), formatJson(config, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML"));
     }
 
     static filterConfig(value: any): void {

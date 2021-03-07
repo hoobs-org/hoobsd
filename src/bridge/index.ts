@@ -36,9 +36,6 @@ import {
 
 import CacheController from "./controllers/cache";
 import StatusController from "./controllers/status";
-import ConfigController from "./controllers/config";
-import BridgeController from "./controllers/bridge";
-import PluginsController from "./controllers/plugins";
 import AccessoriesController from "./controllers/accessories";
 
 const BRIDGE_START_DELAY = 0;
@@ -66,9 +63,6 @@ export default class Bridge extends EventEmitter {
 
         new CacheController();
         new StatusController();
-        new ConfigController();
-        new BridgeController();
-        new PluginsController();
         new AccessoriesController();
 
         const plugins = Plugins.load(State.id);
@@ -100,7 +94,11 @@ export default class Bridge extends EventEmitter {
         }
     }
 
-    start(soft?: boolean, override?: boolean): void {
+    restart() {
+        Socket.fetch(Events.RESTART, State.id);
+    }
+
+    start(): void {
         const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
@@ -117,20 +115,20 @@ export default class Bridge extends EventEmitter {
             });
         });
 
-        if (override || (bridge?.autostart || 0) >= 0) {
+        if ((bridge?.autostart || 0) >= 0) {
             setTimeout(() => {
                 State.homebridge?.start();
-            }, override ? 0 : (bridge?.autostart || BRIDGE_START_DELAY) * 1000);
+            }, (bridge?.autostart || BRIDGE_START_DELAY) * 1000);
         }
 
-        if (!soft) State.socket?.start();
+        State.socket?.start();
     }
 
-    async stop(soft?: boolean): Promise<void> {
+    async stop(): Promise<void> {
         Console.debug("Shutting down");
 
         if (State.homebridge) await State.homebridge.stop();
-        if (State.socket && !soft) State.socket.stop();
+        if (State.socket) State.socket.stop();
 
         Console.debug("Stopped");
 

@@ -78,10 +78,10 @@ export default class Plugins {
         return results;
     }
 
-    static linkLibs(): Promise<void> {
+    static linkLibs(bridge?: string): Promise<void> {
         return new Promise((resolve) => {
-            if (!existsSync(join(Paths.data(State.id), "node_modules", "hap-nodejs"))) {
-                System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(State.id), stdio: "ignore" }, 3);
+            if (!existsSync(join(Paths.data(bridge), "node_modules", "hap-nodejs"))) {
+                System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge), stdio: "ignore" }, 3);
 
                 resolve();
             } else {
@@ -90,25 +90,25 @@ export default class Plugins {
         });
     }
 
-    static install(name: string, version?: string): Promise<void> {
+    static install(bridge: string, name: string, version?: string): Promise<void> {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(State.id), stdio: ["inherit", "inherit", "inherit"] }, 3);
+            System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge), stdio: ["inherit", "inherit", "inherit"] }, 3);
 
-            Plugins.linkLibs();
+            Plugins.linkLibs(bridge);
 
-            const path = join(Plugins.directory, name);
+            const path = join(Paths.data(bridge), "node_modules", name);
 
             if (existsSync(path) && existsSync(join(path, "package.json"))) {
                 const pjson = Plugins.loadPackage(path);
-                const config = Config.configuration();
+                const config = Config.configuration(bridge);
 
                 config.plugins?.push(name);
                 config.plugins = [...new Set(config.plugins)];
 
                 if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
-                    Plugins.getPluginType(name, path, pjson).then((details: any[]) => {
+                    Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
                         let found = false;
                         let alias = "";
 
@@ -137,10 +137,10 @@ export default class Plugins {
                             });
                         }
                     }).finally(() => {
-                        Config.saveConfig(config, true);
+                        Config.saveConfig(config, bridge, true);
 
                         Console.notify(
-                            State.id,
+                            bridge,
                             "Plugin Installed",
                             `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
                             NotificationType.SUCCESS,
@@ -150,10 +150,10 @@ export default class Plugins {
                         resolve();
                     });
                 } else {
-                    Config.saveConfig(config, true);
+                    Config.saveConfig(config, bridge, true);
 
                     Console.notify(
-                        State.id,
+                        bridge,
                         "Plugin Installed",
                         `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
                         NotificationType.SUCCESS,
@@ -164,7 +164,7 @@ export default class Plugins {
                 }
             } else {
                 Console.notify(
-                    State.id,
+                    bridge,
                     "Plugin Not Installed",
                     `Unable to install ${PluginManager.extractPluginName(name)}.`,
                     NotificationType.ERROR,
@@ -175,14 +175,14 @@ export default class Plugins {
         });
     }
 
-    static uninstall(name: string): Promise<void> {
+    static uninstall(bridge: string, name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            System.execPersistSync(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(State.id), stdio: ["inherit", "inherit", "inherit"] }, 3);
+            System.execPersistSync(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge), stdio: ["inherit", "inherit", "inherit"] }, 3);
 
-            Plugins.linkLibs();
+            Plugins.linkLibs(bridge);
 
-            if (!existsSync(join(Plugins.directory, name, "package.json"))) {
-                const config = Config.configuration();
+            if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
+                const config = Config.configuration(bridge);
 
                 let index = config.plugins?.indexOf(name);
 
@@ -202,10 +202,10 @@ export default class Plugins {
                     index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
                 }
 
-                Config.saveConfig(config);
+                Config.saveConfig(config, bridge);
 
                 Console.notify(
-                    State.id,
+                    bridge,
                     "Plugin Uninstalled",
                     `${PluginManager.extractPluginName(name)} has been removed.`,
                     NotificationType.WARN,
@@ -215,7 +215,7 @@ export default class Plugins {
                 resolve();
             } else {
                 Console.notify(
-                    State.id,
+                    bridge,
                     "Plugin Not Uninstalled",
                     `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
                     NotificationType.ERROR,
@@ -226,7 +226,7 @@ export default class Plugins {
         });
     }
 
-    static upgrade(name?: string, version?: string): Promise<void> {
+    static upgrade(bridge: string, name?: string, version?: string): Promise<void> {
         const tag = version || "latest";
 
         return new Promise((resolve) => {
@@ -237,10 +237,10 @@ export default class Plugins {
 
             if (name) flags.push(`${name}@${tag}`);
 
-            System.execPersistSync(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(State.id), stdio: ["inherit", "inherit", "inherit"] }, 3);
+            System.execPersistSync(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge), stdio: ["inherit", "inherit", "inherit"] }, 3);
 
-            Plugins.linkLibs();
-            Config.touchConfig();
+            Plugins.linkLibs(bridge);
+            Config.touchConfig(bridge);
 
             Console.notify(
                 State.id,
@@ -254,7 +254,7 @@ export default class Plugins {
         });
     }
 
-    static async getPluginType(name: string, path: string, pjson: any): Promise<any[]> {
+    static async getPluginType(bridge: string, name: string, path: string, pjson: any): Promise<any[]> {
         if (State.plugins[name] && Array.isArray(State.plugins[name]) && State.plugins[name].length > 0) return State.plugins[name];
 
         const registered: any[] = [];
@@ -278,7 +278,7 @@ export default class Plugins {
             if (main.toLowerCase().endsWith(".js")) main = main.replace(/.js/gi, "");
 
             try {
-                const plugin = await import(join(Plugins.directory, main));
+                const plugin = await import(join(Paths.data(bridge), "node_modules", main));
 
                 const options = {
                     hap: {
@@ -326,7 +326,7 @@ export default class Plugins {
                 Console.error(error.stack);
             }
 
-            delete require.cache[require.resolve(join(Plugins.directory, main))];
+            delete require.cache[require.resolve(join(Paths.data(bridge), "node_modules", main))];
         }
 
         if (registered.length > 0) State.plugins[name] = registered;

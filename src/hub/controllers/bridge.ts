@@ -61,7 +61,11 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "bridge:start"));
+        const bridge = State.bridges.find((item) => item.id === request.params.bridge);
+
+        if (bridge) State.hub?.launch(bridge.id, bridge.port, bridge.display);
+
+        return response.send({ success: true });
     }
 
     async stop(request: Request, response: Response): Promise<Response> {
@@ -72,7 +76,11 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "bridge:stop"));
+        const bridge = State.bridges.find((item) => item.id === request.params.bridge);
+
+        if (bridge) await State.hub?.teardown(bridge.id);
+
+        return response.send({ success: true });
     }
 
     async restart(request: Request, response: Response): Promise<Response> {
@@ -83,6 +91,11 @@ export default class BridgeController {
             });
         }
 
-        return response.send(await Socket.fetch(request.params.bridge, "bridge:restart"));
+        const bridge = State.bridges.find((item) => item.id === request.params.bridge);
+
+        if (bridge) await State.hub?.teardown(bridge.id);
+        if (bridge) State.hub?.launch(bridge.id, bridge.port, bridge.display);
+
+        return response.send({ success: true });
     }
 }

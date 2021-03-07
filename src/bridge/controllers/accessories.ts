@@ -75,7 +75,7 @@ export default class AccessoriesController {
 
     service(id: string): Promise<any> {
         return new Promise((resolve) => {
-            State.homebridge?.client.accessory(id).then((response: any) => {
+            State.homebridge?.client.accessory(State.id, id).then((response: any) => {
                 if (response) {
                     response.refresh((results: any) => {
                         response.values = results.values;
@@ -103,7 +103,7 @@ export default class AccessoriesController {
 
     services(): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
-            State.homebridge?.client.accessories().then((services: { [key: string]: any }[]) => {
+            State.homebridge?.client.accessories(State.id).then((services: { [key: string]: any }[]) => {
                 if (!services) resolve([]);
                 if (!Array.isArray(services)) services = [services];
 

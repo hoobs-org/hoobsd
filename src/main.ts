@@ -22,7 +22,6 @@ import * as Enviornment from "dotenv";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
-import { existsSync } from "fs-extra";
 import { Console } from "./services/logger";
 import State from "./state";
 import Bridges from "./services/bridges";
@@ -123,17 +122,13 @@ export = function Daemon(): void {
                         const modified = State.bridges.find((n: any) => n.id === State.id);
 
                         if (modified && !jsonEquals(current, modified)) {
-                            State.bridge?.stop().then(() => {
-                                State.bridge?.start();
-                            });
+                            State.bridge?.restart();
                         }
                     }
                 });
 
                 Watcher.watch(Paths.config).on("change", () => {
-                    State.bridge?.stop().then(() => {
-                        if (existsSync(Paths.config)) State.bridge?.start();
-                    });
+                    State.bridge?.restart();
                 });
 
                 State.bridge.start();
