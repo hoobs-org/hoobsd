@@ -210,7 +210,7 @@ export default class SystemController {
                 success: true,
             });
 
-            System.restart();
+            System.reboot();
         } else {
             response.send({
                 success: false,
@@ -219,7 +219,7 @@ export default class SystemController {
         }
     }
 
-    upload(request: Request, response: Response): void {
+    async upload(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions.reboot) {
             response.send({
                 token: false,
@@ -234,16 +234,16 @@ export default class SystemController {
         form.multiples = false;
         form.maxFileSize = 2 * 1024 * 1024 * 1024;
 
-        form.parse(request, (_error, _fields, files) => {
+        form.parse(request, async (_error, _fields, files) => {
             const file = <Forms.File>files.file;
 
-            Bridges.restore(file.path, true).finally(() => {
-                response.send({
-                    success: true,
-                });
+            await Bridges.restore(file.path, true);
 
-                System.restart();
+            response.send({
+                success: true,
             });
+
+            System.reboot();
         });
     }
 
@@ -300,7 +300,7 @@ export default class SystemController {
             success: true,
         });
 
-        if (restart) System.restart();
+        if (restart) System.reboot();
     }
 
     reboot(request: Request, response: Response): void {
@@ -336,6 +336,6 @@ export default class SystemController {
 
         await Bridges.reset();
 
-        System.restart();
+        System.reboot();
     }
 }

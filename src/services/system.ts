@@ -185,16 +185,6 @@ export default class System {
         return results;
     }
 
-    static restart(): void {
-        Console.warn("service restart command received");
-
-        if (!State.container && State.mode === "production") {
-            exec(`${join(__dirname, "../../../bin/hoobsd")} service restart`);
-        } else {
-            exec(`touch ${join(__dirname, "../../../src/main.ts")}`);
-        }
-    }
-
     static reboot(): void {
         Console.warn("device reboot command received");
 
