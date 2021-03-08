@@ -93,6 +93,7 @@ export default class Bridge extends EventEmitter {
     }
 
     restart() {
+        State.cache?.remove(`accessories/${State.id}`);
         Socket.fetch(Events.RESTART, State.id);
     }
 
@@ -100,6 +101,7 @@ export default class Bridge extends EventEmitter {
         const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
+        State.cache?.remove(`accessories/${bridge?.id}`);
         State.homebridge = new Homebridge(this.port || undefined);
 
         State.homebridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
