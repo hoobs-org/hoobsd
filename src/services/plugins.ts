@@ -81,9 +81,9 @@ export default class Plugins {
     static linkLibs(bridge?: string): Promise<void> {
         return new Promise((resolve) => {
             if (!existsSync(join(Paths.data(bridge), "node_modules", "hap-nodejs"))) {
-                System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge), stdio: "ignore" }, 3);
-
-                resolve();
+                System.execPersist(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge) }, 3).then(() => {
+                    resolve();
+                });
             } else {
                 resolve();
             }
@@ -94,49 +94,65 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            System.execPersistSync(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge), stdio: ["inherit", "inherit", "inherit"] }, 3);
+            System.execPersist(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }, 3).then((stdio: string[]) => {
+                for (let i = 0; i < stdio.length; i += 1) {
+                    Console.info(stdio[i]);
+                }
 
-            Plugins.linkLibs(bridge);
+                Plugins.linkLibs(bridge);
 
-            const path = join(Paths.data(bridge), "node_modules", name);
+                const path = join(Paths.data(bridge), "node_modules", name);
 
-            if (existsSync(path) && existsSync(join(path, "package.json"))) {
-                const pjson = Plugins.loadPackage(path);
-                const config = Config.configuration(bridge);
+                if (existsSync(path) && existsSync(join(path, "package.json"))) {
+                    const pjson = Plugins.loadPackage(path);
+                    const config = Config.configuration(bridge);
 
-                config.plugins?.push(name);
-                config.plugins = [...new Set(config.plugins)];
+                    config.plugins?.push(name);
+                    config.plugins = [...new Set(config.plugins)];
 
-                if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
-                    Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
-                        let found = false;
-                        let alias = "";
+                    if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
+                        Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
+                            let found = false;
+                            let alias = "";
 
-                        for (let i = 0; i < details.length; i += 1) {
-                            if (details[i].type === "platform") {
-                                const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
+                            for (let i = 0; i < details.length; i += 1) {
+                                if (details[i].type === "platform") {
+                                    const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
 
-                                if (index >= 0) {
-                                    config.platforms[index].plugin_map = {
-                                        plugin_name: name,
-                                    };
+                                    if (index >= 0) {
+                                        config.platforms[index].plugin_map = {
+                                            plugin_name: name,
+                                        };
 
-                                    found = true;
-                                } else if (alias === "") {
-                                    alias = details[i].alias;
+                                        found = true;
+                                    } else if (alias === "") {
+                                        alias = details[i].alias;
+                                    }
                                 }
                             }
-                        }
 
-                        if (!found && alias !== "") {
-                            config.platforms.push({
-                                platform: alias,
-                                plugin_map: {
-                                    plugin_name: name,
-                                },
-                            });
-                        }
-                    }).finally(() => {
+                            if (!found && alias !== "") {
+                                config.platforms.push({
+                                    platform: alias,
+                                    plugin_map: {
+                                        plugin_name: name,
+                                    },
+                                });
+                            }
+                        }).finally(() => {
+                            Config.saveConfig(config, bridge, true);
+
+                            Console.notify(
+                                bridge,
+                                "Plugin Installed",
+                                `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
+                                NotificationType.SUCCESS,
+                                "puzzle",
+                            );
+
+                            resolve();
+                        });
+                    } else {
                         Config.saveConfig(config, bridge, true);
 
                         Console.notify(
@@ -148,81 +164,73 @@ export default class Plugins {
                         );
 
                         resolve();
-                    });
+                    }
                 } else {
-                    Config.saveConfig(config, bridge, true);
-
                     Console.notify(
                         bridge,
-                        "Plugin Installed",
-                        `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
-                        NotificationType.SUCCESS,
-                        "puzzle",
+                        "Plugin Not Installed",
+                        `Unable to install ${PluginManager.extractPluginName(name)}.`,
+                        NotificationType.ERROR,
                     );
 
-                    resolve();
+                    reject();
                 }
-            } else {
-                Console.notify(
-                    bridge,
-                    "Plugin Not Installed",
-                    `Unable to install ${PluginManager.extractPluginName(name)}.`,
-                    NotificationType.ERROR,
-                );
-
-                reject();
-            }
+            });
         });
     }
 
     static uninstall(bridge: string, name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            System.execPersistSync(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge), stdio: ["inherit", "inherit", "inherit"] }, 3);
+            System.execPersist(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge) }, 3).then((stdio) => {
+                for (let i = 0; i < stdio.length; i += 1) {
+                    Console.info(stdio[i]);
+                }
 
-            Plugins.linkLibs(bridge);
+                Plugins.linkLibs(bridge);
 
-            if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
-                const config = Config.configuration(bridge);
+                if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
+                    const config = Config.configuration(bridge);
 
-                let index = config.plugins?.indexOf(name);
+                    let index = config.plugins?.indexOf(name);
 
-                if (index! > -1) config.plugins?.splice(index!, 1);
+                    if (index! > -1) config.plugins?.splice(index!, 1);
 
-                index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-
-                while (index >= 0) {
-                    config.platforms.splice(index, 1);
                     index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-                }
 
-                index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+                    while (index >= 0) {
+                        config.platforms.splice(index, 1);
+                        index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+                    }
 
-                while (index >= 0) {
-                    config.accessories.splice(index, 1);
                     index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+
+                    while (index >= 0) {
+                        config.accessories.splice(index, 1);
+                        index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+                    }
+
+                    Config.saveConfig(config, bridge);
+
+                    Console.notify(
+                        bridge,
+                        "Plugin Uninstalled",
+                        `${PluginManager.extractPluginName(name)} has been removed.`,
+                        NotificationType.WARN,
+                        "puzzle",
+                    );
+
+                    resolve();
+                } else {
+                    Console.notify(
+                        bridge,
+                        "Plugin Not Uninstalled",
+                        `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
+                        NotificationType.ERROR,
+                    );
+
+                    reject();
                 }
-
-                Config.saveConfig(config, bridge);
-
-                Console.notify(
-                    bridge,
-                    "Plugin Uninstalled",
-                    `${PluginManager.extractPluginName(name)} has been removed.`,
-                    NotificationType.WARN,
-                    "puzzle",
-                );
-
-                resolve();
-            } else {
-                Console.notify(
-                    bridge,
-                    "Plugin Not Uninstalled",
-                    `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
-                    NotificationType.ERROR,
-                );
-
-                reject();
-            }
+            });
         });
     }
 
@@ -237,20 +245,24 @@ export default class Plugins {
 
             if (name) flags.push(`${name}@${tag}`);
 
-            System.execPersistSync(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge), stdio: ["inherit", "inherit", "inherit"] }, 3);
+            System.execPersist(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }, 3).then((stdio) => {
+                for (let i = 0; i < stdio.length; i += 1) {
+                    Console.info(stdio[i]);
+                }
 
-            Plugins.linkLibs(bridge);
-            Config.touchConfig(bridge);
+                Plugins.linkLibs(bridge);
+                Config.touchConfig(bridge);
 
-            Console.notify(
-                State.id,
-                name ? "Plugin Upgraded" : "Plugins Upgraded",
-                name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
-                NotificationType.SUCCESS,
-                "puzzle",
-            );
+                Console.notify(
+                    State.id,
+                    name ? "Plugin Upgraded" : "Plugins Upgraded",
+                    name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                    NotificationType.SUCCESS,
+                    "puzzle",
+                );
 
-            resolve();
+                resolve();
+            });
         });
     }
 

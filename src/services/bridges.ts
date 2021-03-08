@@ -398,6 +398,8 @@ export default class Bridges {
     }
 
     static async reset(): Promise<void> {
+        State.restoring = true;
+
         await State.hub?.stop();
         await Bridges.backup();
 
@@ -410,6 +412,7 @@ export default class Bridges {
         removeSync(join(Paths.data(), "hub.persist"));
         removeSync(join(Paths.data(), "hub.conf"));
         removeSync(join(Paths.data(), "hoobs.log"));
+        removeSync(join(Paths.data(), "layout.conf"));
         removeSync(join(Paths.data(), "access"));
 
         State.users = [];
@@ -587,7 +590,11 @@ export default class Bridges {
                                 if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
                                 if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.bridges, formatJson(bridges));
 
-                                System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id), stdio: "inherit" }, 3);
+                                const stdio = await System.execPersist(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id) }, 3);
+
+                                for (let i = 0; i < stdio.length; i += 1) {
+                                    Console.info(stdio[i]);
+                                }
                             }
 
                             removeSync(join(Paths.backups, "stage"));
@@ -634,11 +641,15 @@ export default class Bridges {
                         if (existsSync(filename)) unlinkSync(filename);
                         if (existsSync(join(Paths.data(), "meta"))) unlinkSync(join(Paths.data(), "meta"));
 
-                        setTimeout(() => {
+                        setTimeout(async () => {
                             const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id), stdio: "inherit" }, 3);
+                                const stdio = await System.execPersist(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id) }, 3);
+
+                                for (let j = 0; j < stdio.length; j += 1) {
+                                    Console.info(stdio[j]);
+                                }
                             }
 
                             State.restoring = false;

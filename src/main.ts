@@ -183,7 +183,7 @@ export = function Daemon(): void {
 
             State.terminating = true;
 
-            if (State.cache) State.cache.save(Paths.data(State.id), ["hap/accessories"]);
+            if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id), ["hap/accessories"]);
             if (State.bridge) await State.bridge.stop();
             if (State.hub) await State.hub.stop();
 

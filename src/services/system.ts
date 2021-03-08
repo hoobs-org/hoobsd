@@ -20,7 +20,14 @@
 /* eslint-disable prefer-destructuring */
 
 import { join } from "path";
-import { exec, execSync, ExecSyncOptionsWithBufferEncoding } from "child_process";
+
+import {
+    exec,
+    execSync,
+    ExecOptions,
+    ExecSyncOptions,
+} from "child_process";
+
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
@@ -159,7 +166,26 @@ export default class System {
         });
     }
 
-    static execPersistSync(command: string, options: ExecSyncOptionsWithBufferEncoding, retries: number) {
+    static execPersist(command: string, options: ExecOptions, retries: number): Promise<string[]> {
+        return new Promise((resolve) => {
+            exec(command, options, (error, stdout) => {
+                if (error && retries > 0) {
+                    setTimeout(() => {
+                        System.execPersist(command, options, retries - 1).then((stdio) => {
+                            resolve(stdio);
+                        });
+                    }, 1000);
+                } else if (error) {
+                    Console.error(error.message);
+                    resolve([]);
+                } else {
+                    resolve((stdout || "").trim().split("\n"));
+                }
+            });
+        });
+    }
+
+    static execPersistSync(command: string, options: ExecSyncOptions, retries: number) {
         try {
             execSync(command, options);
         } catch (_error) {
