@@ -141,8 +141,7 @@ export default class Bridges {
 
                     case "restart":
                         try {
-                            execSync("systemctl stop hoobsd.service");
-                            execSync("systemctl start hoobsd.service");
+                            execSync("systemctl restart hoobsd.service");
 
                             return resolve(true);
                         } catch (_error) {
@@ -176,8 +175,7 @@ export default class Bridges {
 
                     case "restart":
                         try {
-                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
-                            execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist && launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
 
                             return resolve(true);
                         } catch (_error) {
