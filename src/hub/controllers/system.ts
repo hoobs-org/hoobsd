@@ -210,7 +210,7 @@ export default class SystemController {
                 success: true,
             });
 
-            System.reboot();
+            System.restart();
         } else {
             response.send({
                 success: false,
@@ -243,7 +243,7 @@ export default class SystemController {
                 success: true,
             });
 
-            System.reboot();
+            System.restart();
         });
     }
 
@@ -300,7 +300,7 @@ export default class SystemController {
             success: true,
         });
 
-        if (restart) System.reboot();
+        if (restart) System.restart();
     }
 
     reboot(request: Request, response: Response): void {
@@ -336,6 +336,6 @@ export default class SystemController {
 
         await Bridges.reset();
 
-        System.reboot();
+        System.restart();
     }
 }

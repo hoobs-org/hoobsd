@@ -269,10 +269,7 @@ export default class Bridges {
     static install(): boolean {
         if (State.mode === "production" && existsSync("/etc/systemd/system")) {
             try {
-                if (existsSync("/etc/systemd/system/hoobsd.service")) {
-                    execSync("systemctl stop hoobsd.service");
-                    execSync("systemctl start hoobsd.service");
-                } else {
+                if (!existsSync("/etc/systemd/system/hoobsd.service")) {
                     execSync("touch /etc/systemd/system/hoobsd.service");
                     execSync("truncate -s 0 /etc/systemd/system/hoobsd.service");
 
@@ -305,10 +302,7 @@ export default class Bridges {
 
         if (State.mode === "production" && existsSync("/Library/LaunchDaemons")) {
             try {
-                if (existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
-                    execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
-                } else {
+                if (!existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
                     execSync("touch /Library/LaunchDaemons/org.hoobsd.plist");
 
                     execSync("echo \"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
