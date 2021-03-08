@@ -34,20 +34,8 @@ export default class Client {
                 return;
             }
 
-            const key = `accessories/${data.id}`;
-            const cached = State.cache?.get<{ [key: string]: any }[]>(key);
-
-            if (cached) {
-                resolve(cached);
-
-                return;
-            }
-
             Request.get(`http://127.0.0.1:${data.port}/accessories`).then((response) => {
-                const results = this.process(bridge, response.data.accessories);
-
-                State.cache?.set(key, results, 720);
-                resolve(results);
+                resolve(this.process(bridge, response.data.accessories));
             }).catch(() => {
                 resolve([]);
             });
