@@ -277,14 +277,14 @@ export default class Bridges {
                     execSync("truncate -s 0 /etc/systemd/system/hoobsd.service");
 
                     execSync("echo \"[Unit]\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"Description=HOOBS API\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"Description=HOOBS\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"After=network-online.target\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
                     execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
-                    execSync("echo \"Restart=on-failure\" >> /etc/systemd/system/hoobsd.service");
+                    execSync("echo \"Restart=always\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
                     execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
