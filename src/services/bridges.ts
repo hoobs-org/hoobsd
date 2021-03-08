@@ -266,86 +266,6 @@ export default class Bridges {
         return false;
     }
 
-    static install(): boolean {
-        if (State.mode === "production" && existsSync("/etc/systemd/system")) {
-            try {
-                if (!existsSync("/etc/systemd/system/hoobsd.service")) {
-                    execSync("touch /etc/systemd/system/hoobsd.service");
-                    execSync("truncate -s 0 /etc/systemd/system/hoobsd.service");
-
-                    execSync("echo \"[Unit]\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"Description=HOOBS\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"After=network-online.target\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"[Service]\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"Type=simple\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"User=root\" >> /etc/systemd/system/hoobsd.service");
-                    execSync(`echo "ExecStart=${join(Bridges.locate(), "hoobsd")} hub" >> /etc/systemd/system/hoobsd.service`);
-                    execSync("echo \"Restart=always\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"RestartSec=3\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"KillMode=process\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"[Install]\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"WantedBy=multi-user.target\" >> /etc/systemd/system/hoobsd.service");
-                    execSync("echo \"\" >> /etc/systemd/system/hoobsd.service");
-
-                    execSync("systemctl daemon-reload");
-                    execSync("systemctl enable hoobsd.service");
-                    execSync("systemctl start hoobsd.service");
-                }
-
-                return true;
-            } catch (_error) {
-                return false;
-            }
-        }
-
-        if (State.mode === "production" && existsSync("/Library/LaunchDaemons")) {
-            try {
-                if (!existsSync("/Library/LaunchDaemons/org.hoobsd.plist")) {
-                    execSync("touch /Library/LaunchDaemons/org.hoobsd.plist");
-
-                    execSync("echo \"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"<plist version=\"1.0\">\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"    <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <key>Label</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <string>org.hoobsd.hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <key>EnvironmentVariables</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"            <key>PATH</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"            <string><![CDATA[/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin]]></string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"            <key>HOME</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"            <string>/var/root</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <key>Program</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync(`echo "        <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
-                    execSync("echo \"        <key>ProgramArguments</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync(`echo "            <string>${join(Bridges.locate(), "hoobsd")}</string>" >> /Library/LaunchDaemons/org.hoobsd.plist`);
-                    execSync("echo \"            <string>hub</string>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        </array>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <key>RunAtLoad</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <key>KeepAlive</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <key>SessionCreate</key>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"        <true/>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"    </dict>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-                    execSync("echo \"</plist>\" >> /Library/LaunchDaemons/org.hoobsd.plist");
-
-                    execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
-                }
-            } catch (_error) {
-                return false;
-            }
-
-            return true;
-        }
-
-        return true;
-    }
-
     static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string) {
         const bridges: BridgeRecord[] = [];
 
@@ -406,7 +326,6 @@ export default class Bridges {
     }
 
     static create(name: string, port: number, pin: string, username: string, advertiser: string): void {
-        if (sanitize(name) === "hub") Bridges.install();
         if (!existsSync(Paths.bridges)) writeFileSync(Paths.bridges, "[]");
 
         Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0, advertiser);
@@ -721,8 +640,6 @@ export default class Bridges {
                             for (let i = 0; i < bridges.length; i += 1) {
                                 System.execPersistSync(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id), stdio: "inherit" }, 3);
                             }
-
-                            if (bridges.find((item) => item.type === "hub") && State.mode === "production") Bridges.install();
 
                             State.restoring = false;
 
