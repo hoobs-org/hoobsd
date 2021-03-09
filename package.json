@@ -15,7 +15,7 @@
         "name": "Michael J Kellsy"
     },
     "scripts": {
-        "build": "bin/build --lint --pack",
+        "build": "bin/build --lint",
         "lint": "eslint 'src/**/*.ts'",
         "serve": "bin/debug build"
     },
