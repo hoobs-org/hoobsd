@@ -96,7 +96,11 @@ export default class Plugins {
         return new Promise((resolve, reject) => {
             System.execPersist(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }, 3).then((stdio: string[]) => {
                 for (let i = 0; i < stdio.length; i += 1) {
-                    Console.info(stdio[i]);
+                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn add")) {
+                        Console.info(stdio[i]);
+                    } else if (stdio[i].toLowerCase().startsWith("yarn add")) {
+                        Console.info("installing plugin");
+                    }
                 }
 
                 Plugins.linkLibs(bridge);
@@ -183,7 +187,11 @@ export default class Plugins {
         return new Promise((resolve, reject) => {
             System.execPersist(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge) }, 3).then((stdio) => {
                 for (let i = 0; i < stdio.length; i += 1) {
-                    Console.info(stdio[i]);
+                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn remove")) {
+                        Console.info(stdio[i]);
+                    } else if (stdio[i].toLowerCase().startsWith("yarn remove")) {
+                        Console.info("removing plugin");
+                    }
                 }
 
                 Plugins.linkLibs(bridge);
@@ -247,7 +255,11 @@ export default class Plugins {
 
             System.execPersist(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }, 3).then((stdio) => {
                 for (let i = 0; i < stdio.length; i += 1) {
-                    Console.info(stdio[i]);
+                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn upgrade")) {
+                        Console.info(stdio[i]);
+                    } else if (stdio[i].toLowerCase().startsWith("yarn upgrade")) {
+                        Console.info("upgrading plugin");
+                    }
                 }
 
                 Plugins.linkLibs(bridge);

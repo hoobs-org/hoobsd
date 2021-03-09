@@ -593,7 +593,11 @@ export default class Bridges {
                                 const stdio = await System.execPersist(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id) }, 3);
 
                                 for (let i = 0; i < stdio.length; i += 1) {
-                                    Console.info(stdio[i]);
+                                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn install")) {
+                                        Console.info(stdio[i]);
+                                    } else if (stdio[i].toLowerCase().startsWith("yarn install")) {
+                                        Console.info("installing plugins");
+                                    }
                                 }
                             }
 
@@ -648,7 +652,11 @@ export default class Bridges {
                                 const stdio = await System.execPersist(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id) }, 3);
 
                                 for (let j = 0; j < stdio.length; j += 1) {
-                                    Console.info(stdio[j]);
+                                    if (!stdio[j].toLowerCase().startsWith("done in") && !stdio[j].toLowerCase().startsWith("yarn install")) {
+                                        Console.info(stdio[j]);
+                                    } else if (stdio[j].toLowerCase().startsWith("yarn install")) {
+                                        Console.info("restoring bridge");
+                                    }
                                 }
                             }
 
