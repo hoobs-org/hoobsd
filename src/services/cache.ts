@@ -46,11 +46,25 @@ export default class Cache {
         return this.client.del(key);
     }
 
+    filter(value: string): boolean {
+        if (
+            !value.startsWith("system/")
+         && !value.startsWith("release/")
+         && !value.startsWith("accessories/")
+         && !value.startsWith("plugin/definition:")
+         && !value.startsWith("plugin/schema:")
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
     load(path: string) {
         const now = (new Date()).getTime();
 
         if (existsSync(join(path, "cache"))) {
-            const cache = loadJson<any>(join(path, "cache"), [], "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo");
+            const cache = loadJson<any>(join(path, "cache"), [], "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo").filter((item: any) => this.filter(item.key));
 
             for (let i = 0; i < cache.length; i += 1) {
                 const ttl = (cache[i].ttl - now) / 1000;
@@ -62,19 +76,19 @@ export default class Cache {
         }
     }
 
-    save(path: string, exclude: string[]) {
+    save(path: string) {
         if (existsSync(path)) {
             const keys = this.client.keys();
             const cache = [];
 
-            for (let i = 0; i < keys.length; i += 1) {
-                if (exclude.indexOf(keys[i]) === -1) {
-                    cache.push({
-                        key: keys[i],
-                        value: this.client.get(keys[i]),
-                        ttl: this.client.getTtl(keys[i]),
-                    });
-                }
+            const filtered = keys.filter((item) => this.filter(item));
+
+            for (let i = 0; i < filtered.length; i += 1) {
+                cache.push({
+                    key: keys[i],
+                    value: this.client.get(keys[i]),
+                    ttl: this.client.getTtl(keys[i]),
+                });
             }
 
             writeFileSync(join(path, "cache"), formatJson(cache, "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo"));
