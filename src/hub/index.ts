@@ -38,6 +38,7 @@ import {
 
 import Paths from "../services/paths";
 import Config from "../services/config";
+import System from "../services/system";
 import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
@@ -379,6 +380,8 @@ export default class API extends EventEmitter {
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type === "bridge") Console.import((await Socket.fetch(State.bridges[i].id, "status:log")) || []);
         }
+
+        await System.preload();
 
         this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();

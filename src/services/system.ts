@@ -36,6 +36,18 @@ import { Console } from "./logger";
 import { loadJson } from "./formatters";
 
 export default class System {
+    static async preload(): Promise<void> {
+        const waits: Promise<{ [key: string]: any }>[] = [];
+
+        waits.push(System.info());
+        waits.push(System.cli.info());
+        waits.push(System.gui.info());
+        waits.push(System.hoobsd.info());
+        waits.push(System.runtime.info());
+
+        await Promise.all(waits);
+    }
+
     static async info(): Promise<{ [key: string]: any }> {
         const key = "system/info";
         const cached = State.cache?.get<{ [key: string]: any }>(key);
