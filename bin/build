@@ -97,12 +97,7 @@ Program.command("server", { isDefault: true })
             control += "Description: Server component for the certified HOOBS smart home stack.\n";
 
             writeFileSync(join(root, "dist/DEBIAN/control"), control);
-            copyFileSync(join(root, "bin", "prerm"), join(root, "dist/DEBIAN", "prerm"));
-            copyFileSync(join(root, "bin", "postrm"), join(root, "dist/DEBIAN", "postrm"));
             copyFileSync(join(root, "bin", "postinst"), join(root, "dist/DEBIAN", "postinst"));
-
-            execSync(`chmod 755 ${join(root, "dist/DEBIAN", "prerm")}`, { cwd: root, stdio: "inherit" });
-            execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postrm")}`, { cwd: root, stdio: "inherit" });
             execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postinst")}`, { cwd: root, stdio: "inherit" });
             execSync("dpkg-deb --build dist", { cwd: root, stdio: "inherit" });
 
