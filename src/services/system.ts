@@ -288,6 +288,8 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = await System.info();
 
+                State.cache?.remove(key);
+
                 if (system.package_manager === "apt-get") {
                     execSync("apt-get update", { stdio: "ignore" });
                     execSync("apt-get install -y hoobs-gui", { stdio: "ignore" });
@@ -366,6 +368,8 @@ export default class System {
 
             upgrade: async (): Promise<void> => {
                 const system = await System.info();
+
+                State.cache?.remove(key);
 
                 if (system.package_manager === "apt-get") {
                     execSync("apt-get update", { stdio: "ignore" });
@@ -446,6 +450,8 @@ export default class System {
 
             upgrade: async (): Promise<void> => {
                 const system = await System.info();
+
+                State.cache?.remove(key);
 
                 if (system.package_manager === "apt-get") {
                     execSync("apt-get update", { stdio: "ignore" });
