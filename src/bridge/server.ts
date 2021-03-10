@@ -21,7 +21,14 @@ import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
 import { StorageService } from "homebridge/lib/storageService";
-import { existsSync, writeFileSync, unlinkSync } from "fs-extra";
+
+import {
+    existsSync,
+    writeFileSync,
+    unlinkSync,
+    openSync,
+    closeSync,
+} from "fs-extra";
 
 import {
     Accessory,
@@ -323,6 +330,8 @@ export default class Server extends EventEmitter {
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
         let cachedAccessories: SerializedPlatformAccessory[] | null = null;
 
+        if (!existsSync(join(Paths.accessories, "cachedAccessories"))) closeSync(openSync(join(Paths.accessories, "cachedAccessories"), "w"));
+
         try {
             cachedAccessories = await this.storageService.getItem<SerializedPlatformAccessory[]>("cachedAccessories");
         } catch (error) {
@@ -360,7 +369,11 @@ export default class Server extends EventEmitter {
                 platformPlugins.configureAccessory(accessory);
             }
 
-            this.bridge.addBridgedAccessory(accessory._associatedHAPAccessory);
+            try {
+                this.bridge.addBridgedAccessory(accessory._associatedHAPAccessory);
+            } catch (_error) {
+                return false;
+            }
 
             return true;
         });
@@ -371,10 +384,11 @@ export default class Server extends EventEmitter {
             try {
                 const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
 
+                if (!existsSync(join(Paths.accessories, "cachedAccessories"))) closeSync(openSync(join(Paths.accessories, "cachedAccessories"), "w"));
+
                 this.storageService.setItemSync("cachedAccessories", serializedAccessories);
             } catch (error) {
                 Console.error(`Failed to save cached accessories to disk: ${error.message}`);
-                Console.error("Your accessories will not persist between restarts until this issue is resolved.");
             }
         }
     }
