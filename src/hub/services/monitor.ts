@@ -50,20 +50,8 @@ export default async function Monitor() {
         }
     }
 
-    const system = System.info();
-    const cli = System.cli.info();
-    const hoobsd = System.hoobsd.info();
-    const runtime = System.runtime.info();
-
-    let upgraded = true;
-
-    if (!hoobsd.hoobsd_upgraded) upgraded = false;
-    if (!cli.cli_upgraded) upgraded = false;
-    if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !runtime.node_upgraded) upgraded = false;
-
     Console.emit(Events.MONITOR, "hub", {
         bridges: results,
-        upgraded,
         cpu: await SystemInfo.currentLoad(),
         memory: await SystemInfo.mem(),
         temp: await SystemInfo.cpuTemperature(),

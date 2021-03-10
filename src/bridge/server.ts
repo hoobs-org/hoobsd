@@ -20,7 +20,7 @@
 import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
-import storage, { LocalStorage } from "node-persist";
+import { StorageService } from "homebridge/lib/storageService";
 import { existsSync, writeFileSync, unlinkSync } from "fs-extra";
 
 import {
@@ -71,7 +71,6 @@ import { Console, Prefixed, Events } from "../services/logger";
 import { formatJson } from "../services/formatters";
 
 const INSTANCE_KILL_DELAY = 3000;
-const PERSISTED_CACHE: LocalStorage = storage.create();
 
 let STORAGE_PATH_SET = false;
 
@@ -101,11 +100,13 @@ export default class Server extends EventEmitter {
 
     private readonly allowInsecureAccess: boolean;
 
+    private storageService: StorageService;
+
     private readonly externalPortService: ExternalPortService;
 
     private cachedPlatformAccessories: PlatformAccessory[] = [];
 
-    private cachedAccessoriesFileCreated = false;
+    private cachedAccessoriesFileLoaded = false;
 
     private readonly publishedExternalAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
@@ -122,11 +123,8 @@ export default class Server extends EventEmitter {
         // @ts-ignore
         Logger.internal = Console;
 
-        (async () => {
-            await PERSISTED_CACHE.init({
-                dir: Paths.accessories,
-            });
-        })();
+        this.storageService = new StorageService(Paths.accessories);
+        this.storageService.initSync();
 
         this.running = false;
         this.instance = State.bridges.find((n: any) => n.id === State.id);
@@ -327,12 +325,13 @@ export default class Server extends EventEmitter {
     }
 
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
-        const cachedAccessories: SerializedPlatformAccessory[] = await PERSISTED_CACHE.getItem("cachedAccessories");
+        const cachedAccessories = await this.storageService.getItem<SerializedPlatformAccessory[]>("cachedAccessories");
 
         if (cachedAccessories) {
             this.cachedPlatformAccessories = cachedAccessories.map((serialized) => PlatformAccessory.deserialize(serialized));
-            this.cachedAccessoriesFileCreated = true;
         }
+
+        this.cachedAccessoriesFileLoaded = true;
     }
 
     private restoreCachedPlatformAccessories(): void {
@@ -367,17 +366,11 @@ export default class Server extends EventEmitter {
         });
     }
 
-    private async saveCachedPlatformAccessoriesOnDisk(): Promise<void> {
-        if (this.cachedPlatformAccessories.length > 0) {
-            this.cachedAccessoriesFileCreated = true;
-
+    private saveCachedPlatformAccessoriesOnDisk(): void {
+        if (this.cachedAccessoriesFileLoaded) {
             const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
 
-            await PERSISTED_CACHE.setItem("cachedAccessories", serializedAccessories);
-        } else if (this.cachedAccessoriesFileCreated) {
-            this.cachedAccessoriesFileCreated = false;
-
-            await PERSISTED_CACHE.removeItem("cachedAccessories");
+            this.storageService.setItemSync("cachedAccessories", serializedAccessories);
         }
     }
 

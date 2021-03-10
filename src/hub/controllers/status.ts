@@ -60,10 +60,46 @@ export default class StatusController {
         }
 
         const system = System.info();
-        const cli = System.cli.info();
-        const gui = System.gui.info();
-        const hoobsd = System.hoobsd.info();
-        const runtime = System.runtime.info();
+        const waits: Promise<void>[] = [];
+
+        let cli: { [key: string]: any } | undefined;
+        let gui: { [key: string]: any } | undefined;
+        let hoobsd: { [key: string]: any } | undefined;
+        let runtime: { [key: string]: any } | undefined;
+
+        waits.push(new Promise((resolve) => {
+            System.cli.info().then((info: { [key: string]: any }) => {
+                cli = info;
+            }).finally(() => {
+                resolve();
+            });
+        }));
+
+        waits.push(new Promise((resolve) => {
+            System.gui.info().then((info: { [key: string]: any }) => {
+                gui = info;
+            }).finally(() => {
+                resolve();
+            });
+        }));
+
+        waits.push(new Promise((resolve) => {
+            System.hoobsd.info().then((info: { [key: string]: any }) => {
+                hoobsd = info;
+            }).finally(() => {
+                resolve();
+            });
+        }));
+
+        waits.push(new Promise((resolve) => {
+            System.runtime.info().then((info: { [key: string]: any }) => {
+                runtime = info;
+            }).finally(() => {
+                resolve();
+            });
+        }));
+
+        await Promise.all(waits);
 
         let product = "custom";
         let upgraded = true;
