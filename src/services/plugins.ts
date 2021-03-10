@@ -91,43 +91,57 @@ export default class Plugins {
             System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }).then(() => {
                 const path = join(Paths.data(bridge), "node_modules", name);
 
-                if (existsSync(path) && existsSync(join(path, "package.json"))) {
-                    const pjson = Plugins.loadPackage(path);
-                    const config = Config.configuration(bridge);
+                setTimeout(() => {
+                    if (existsSync(path) && existsSync(join(path, "package.json"))) {
+                        const pjson = Plugins.loadPackage(path);
+                        const config = Config.configuration(bridge);
 
-                    config.plugins?.push(name);
-                    config.plugins = [...new Set(config.plugins)];
+                        config.plugins?.push(name);
+                        config.plugins = [...new Set(config.plugins)];
 
-                    if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
-                        Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
-                            let found = false;
-                            let alias = "";
+                        if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
+                            Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
+                                let found = false;
+                                let alias = "";
 
-                            for (let i = 0; i < details.length; i += 1) {
-                                if (details[i].type === "platform") {
-                                    const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
+                                for (let i = 0; i < details.length; i += 1) {
+                                    if (details[i].type === "platform") {
+                                        const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
 
-                                    if (index >= 0) {
-                                        config.platforms[index].plugin_map = {
-                                            plugin_name: name,
-                                        };
+                                        if (index >= 0) {
+                                            config.platforms[index].plugin_map = {
+                                                plugin_name: name,
+                                            };
 
-                                        found = true;
-                                    } else if (alias === "") {
-                                        alias = details[i].alias;
+                                            found = true;
+                                        } else if (alias === "") {
+                                            alias = details[i].alias;
+                                        }
                                     }
                                 }
-                            }
 
-                            if (!found && alias !== "") {
-                                config.platforms.push({
-                                    platform: alias,
-                                    plugin_map: {
-                                        plugin_name: name,
-                                    },
-                                });
-                            }
-                        }).finally(() => {
+                                if (!found && alias !== "") {
+                                    config.platforms.push({
+                                        platform: alias,
+                                        plugin_map: {
+                                            plugin_name: name,
+                                        },
+                                    });
+                                }
+                            }).finally(() => {
+                                Config.saveConfig(config, bridge, true);
+
+                                Console.notify(
+                                    bridge,
+                                    "Plugin Installed",
+                                    `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
+                                    NotificationType.SUCCESS,
+                                    "puzzle",
+                                );
+
+                                resolve();
+                            });
+                        } else {
                             Config.saveConfig(config, bridge, true);
 
                             Console.notify(
@@ -139,30 +153,18 @@ export default class Plugins {
                             );
 
                             resolve();
-                        });
+                        }
                     } else {
-                        Config.saveConfig(config, bridge, true);
-
                         Console.notify(
                             bridge,
-                            "Plugin Installed",
-                            `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
-                            NotificationType.SUCCESS,
-                            "puzzle",
+                            "Plugin Not Installed",
+                            `Unable to install ${PluginManager.extractPluginName(name)}.`,
+                            NotificationType.ERROR,
                         );
 
-                        resolve();
+                        reject();
                     }
-                } else {
-                    Console.notify(
-                        bridge,
-                        "Plugin Not Installed",
-                        `Unable to install ${PluginManager.extractPluginName(name)}.`,
-                        NotificationType.ERROR,
-                    );
-
-                    reject();
-                }
+                }, 2 * 1000);
             });
         });
     }
