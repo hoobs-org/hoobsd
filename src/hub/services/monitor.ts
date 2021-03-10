@@ -20,7 +20,6 @@ import SystemInfo from "systeminformation";
 import State from "../../state";
 import { Console, Events } from "../../services/logger";
 import Socket from "./socket";
-import System from "../../services/system";
 
 const DEFAULT_POLLING = 5;
 
