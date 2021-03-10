@@ -46,10 +46,10 @@ export default class Cache {
         return this.client.del(key);
     }
 
-    filter(value: string): boolean {
+    filter(value: string, clear?: boolean): boolean {
         if (
             !value.startsWith("system/")
-         && !value.startsWith("release/")
+         && (clear && !value.startsWith("release/"))
          && !value.startsWith("accessories/")
          && !value.startsWith("plugin/definition:")
          && !value.startsWith("plugin/schema:")
@@ -58,6 +58,15 @@ export default class Cache {
         }
 
         return false;
+    }
+
+    clear() {
+        const keys = this.client.keys();
+        const filtered = keys.filter((item) => !this.filter(item, true));
+
+        for (let i = 0; i < filtered.length; i += 1) {
+            this.client.del(filtered[i]);
+        }
     }
 
     load(path: string) {
@@ -85,9 +94,9 @@ export default class Cache {
 
             for (let i = 0; i < filtered.length; i += 1) {
                 cache.push({
-                    key: keys[i],
-                    value: this.client.get(keys[i]),
-                    ttl: this.client.getTtl(keys[i]),
+                    key: filtered[i],
+                    value: this.client.get(filtered[i]),
+                    ttl: this.client.getTtl(filtered[i]),
                 });
             }
 

@@ -28,7 +28,7 @@ export default class GUI {
 
         if (release) {
             const utsname: Utsname = uname();
-            const system = await System.info();
+            const system = System.info();
 
             if ((utsname.sysname || "").toLowerCase() === "linux" && system.package_manager === "apt-get") {
                 execSync("apt-get update", { stdio: "ignore" });

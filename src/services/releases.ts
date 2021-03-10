@@ -20,16 +20,20 @@ import Request from "axios";
 import State from "../state";
 
 export default class Releases {
-    static async fetch(application: string, beta?: boolean) {
+    static fetch(application: string, beta?: boolean): { [key: string]: any } {
         const key = `release/${application}`;
         const cached = State.cache?.get<{ [key: string]: any }>(key);
 
         if (cached) return cached;
 
-        const { results } = (await Request.get(`https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`)).data;
+        let results: { [key: string]: any } | undefined;
 
-        State.cache?.set(key, results, 60);
+        (async () => {
+            results = (await Request.get(`https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`)).data.results;
+        })();
 
-        return results;
+        if (results) State.cache?.set(key, results, 4 * 60);
+
+        return results || {};
     }
 }

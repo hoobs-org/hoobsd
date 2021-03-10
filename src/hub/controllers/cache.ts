@@ -27,6 +27,7 @@ export default class CacheController {
         State.app?.get("/api/cache/:bridge", Security, (request, response) => this.list(request, response));
         State.app?.get("/api/cache/:bridge/parings", Security, (request, response) => this.listParings(request, response));
         State.app?.get("/api/cache/:bridge/accessories", Security, (request, response) => this.listAccessories(request, response));
+        State.app?.delete("/api/cache/purge", Security, (request, response) => this.clear(request, response));
         State.app?.delete("/api/cache/:bridge/purge", Security, (request, response) => this.purge(request, response));
         State.app?.delete("/api/cache/:bridge/purge/:uuid", Security, (request, response) => this.purge(request, response));
     }
@@ -96,6 +97,23 @@ export default class CacheController {
         }
 
         return response.send(Bridges.accessories(request.params.bridge));
+    }
+
+    clear(request: Request, response: Response): void {
+        if (!request.user?.permissions.config) {
+            response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+
+            return;
+        }
+
+        State.cache?.clear();
+
+        response.send({
+            success: true,
+        });
     }
 
     async purge(request: Request, response: Response): Promise<Response> {

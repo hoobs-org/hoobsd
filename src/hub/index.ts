@@ -381,7 +381,7 @@ export default class API extends EventEmitter {
             if (State.bridges[i].type === "bridge") Console.import((await Socket.fetch(State.bridges[i].id, "status:log")) || []);
         }
 
-        await System.preload();
+        System.preload();
 
         this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();

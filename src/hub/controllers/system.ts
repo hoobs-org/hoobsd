@@ -52,7 +52,7 @@ export default class SystemController {
     async info(_request: Request, response: Response): Promise<Response> {
         const operating: { [key: string]: any } = await SystemInfo.osInfo();
         const system: { [key: string]: any } = await SystemInfo.system();
-        const distro: { [key: string]: any } = await System.info();
+        const distro: { [key: string]: any } = System.info();
 
         if (distro.product === "box" || distro.product === "card") {
             system.manufacturer = "HOOBS.org";
@@ -87,7 +87,7 @@ export default class SystemController {
 
     async hostname(method: string, request: Request, response: Response): Promise<Response> {
         const operating: { [key: string]: any } = await SystemInfo.osInfo();
-        const distro: { [key: string]: any } = await System.info();
+        const distro: { [key: string]: any } = System.info();
 
         switch (method) {
             case "post":
@@ -259,10 +259,9 @@ export default class SystemController {
 
         await Bridges.backup();
 
-        const system = await System.info();
+        const system = System.info();
 
-        let restart = false;
-        let data = await System.runtime.info();
+        let data = System.runtime.info();
 
         if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !data.node_upgraded) {
             Console.info("upgrading node");
@@ -270,7 +269,7 @@ export default class SystemController {
             await System.runtime.upgrade();
         }
 
-        data = await System.cli.info();
+        data = System.cli.info();
 
         if (!data.cli_upgraded) {
             Console.info("upgrading cli");
@@ -278,7 +277,7 @@ export default class SystemController {
             await System.cli.upgrade();
         }
 
-        data = await System.gui.info();
+        data = System.gui.info();
 
         if (data.gui_version && !data.gui_upgraded) {
             Console.info("upgrading gui");
@@ -286,21 +285,19 @@ export default class SystemController {
             await System.gui.upgrade();
         }
 
-        data = await System.hoobsd.info();
+        data = System.hoobsd.info();
 
         if (!data.hoobsd_upgraded) {
             Console.info("upgrading hoobsd");
 
             await System.hoobsd.upgrade();
-
-            restart = true;
         }
 
         response.send({
             success: true,
         });
 
-        if (restart) System.restart();
+        System.restart();
     }
 
     reboot(request: Request, response: Response): void {

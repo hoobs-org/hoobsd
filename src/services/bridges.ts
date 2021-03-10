@@ -590,15 +590,7 @@ export default class Bridges {
                                 if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
                                 if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) writeFileSync(Paths.bridges, formatJson(bridges));
 
-                                const stdio = await System.execPersist(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id) }, 3);
-
-                                for (let i = 0; i < stdio.length; i += 1) {
-                                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn install")) {
-                                        Console.info(stdio[i]);
-                                    } else if (stdio[i].toLowerCase().startsWith("yarn install")) {
-                                        Console.info("installing plugins");
-                                    }
-                                }
+                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id) });
                             }
 
                             removeSync(join(Paths.backups, "stage"));
@@ -649,15 +641,7 @@ export default class Bridges {
                             const bridges = loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                const stdio = await System.execPersist(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id) }, 3);
-
-                                for (let j = 0; j < stdio.length; j += 1) {
-                                    if (!stdio[j].toLowerCase().startsWith("done in") && !stdio[j].toLowerCase().startsWith("yarn install")) {
-                                        Console.info(stdio[j]);
-                                    } else if (stdio[j].toLowerCase().startsWith("yarn install")) {
-                                        Console.info("restoring bridge");
-                                    }
-                                }
+                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id), detached: true });
                             }
 
                             State.restoring = false;

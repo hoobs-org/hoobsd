@@ -50,11 +50,10 @@ export default async function Monitor() {
         }
     }
 
-    const system = await System.info();
-
-    const cli = await System.cli.info();
-    const hoobsd = await System.hoobsd.info();
-    const runtime = await System.runtime.info();
+    const system = System.info();
+    const cli = System.cli.info();
+    const hoobsd = System.hoobsd.info();
+    const runtime = System.runtime.info();
 
     let upgraded = true;
 

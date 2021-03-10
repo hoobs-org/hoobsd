@@ -78,31 +78,17 @@ export default class Plugins {
         return results;
     }
 
-    static linkLibs(bridge?: string): Promise<void> {
-        return new Promise((resolve) => {
-            if (!existsSync(join(Paths.data(bridge), "node_modules", "hap-nodejs"))) {
-                System.execPersist(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge) }, 3).then(() => {
-                    resolve();
-                });
-            } else {
-                resolve();
-            }
-        });
+    static async linkLibs(bridge?: string): Promise<void> {
+        if (!existsSync(join(Paths.data(bridge), "node_modules", "hap-nodejs"))) {
+            await System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge) });
+        }
     }
 
     static install(bridge: string, name: string, version?: string): Promise<void> {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            System.execPersist(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }, 3).then((stdio: string[]) => {
-                for (let i = 0; i < stdio.length; i += 1) {
-                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn add")) {
-                        Console.info(stdio[i]);
-                    } else if (stdio[i].toLowerCase().startsWith("yarn add")) {
-                        Console.info("installing plugin");
-                    }
-                }
-
+            System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }).then(() => {
                 Plugins.linkLibs(bridge);
 
                 const path = join(Paths.data(bridge), "node_modules", name);
@@ -185,15 +171,7 @@ export default class Plugins {
 
     static uninstall(bridge: string, name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            System.execPersist(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge) }, 3).then((stdio) => {
-                for (let i = 0; i < stdio.length; i += 1) {
-                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn remove")) {
-                        Console.info(stdio[i]);
-                    } else if (stdio[i].toLowerCase().startsWith("yarn remove")) {
-                        Console.info("removing plugin");
-                    }
-                }
-
+            System.execute(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge) }).then(() => {
                 Plugins.linkLibs(bridge);
 
                 if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
@@ -253,15 +231,7 @@ export default class Plugins {
 
             if (name) flags.push(`${name}@${tag}`);
 
-            System.execPersist(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }, 3).then((stdio) => {
-                for (let i = 0; i < stdio.length; i += 1) {
-                    if (!stdio[i].toLowerCase().startsWith("done in") && !stdio[i].toLowerCase().startsWith("yarn upgrade")) {
-                        Console.info(stdio[i]);
-                    } else if (stdio[i].toLowerCase().startsWith("yarn upgrade")) {
-                        Console.info("upgrading plugin");
-                    }
-                }
-
+            System.execute(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
                 Plugins.linkLibs(bridge);
                 Config.touchConfig(bridge);
 

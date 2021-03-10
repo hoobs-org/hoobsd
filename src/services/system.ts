@@ -23,9 +23,9 @@ import { join } from "path";
 
 import {
     exec,
+    spawn,
     execSync,
-    ExecOptions,
-    ExecSyncOptions,
+    SpawnOptionsWithoutStdio,
 } from "child_process";
 
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
@@ -36,63 +36,59 @@ import { Console } from "./logger";
 import { loadJson } from "./formatters";
 
 export default class System {
-    static async preload(): Promise<void> {
-        const waits: Promise<{ [key: string]: any }>[] = [];
-
-        waits.push(System.info());
-        waits.push(System.cli.info());
-        waits.push(System.gui.info());
-        waits.push(System.hoobsd.info());
-        waits.push(System.runtime.info());
-
-        await Promise.all(waits);
+    static preload(): void {
+        System.info();
+        System.cli.info();
+        System.gui.info();
+        System.hoobsd.info();
+        System.runtime.info();
     }
 
-    static async info(): Promise<{ [key: string]: any }> {
+    static info(): { [key: string]: any } {
         const key = "system/info";
         const cached = State.cache?.get<{ [key: string]: any }>(key);
 
         if (cached) return cached;
 
         const results: { [key: string]: any } = {};
-        const release = (await System.shell("uname")).toLowerCase();
+        const release = (System.shell("uname")).toLowerCase();
 
         switch (release) {
             case "darwin":
-                results.distribution = (((await System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductName:")) || "").split(":")[1] || "").trim();
-                results.version = (((await System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductVersion:")) || "").split(":")[1] || "").trim();
+                results.distribution = (((System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductName:")) || "").split(":")[1] || "").trim();
+                results.version = (((System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductVersion:")) || "").split(":")[1] || "").trim();
                 break;
 
             case "linux":
-                results.distribution = (((await System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("ID=")) || "").split("=")[1] || "").replace(/"/g, "");
-                results.version = (((await System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("VERSION_ID=")) || "").split("=")[1] || "").replace(/"/g, "");
+                results.distribution = (((System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("ID=")) || "").split("=")[1] || "").replace(/"/g, "");
+                results.version = (((System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("VERSION_ID=")) || "").split("=")[1] || "").replace(/"/g, "");
                 break;
         }
 
-        results.arch = await System.shell("uname -m");
+        results.arch = System.shell("uname -m");
         results.init_system = "";
 
         if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
         if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
-        if (await System.shell("cat /proc/version | grep microsoft") !== "") results.init_system = "";
+        if (System.shell("cat /proc/version | grep microsoft") !== "") results.init_system = "";
 
         switch (results.distribution) {
             case "alpine":
-                results.package_manager = (await System.shell("command -v apk")) !== "" ? "apk" : "";
+                results.package_manager = (System.shell("command -v apk")) !== "" ? "apk" : "";
                 break;
 
             case "ubuntu":
             case "debian":
             case "raspbian":
-                results.package_manager = (await System.shell("command -v apt-get")) !== "" ? "apt-get" : "";
+                results.package_manager = (System.shell("command -v apt-get")) !== "" ? "apt-get" : "";
                 break;
 
             case "fedora":
             case "rhel":
             case "centos":
-                if ((await System.shell("command -v dnf")) !== "") {
+                if ((System.shell("command -v dnf")) !== "") {
                     results.package_manager = "dnf";
-                } else if ((await System.shell("command -v yum")) !== "") {
+                } else if ((System.shell("command -v yum")) !== "") {
                     results.package_manager = "yum";
                 } else {
                     results.package_manager = "";
@@ -123,10 +119,10 @@ export default class System {
         }
 
         if ((results.product === "box" || results.product === "card") && results.init_system === "systemd" && existsSync("/etc/avahi/avahi-daemon.conf")) {
-            let broadcast = await System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+            let broadcast = System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
 
             if (broadcast.indexOf("#") >= 0) {
-                broadcast = ((await System.shell("hostname")).split(".")[0] || "").toLowerCase();
+                broadcast = ((System.shell("hostname")).split(".")[0] || "").toLowerCase();
             } else {
                 broadcast = (broadcast.split("=")[1] || "").toLowerCase();
             }
@@ -140,8 +136,8 @@ export default class System {
         return results;
     }
 
-    static async hostname(value: string) {
-        const system = await System.info();
+    static hostname(value: string) {
+        const system = System.info();
 
         if (system.mdns) {
             let formatted = value || "";
@@ -152,75 +148,54 @@ export default class System {
             formatted = formatted.split(".")[0];
 
             if (formatted && formatted !== "" && formatted !== system.mdns_broadcast) {
-                const broadcast = await System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+                const broadcast = System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
                 const content = readFileSync("/etc/avahi/avahi-daemon.conf").toString();
 
                 writeFileSync("/etc/avahi/avahi-daemon.conf", content.replace(broadcast, `host-name=${formatted}`));
-
-                await System.shell("systemctl restart avahi-daemon");
-
+                execSync("systemctl restart avahi-daemon");
                 State.cache?.remove("system/info");
             }
         }
     }
 
-    static shell(command: string, multiline?: boolean): Promise<string> {
-        return new Promise((resolve) => {
-            exec(command, (error, stdout) => {
-                if (error) {
-                    resolve("");
-                } else if (!multiline) {
-                    resolve((stdout || "").replace(/\n/g, ""));
-                } else {
-                    resolve(stdout || "");
-                }
-            });
-        });
-    }
-
-    static execPersist(command: string, options: ExecOptions, retries: number): Promise<string[]> {
-        return new Promise((resolve) => {
-            exec(command, options, (error, stdout) => {
-                if (error && retries > 0) {
-                    setTimeout(() => {
-                        System.execPersist(command, options, retries - 1).then((stdio) => {
-                            resolve(stdio);
-                        });
-                    }, 1000);
-                } else if (error) {
-                    Console.error(error.message);
-                    resolve([]);
-                } else {
-                    resolve((stdout || "").trim().split("\n"));
-                }
-            });
-        });
-    }
-
-    static execPersistSync(command: string, options: ExecSyncOptions, retries: number) {
+    static shell(command: string, multiline?: boolean): string {
         try {
-            execSync(command, options);
-        } catch (_error) {
-            if (retries > 0) {
-                setTimeout(() => {
-                    System.execPersistSync(command, options, retries - 1);
-                }, 1000);
+            const results = execSync(command).toString().trim();
+
+            if (!multiline) return results.replace(/\n/g, "");
+
+            return results;
+        } catch (error) {
+            return "";
+        }
+    }
+
+    static execute(command: string, options?: SpawnOptionsWithoutStdio): Promise<void> {
+        return new Promise((resolve) => {
+            const commands: string[] = [...(command.match(/(".*?"|[^"\s]+)+(?=\s*|\s*$)/g) || [])];
+
+            if (!commands || commands.length === 0) {
+                resolve();
+
+                return;
             }
-        }
-    }
 
-    static shellSync(command: string, multiline?: boolean): string {
-        let results = "";
+            const proc = spawn(commands.shift() || "", commands, options || { detached: true });
 
-        try {
-            results = execSync(command).toString() || "";
-        } catch (_error) {
-            results = "";
-        }
+            proc.stdout?.on("data", (data) => {
+                const messages: string[] = data.toString().split("\n");
 
-        if (!multiline) results = results.replace(/\n/g, "");
+                for (let i = 0; i < messages.length; i += 1) {
+                    const message = messages[i].trim();
 
-        return results;
+                    if (message !== "") Console.debug(messages[i].trim());
+                }
+            });
+
+            proc.on("close", () => {
+                resolve();
+            });
+        });
     }
 
     static restart(): void {
@@ -247,7 +222,7 @@ export default class System {
         const key = "system/gui";
 
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (beta: boolean): { [key: string]: any } => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
                 if (cached) return cached;
@@ -260,7 +235,7 @@ export default class System {
                 if (path) installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
-                const release = await System.gui.release(beta);
+                const release = System.gui.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -288,8 +263,8 @@ export default class System {
                 return results;
             },
 
-            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
-                const release = await Releases.fetch("gui", beta) || {};
+            release: (beta: boolean): { [key: string]: string } => {
+                const release = Releases.fetch("gui", beta) || {};
 
                 return {
                     version: release.version || "",
@@ -298,13 +273,13 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = await System.info();
+                const system = System.info();
 
                 State.cache?.remove(key);
 
                 if (system.package_manager === "apt-get") {
-                    execSync("apt-get update", { stdio: "ignore" });
-                    execSync("apt-get install -y hoobs-gui", { stdio: "ignore" });
+                    await System.execute("apt-get update");
+                    await System.execute("apt-get install -y hoobs-gui");
                 }
             },
         };
@@ -314,7 +289,7 @@ export default class System {
         const key = "system/cli";
 
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (beta: boolean): { [key: string]: any } => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
                 if (cached) return cached;
@@ -337,11 +312,11 @@ export default class System {
 
                 let installed = "";
 
-                if (path !== "") installed = await System.shell(`${path} -v`, true);
+                if (path !== "") installed = System.shell(`${path} -v`, true);
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = await System.cli.release(beta);
+                const release = System.cli.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -369,8 +344,8 @@ export default class System {
                 return results;
             },
 
-            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
-                const release = await Releases.fetch("hbs", beta) || {};
+            release: (beta: boolean): { [key: string]: string } => {
+                const release = Releases.fetch("hbs", beta) || {};
 
                 return {
                     version: release.version || "",
@@ -379,13 +354,13 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = await System.info();
+                const system = System.info();
 
                 State.cache?.remove(key);
 
                 if (system.package_manager === "apt-get") {
-                    execSync("apt-get update", { stdio: "ignore" });
-                    execSync("apt-get install -y hoobs-cli", { stdio: "ignore" });
+                    await System.execute("apt-get update");
+                    await System.execute("apt-get install -y hoobs-cli");
                 }
             },
         };
@@ -395,7 +370,7 @@ export default class System {
         const key = "system/hoobsd";
 
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (beta: boolean): { [key: string]: any } => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
                 if (cached) return cached;
@@ -418,11 +393,11 @@ export default class System {
 
                 let installed = "";
 
-                if (path !== "") installed = await System.shell(`${path} -v`, true);
+                if (path !== "") installed = System.shell(`${path} -v`, true);
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = await System.hoobsd.release(beta);
+                const release = System.hoobsd.release(beta);
                 const download = release.download || "";
 
                 let current = release.version || "";
@@ -443,7 +418,7 @@ export default class System {
                     hoobsd_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
                     hoobsd_download: download,
                     hoobsd_mode: mode,
-                    hoobsd_running: (await System.shell("pidof hoobsd")) !== "",
+                    hoobsd_running: (System.shell("pidof hoobsd")) !== "",
                 };
 
                 State.cache?.set(key, results, 60);
@@ -451,8 +426,8 @@ export default class System {
                 return results;
             },
 
-            release: async (beta: boolean): Promise<{ [key: string]: string }> => {
-                const release = await Releases.fetch("hoobsd", beta) || {};
+            release: (beta: boolean): { [key: string]: string } => {
+                const release = Releases.fetch("hoobsd", beta) || {};
 
                 return {
                     version: release.version || "",
@@ -461,13 +436,13 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = await System.info();
+                const system = System.info();
 
                 State.cache?.remove(key);
 
                 if (system.package_manager === "apt-get") {
-                    execSync("apt-get update", { stdio: "ignore" });
-                    execSync("apt-get install -y hoobsd", { stdio: "ignore" });
+                    await System.execute("apt-get update");
+                    await System.execute("apt-get install -y hoobsd");
                 }
             },
         };
@@ -477,7 +452,7 @@ export default class System {
         const key = "system/node";
 
         return {
-            info: async (beta: boolean): Promise<{ [key: string]: any }> => {
+            info: (beta: boolean): { [key: string]: any } => {
                 const cached = State.cache?.get<{ [key: string]: any }>(key);
 
                 if (cached) return cached;
@@ -496,21 +471,16 @@ export default class System {
 
                 if (!existsSync(path)) path = "";
 
-                let installed = "";
-                let current = await System.runtime.release(beta);
+                let current = System.runtime.release(beta);
 
-                if (path !== "") installed = (await System.shell(`${path} -v`)).replace("v", "");
-                if (!Semver.valid(installed)) installed = "";
-
-                if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
-                    current = installed;
+                if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) {
+                    current = process.version.replace("v", "");
                 }
 
                 const results = {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
-                    node_version: installed,
                     node_current: current,
-                    node_upgraded: installed === current || current === "" || installed === "" ? true : !Semver.gt(current, installed),
+                    node_upgraded: process.version.replace("v", "") === current || current === "" || process.version.replace("v", "") === "" ? true : !Semver.gt(current, process.version.replace("v", "")),
                 };
 
                 State.cache?.set(key, results, 60);
@@ -518,35 +488,38 @@ export default class System {
                 return results;
             },
 
-            release: async (beta: boolean): Promise<string> => {
-                const system = await System.info();
+            release: (beta: boolean): string => {
+                const system = System.info();
+                const release = Releases.fetch("node", beta) || {};
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
-                    execSync(`curl -sL https://deb.nodesource.com/setup_${beta ? "current" : "lts"}.x | bash`, { stdio: "ignore" });
-
                     let data: any = "";
 
-                    data = await System.shell("apt-cache show nodejs | grep Version");
+                    data = System.shell("apt-cache show nodejs | grep Version");
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
                     data = (data.split(/[-~]+/)[0] || "").trim();
 
+                    if (Semver.valid(release.version) && Semver.valid(data) && Semver.gt(release.version, data)) {
+                        return release.version || "";
+                    }
+
                     return data || "";
                 }
-
-                const release = await Releases.fetch("node", beta) || {};
 
                 return release.version || "";
             },
 
             upgrade: async (): Promise<void> => {
-                const system = await System.info();
+                const system = System.info();
 
                 State.cache?.remove(key);
 
                 if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") {
-                    execSync("apt-get update", { stdio: "ignore" });
-                    execSync("apt-get install -y curl tar git python3 make gcc g++ nodejs", { stdio: "ignore" });
+                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash", { stdio: "ignore" });
+
+                    await System.execute("apt-get update");
+                    await System.execute("apt-get install -y curl tar git python3 make gcc g++ nodejs");
                 }
             },
         };

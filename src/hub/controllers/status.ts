@@ -59,35 +59,34 @@ export default class StatusController {
             }
         }
 
-        const system = await System.info();
-
-        const cli = await System.cli.info();
-        const gui = await System.gui.info();
-        const hoobsd = await System.hoobsd.info();
-        const runtime = await System.runtime.info();
+        const system = System.info();
+        const cli = System.cli.info();
+        const gui = System.gui.info();
+        const hoobsd = System.hoobsd.info();
+        const runtime = System.runtime.info();
 
         let product = "custom";
         let upgraded = true;
 
         if (system.product === "box" || system.product === "card") product = system.product;
-        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = runtime.node_upgraded;
+        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = runtime?.node_upgraded;
 
-        if (gui.gui_version) {
+        if (gui?.gui_version) {
             return response.send({
                 product,
                 mdns: system.mdns,
                 broadcast: system.mdns_broadcast,
-                version: hoobsd.hoobsd_version,
-                current: hoobsd.hoobsd_current,
-                upgraded: hoobsd.hoobsd_upgraded,
-                cli_version: cli.cli_version,
-                cli_current: cli.cli_current,
-                cli_upgraded: cli.cli_upgraded,
+                version: hoobsd?.hoobsd_version,
+                current: hoobsd?.hoobsd_current,
+                upgraded: hoobsd?.hoobsd_upgraded,
+                cli_version: cli?.cli_version,
+                cli_current: cli?.cli_current,
+                cli_upgraded: cli?.cli_upgraded,
                 gui_version: gui.gui_version,
                 gui_current: gui.gui_current,
                 gui_upgraded: gui.gui_upgraded,
-                node_version: runtime.node_version,
-                node_current: runtime.node_current,
+                node_version: process.version.replace("v", ""),
+                node_current: runtime?.node_current,
                 node_upgraded: upgraded,
                 bridges: results,
                 cpu: await SystemInfo.currentLoad(),
@@ -100,14 +99,14 @@ export default class StatusController {
             product,
             mdns: system.mdns,
             broadcast: system.mdns_broadcast,
-            version: hoobsd.hoobsd_version,
-            current: hoobsd.hoobsd_current,
-            upgraded: hoobsd.hoobsd_upgraded,
-            cli_version: cli.cli_version,
-            cli_current: cli.cli_current,
-            cli_upgraded: cli.cli_upgraded,
-            node_version: runtime.node_version,
-            node_current: runtime.node_current,
+            version: hoobsd?.hoobsd_version,
+            current: hoobsd?.hoobsd_current,
+            upgraded: hoobsd?.hoobsd_upgraded,
+            cli_version: cli?.cli_version,
+            cli_current: cli?.cli_current,
+            cli_upgraded: cli?.cli_upgraded,
+            node_version: process.version.replace("v", ""),
+            node_current: runtime?.node_current,
             node_upgraded: upgraded,
             bridges: results,
             cpu: await SystemInfo.currentLoad(),
