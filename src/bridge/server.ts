@@ -72,8 +72,6 @@ import { formatJson } from "../services/formatters";
 
 const INSTANCE_KILL_DELAY = 3000;
 
-let STORAGE_PATH_SET = false;
-
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
 
@@ -113,9 +111,7 @@ export default class Server extends EventEmitter {
     constructor(port?: number) {
         super();
 
-        if (!STORAGE_PATH_SET) User.setStoragePath(Paths.data(State.id));
-
-        STORAGE_PATH_SET = true;
+        User.setStoragePath(Paths.data(State.id));
         Logger.setTimestampEnabled(false);
 
         if (State.debug) Logger.setDebugEnabled(true);
@@ -325,11 +321,15 @@ export default class Server extends EventEmitter {
     }
 
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
-        const cachedAccessories = await this.storageService.getItem<SerializedPlatformAccessory[]>("cachedAccessories");
+        let cachedAccessories: SerializedPlatformAccessory[] | null = null;
 
-        if (cachedAccessories) {
-            this.cachedPlatformAccessories = cachedAccessories.map((serialized) => PlatformAccessory.deserialize(serialized));
+        try {
+            cachedAccessories = await this.storageService.getItem<SerializedPlatformAccessory[]>("cachedAccessories");
+        } catch (error) {
+            Console.error(`Failed to load cached accessories from disk: ${error.message}`);
         }
+
+        if (cachedAccessories) this.cachedPlatformAccessories = cachedAccessories.map((serialized) => PlatformAccessory.deserialize(serialized));
 
         this.cachedAccessoriesFileLoaded = true;
     }
@@ -368,9 +368,14 @@ export default class Server extends EventEmitter {
 
     private saveCachedPlatformAccessoriesOnDisk(): void {
         if (this.cachedAccessoriesFileLoaded) {
-            const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
+            try {
+                const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
 
-            this.storageService.setItemSync("cachedAccessories", serializedAccessories);
+                this.storageService.setItemSync("cachedAccessories", serializedAccessories);
+            } catch (error) {
+                Console.error(`Failed to save cached accessories to disk: ${error.message}`);
+                Console.error("Your accessories will not persist between restarts until this issue is resolved.");
+            }
         }
     }
 
