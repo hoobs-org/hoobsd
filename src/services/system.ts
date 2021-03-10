@@ -192,6 +192,16 @@ export default class System {
                 }
             });
 
+            proc.stderr?.on("data", (data) => {
+                const messages: string[] = data.toString().split("\n");
+
+                for (let i = 0; i < messages.length; i += 1) {
+                    const message = messages[i].trim();
+
+                    if (message !== "") Console.error(messages[i].trim());
+                }
+            });
+
             proc.on("close", () => {
                 resolve();
             });

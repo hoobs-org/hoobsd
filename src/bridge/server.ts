@@ -185,7 +185,8 @@ export default class Server extends EventEmitter {
     public async start(): Promise<void> {
         const promises: Promise<void>[] = [];
 
-        Plugins.linkLibs(State.id);
+        await Plugins.linkLibs(State.id);
+
         writeFileSync(join(Paths.data(State.id), "config.json"), formatJson(this.config));
 
         this.loadCachedPlatformAccessoriesFromDisk();

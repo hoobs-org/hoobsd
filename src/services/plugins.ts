@@ -89,8 +89,6 @@ export default class Plugins {
 
         return new Promise((resolve, reject) => {
             System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }).then(() => {
-                Plugins.linkLibs(bridge);
-
                 const path = join(Paths.data(bridge), "node_modules", name);
 
                 if (existsSync(path) && existsSync(join(path, "package.json"))) {
@@ -172,8 +170,6 @@ export default class Plugins {
     static uninstall(bridge: string, name: string): Promise<void> {
         return new Promise((resolve, reject) => {
             System.execute(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge) }).then(() => {
-                Plugins.linkLibs(bridge);
-
                 if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
                     const config = Config.configuration(bridge);
 
@@ -232,7 +228,6 @@ export default class Plugins {
             if (name) flags.push(`${name}@${tag}`);
 
             System.execute(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
-                Plugins.linkLibs(bridge);
                 Config.touchConfig(bridge);
 
                 Console.notify(
