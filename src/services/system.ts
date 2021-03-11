@@ -349,7 +349,7 @@ export default class System {
                     cli_mode: mode,
                 };
 
-                State.cache?.set(key, results, 60);
+                State.cache?.set(key, results, 4 * 60);
 
                 return results;
             },
@@ -431,7 +431,7 @@ export default class System {
                     hoobsd_running: (System.shell("pidof hoobsd")) !== "",
                 };
 
-                State.cache?.set(key, results, 60);
+                State.cache?.set(key, results, 4 * 60);
 
                 return results;
             },
@@ -493,7 +493,7 @@ export default class System {
                     node_upgraded: process.version.replace("v", "") === current || current === "" || process.version.replace("v", "") === "" ? true : !Semver.gt(current, process.version.replace("v", "")),
                 };
 
-                State.cache?.set(key, results, 60);
+                State.cache?.set(key, results, 12 * 60);
 
                 return results;
             },

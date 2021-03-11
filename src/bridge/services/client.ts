@@ -26,6 +26,7 @@ import { Services, Characteristics, Precedence } from "./types";
 export default class Client {
     accessories(bridge: string): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
+            const key = `bridge/${bridge}/accessories`;
             const data = State.bridges.find((item) => item.id === bridge);
 
             if (!data) {
@@ -34,7 +35,17 @@ export default class Client {
                 return;
             }
 
+            const cached = State.cache?.get<{ [key: string]: any }[]>(key);
+
+            if (cached) {
+                resolve(this.process(bridge, cached));
+
+                return;
+            }
+
             Request.get(`http://127.0.0.1:${data.port}/accessories`).then((response) => {
+                if (response.data.accessories) State.cache?.set(key, response.data.accessories, 30);
+
                 resolve(this.process(bridge, response.data.accessories));
             }).catch(() => {
                 resolve([]);

@@ -51,6 +51,7 @@ export default class Cache {
             value.indexOf("system/") === 0
          || value.indexOf("accessories/") === 0
          || value.indexOf("plugin/") === 0
+         || value.indexOf("bridge/") === 0
         ) {
             return false;
         }

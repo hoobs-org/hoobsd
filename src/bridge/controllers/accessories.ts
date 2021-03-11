@@ -107,10 +107,10 @@ export default class AccessoriesController {
                 if (!services) resolve([]);
                 if (!Array.isArray(services)) services = [services];
 
-                const queue: Promise<void>[] = [];
+                const waits: Promise<void>[] = [];
 
                 for (let i = 0; i < services.length; i += 1) {
-                    queue.push(new Promise((complete) => {
+                    waits.push(new Promise((complete) => {
                         services[i].refresh((results: { [key: string]: any }) => {
                             services[i].values = results.values;
                         }).finally(() => {
@@ -119,7 +119,7 @@ export default class AccessoriesController {
                     }));
                 }
 
-                Promise.all(queue).then(() => {
+                Promise.all(waits).then(() => {
                     services = [...services];
 
                     resolve(<{ [key: string]: any }[]> this.cleanse(services));
