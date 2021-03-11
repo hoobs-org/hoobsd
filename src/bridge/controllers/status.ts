@@ -22,12 +22,19 @@ import { Console } from "../../services/logger";
 import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class StatusController {
+    declare id: string | undefined;
+
+    declare path: string | undefined;
+
     constructor() {
         State.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
         State.socket?.route("status:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
     }
 
     status(_request: SocketRequest, response: SocketResponse): void {
+        this.id = this.id || State.homebridge?.setupURI();
+        this.path = this.path || Paths.data(State.id);
+
         response.send({
             id: State.id,
             bridge: State.display || State.id,
@@ -40,8 +47,8 @@ export default class StatusController {
             bridge_username: State.homebridge?.settings.username || "",
             bridge_port: State.homebridge?.port,
             setup_pin: State.homebridge?.settings.pin || "",
-            setup_id: State.homebridge?.setupURI(),
-            bridge_path: Paths.data(State.id),
+            setup_id: this.id || "",
+            bridge_path: this.path || "",
         });
     }
 

@@ -24,7 +24,7 @@ import State from "../../state";
 import { Services, Characteristics, Precedence } from "./types";
 
 export default class Client {
-    accessories(bridge: string): Promise<{ [key: string]: any }[]> {
+    accessories(bridge: string, reload?: boolean): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
             const key = `bridge/${bridge}/accessories`;
             const data = State.bridges.find((item) => item.id === bridge);
@@ -35,12 +35,14 @@ export default class Client {
                 return;
             }
 
-            const cached = State.cache?.get<{ [key: string]: any }[]>(key);
+            if (!reload) {
+                const cached = State.cache?.get<{ [key: string]: any }[]>(key);
 
-            if (cached && Array.isArray(cached) && cached.length > 0) {
-                resolve(this.process(bridge, cached));
+                if (cached && Array.isArray(cached) && cached.length > 0) {
+                    resolve(this.process(bridge, cached));
 
-                return;
+                    return;
+                }
             }
 
             Request.get(`http://127.0.0.1:${data.port}/accessories`).then((response) => {
@@ -53,13 +55,23 @@ export default class Client {
         });
     }
 
-    accessory(bridge: string, value: string): Promise<{ [key: string]: any } | undefined> {
+    accessory(bridge: string, value: string, reload?: boolean): Promise<{ [key: string]: any } | undefined> {
         return new Promise((resolve) => {
             if (!value || value === "") {
                 resolve(undefined);
             } else {
-                this.accessories(bridge).then((services) => {
-                    resolve(services.find((item) => item.accessory_identifier === value));
+                this.accessories(bridge, reload).then((services) => {
+                    const result = services.find((item) => item.accessory_identifier === value);
+
+                    if (result || reload) {
+                        resolve(result);
+
+                        return;
+                    }
+
+                    this.accessory(bridge, value, true).then((reloaded) => {
+                        resolve(reloaded);
+                    });
                 }).catch(() => {
                     resolve(undefined);
                 });

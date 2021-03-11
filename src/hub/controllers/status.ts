@@ -29,6 +29,7 @@ export default class StatusController {
     }
 
     async status(_request: Request, response: Response): Promise<Response> {
+        const key = "system/status";
         const results: { [key: string]: any } = {};
 
         for (let i = 0; i < State.bridges.length; i += 1) {
@@ -41,7 +42,7 @@ export default class StatusController {
                         running: status.running,
                         status: status.status,
                         uptime: status.uptime,
-                        product: status.productproduct,
+                        product: status.product,
                         bridge_name: status.bridge_name,
                         bridge_username: status.bridge_username,
                         bridge_port: status.bridge_port,
@@ -61,43 +62,12 @@ export default class StatusController {
 
         const system = System.info();
         const waits: Promise<void>[] = [];
+        const applications: { [key: string]: any } = State.cache?.get<{ [key: string]: any }>(key) || {};
 
-        let cli: { [key: string]: any } | undefined;
-        let gui: { [key: string]: any } | undefined;
-        let hoobsd: { [key: string]: any } | undefined;
-        let runtime: { [key: string]: any } | undefined;
-
-        waits.push(new Promise((resolve) => {
-            System.cli.info().then((info: { [key: string]: any }) => {
-                cli = info;
-            }).finally(() => {
-                resolve();
-            });
-        }));
-
-        waits.push(new Promise((resolve) => {
-            System.gui.info().then((info: { [key: string]: any }) => {
-                gui = info;
-            }).finally(() => {
-                resolve();
-            });
-        }));
-
-        waits.push(new Promise((resolve) => {
-            System.hoobsd.info().then((info: { [key: string]: any }) => {
-                hoobsd = info;
-            }).finally(() => {
-                resolve();
-            });
-        }));
-
-        waits.push(new Promise((resolve) => {
-            System.runtime.info().then((info: { [key: string]: any }) => {
-                runtime = info;
-            }).finally(() => {
-                resolve();
-            });
-        }));
+        if (!applications.cli) waits.push(new Promise((resolve) => { System.cli.info().then((info: { [key: string]: any }) => { applications.cli = info; }).finally(() => { resolve(); }); }));
+        if (!applications.gui) waits.push(new Promise((resolve) => { System.gui.info().then((info: { [key: string]: any }) => { applications.gui = info; }).finally(() => { resolve(); }); }));
+        if (!applications.hoobsd) waits.push(new Promise((resolve) => { System.hoobsd.info().then((info: { [key: string]: any }) => { applications.hoobsd = info; }).finally(() => { resolve(); }); }));
+        if (!applications.runtime) waits.push(new Promise((resolve) => { System.runtime.info().then((info: { [key: string]: any }) => { applications.runtime = info; }).finally(() => { resolve(); }); }));
 
         await Promise.all(waits);
 
@@ -105,24 +75,24 @@ export default class StatusController {
         let upgraded = true;
 
         if (system.product === "box" || system.product === "card") product = system.product;
-        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = runtime?.node_upgraded;
+        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
 
-        if (gui?.gui_version) {
+        if (applications.gui?.gui_version) {
             return response.send({
                 product,
                 mdns: system.mdns,
                 broadcast: system.mdns_broadcast,
-                version: hoobsd?.hoobsd_version,
-                current: hoobsd?.hoobsd_current,
-                upgraded: hoobsd?.hoobsd_upgraded,
-                cli_version: cli?.cli_version,
-                cli_current: cli?.cli_current,
-                cli_upgraded: cli?.cli_upgraded,
-                gui_version: gui.gui_version,
-                gui_current: gui.gui_current,
-                gui_upgraded: gui.gui_upgraded,
+                version: applications.hoobsd?.hoobsd_version,
+                current: applications.hoobsd?.hoobsd_current,
+                upgraded: applications.hoobsd?.hoobsd_upgraded,
+                cli_version: applications.cli?.cli_version,
+                cli_current: applications.cli?.cli_current,
+                cli_upgraded: applications.cli?.cli_upgraded,
+                gui_version: applications.gui.gui_version,
+                gui_current: applications.gui.gui_current,
+                gui_upgraded: applications.gui.gui_upgraded,
                 node_version: process.version.replace("v", ""),
-                node_current: runtime?.node_current,
+                node_current: applications.runtime?.node_current,
                 node_upgraded: upgraded,
                 bridges: results,
                 cpu: await SystemInfo.currentLoad(),
@@ -135,14 +105,14 @@ export default class StatusController {
             product,
             mdns: system.mdns,
             broadcast: system.mdns_broadcast,
-            version: hoobsd?.hoobsd_version,
-            current: hoobsd?.hoobsd_current,
-            upgraded: hoobsd?.hoobsd_upgraded,
-            cli_version: cli?.cli_version,
-            cli_current: cli?.cli_current,
-            cli_upgraded: cli?.cli_upgraded,
+            version: applications.hoobsd?.hoobsd_version,
+            current: applications.hoobsd?.hoobsd_current,
+            upgraded: applications.hoobsd?.hoobsd_upgraded,
+            cli_version: applications.cli?.cli_version,
+            cli_current: applications.cli?.cli_current,
+            cli_upgraded: applications.cli?.cli_upgraded,
             node_version: process.version.replace("v", ""),
-            node_current: runtime?.node_current,
+            node_current: applications.runtime?.node_current,
             node_upgraded: upgraded,
             bridges: results,
             cpu: await SystemInfo.currentLoad(),
