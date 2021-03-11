@@ -340,10 +340,16 @@ export default class Bridges {
     }
 
     static accessories(bridge: string): { [key: string]: any }[] {
+        ensureDirSync(join(Paths.data(), `${bridge}.persist`));
+        ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
+
         return loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), []);
     }
 
     static parings(bridge: string): { [key: string]: any }[] {
+        ensureDirSync(join(Paths.data(), `${bridge}.persist`));
+        ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
+
         const pairings = readdirSync(join(Paths.data(), `${bridge}.persist`)).filter((d) => d.match(/AccessoryInfo\.([A-F,a-f,0-9]+)\.json/));
         const results = [];
 
@@ -369,7 +375,11 @@ export default class Bridges {
 
     static purge(bridge: string, uuid?: string): void {
         if (uuid) {
+            ensureDirSync(join(Paths.data(), `${bridge}.persist`));
+            ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
+
             const working = loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), []);
+
             let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
             while (index >= 0) {
@@ -380,11 +390,9 @@ export default class Bridges {
             writeFileSync(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), formatJson(working));
         } else {
             if (existsSync(join(Paths.data(), `${bridge}.persist`))) removeSync(join(Paths.data(), `${bridge}.persist`));
-
-            ensureDirSync(join(Paths.data(), `${bridge}.persist`));
-
             if (existsSync(join(Paths.data(), `${bridge}.accessories`))) removeSync(join(Paths.data(), `${bridge}.accessories`));
 
+            ensureDirSync(join(Paths.data(), `${bridge}.persist`));
             ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
 
             Console.notify(
