@@ -46,8 +46,8 @@ export default class PluginsController {
         const results = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") {
-                const plugins = await this.bridge(State.bridges[i].id);
+            if (State.bridges[i].type === "bridge" || (State.mode === "development" && State.bridges[i].type === "dev")) {
+                const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
 
                 if (plugins) {
                     for (let j = 0; j < plugins.length; j += 1) {
@@ -198,9 +198,9 @@ export default class PluginsController {
         }));
     }
 
-    private async bridge(bridge: string): Promise<{ [key:string]: any }[]> {
+    private async bridge(bridge: string, development?: boolean): Promise<{ [key:string]: any }[]> {
         const results = [];
-        const plugins = Plugins.installed(bridge);
+        const plugins = Plugins.installed(bridge, development);
 
         for (let i = 0; i < plugins.length; i += 1) {
             const plugin = plugins[i];
@@ -219,6 +219,9 @@ export default class PluginsController {
 
             const definition = await this.pluginDefinition(identifier);
             const schema = await this.pluginSchema(identifier);
+
+            // development
+            // plugin.schema
 
             if (definition) {
                 if ((definition.tags || {}).latest) {

@@ -332,7 +332,7 @@ export default class API extends EventEmitter {
                 }
             }
 
-            const bridges = State.bridges.filter((item) => item.type === "bridge");
+            const bridges = State.bridges.filter((item) => item.type === "bridge" || (State.mode === "development" && item.type === "dev"));
             const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(Path.join(Paths.data(), item)).isDirectory());
             const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
@@ -379,8 +379,8 @@ export default class API extends EventEmitter {
 
         this.socket.start();
 
-        for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") Console.import((await Socket.fetch(State.bridges[i].id, "status:log")) || []);
+        if (State.mode === "development") {
+            Console.warn("running in development mode");
         }
 
         System.preload();
@@ -395,10 +395,18 @@ export default class API extends EventEmitter {
         Monitor();
 
         setTimeout(() => {
-            const bridges = State.bridges.filter((item) => item.type === "bridge");
+            let bridges = State.bridges.filter((item) => item.type === "bridge");
 
             for (let i = 0; i < bridges.length; i += 1) {
                 this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
+            }
+
+            if (State.mode === "development") {
+                bridges = State.bridges.filter((item) => item.type === "dev");
+
+                for (let i = 0; i < bridges.length; i += 1) {
+                    this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
+                }
             }
         }, BRIDGE_LAUNCH_DELAY);
     }

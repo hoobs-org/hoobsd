@@ -62,6 +62,7 @@ export interface BridgeRecord {
     host?: string;
     plugins?: string;
     advertiser?: string;
+    project?: string,
 }
 
 export default class Bridges {

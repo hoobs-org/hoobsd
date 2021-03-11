@@ -79,12 +79,16 @@ export = function Daemon(): void {
 
                 Watcher.watch(join(Paths.data(), "access")).on("change", () => {
                     if (!State.restoring) {
+                        Console.info("User change");
+
                         State.users = Users.list();
                     }
                 });
 
                 Watcher.watch(Paths.config).on("change", () => {
                     if (!State.restoring) {
+                        Console.info("Configuration change");
+
                         State.hub?.reload();
                     }
                 });
@@ -111,7 +115,12 @@ export = function Daemon(): void {
             const bridge = State.bridges.find((n) => n.id === State.id);
 
             if (bridge) {
-                State.bridge = new Bridge(command.port || bridge.port);
+                if (bridge.type === "dev") {
+                    State.project = bridge.project;
+                    State.bridge = new Bridge(command.port || bridge.port, true);
+                } else {
+                    State.bridge = new Bridge(command.port || bridge.port);
+                }
 
                 Watcher.watch(Paths.bridges).on("change", () => {
                     const current = cloneJson(State.bridges.find((n: any) => n.id === State.id));
@@ -122,12 +131,16 @@ export = function Daemon(): void {
                         const modified = State.bridges.find((n: any) => n.id === State.id);
 
                         if (modified && !jsonEquals(current, modified)) {
+                            Console.info("Bridge change");
+
                             State.bridge?.restart();
                         }
                     }
                 });
 
                 Watcher.watch(Paths.config).on("change", () => {
+                    Console.info("Configuration change");
+
                     State.bridge?.restart();
                 });
 

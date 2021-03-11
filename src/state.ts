@@ -60,6 +60,7 @@ export interface Application {
 
     plugins: { [key: string]: any };
     restoring: boolean;
+    project: string | undefined;
 }
 
 const bridge: Application = {
@@ -91,6 +92,7 @@ const bridge: Application = {
 
     plugins: {},
     restoring: false,
+    project: undefined,
 };
 
 export default bridge;

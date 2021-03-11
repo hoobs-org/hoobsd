@@ -40,6 +40,8 @@ import AccessoriesController from "./controllers/accessories";
 const BRIDGE_START_DELAY = 0;
 
 export default class Bridge extends EventEmitter {
+    declare development: boolean;
+
     declare time: number;
 
     declare config: any;
@@ -48,7 +50,7 @@ export default class Bridge extends EventEmitter {
 
     declare readonly port: number;
 
-    constructor(port: number | undefined) {
+    constructor(port: number | undefined, development?: boolean) {
         super();
 
         HAPStorage.setCustomStoragePath(Paths.persist);
@@ -56,6 +58,7 @@ export default class Bridge extends EventEmitter {
         this.time = 0;
         this.port = port || 51826;
         this.config = Config.configuration();
+        this.development = development || false;
         this.settings = (this.config || {}).server || {};
 
         State.socket = new Socket(State.id);
@@ -63,7 +66,7 @@ export default class Bridge extends EventEmitter {
         new StatusController();
         new AccessoriesController();
 
-        const plugins = Plugins.load(State.id);
+        const plugins = Plugins.load(State.id, this.development);
 
         for (let i = 0; i < plugins.length; i += 1) {
             if (existsSync(join(plugins[i].directory, plugins[i].library, "routes.js"))) {
@@ -100,7 +103,7 @@ export default class Bridge extends EventEmitter {
         const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
-        State.homebridge = new Homebridge(this.port || undefined);
+        State.homebridge = new Homebridge(this.port || undefined, this.development);
 
         State.homebridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
             Console.debug(`Setup URI '${uri}'`);

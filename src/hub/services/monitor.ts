@@ -27,7 +27,7 @@ export default async function Monitor() {
     const results: { [key: string]: any } = {};
 
     for (let i = 0; i < State.bridges.length; i += 1) {
-        if (State.bridges[i].type === "bridge") {
+        if (State.bridges[i].type === "bridge" || (State.mode === "development" && State.bridges[i].type === "dev")) {
             const status = await Socket.fetch(State.bridges[i].id, "status:get");
 
             if (status) {

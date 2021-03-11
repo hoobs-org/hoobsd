@@ -36,7 +36,7 @@ export default class BridgesController {
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send(State.bridges.filter((item) => item.type === "bridge"));
+        return response.send(State.bridges.filter((item) => item.type === "bridge" || (State.mode === "development" && item.type === "dev")));
     }
 
     count(_request: Request, response: Response): Response {

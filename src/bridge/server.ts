@@ -111,9 +111,11 @@ export default class Server extends EventEmitter {
 
     private cachedAccessoriesFileLoaded = false;
 
+    private development = false;
+
     private readonly publishedExternalAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
-    constructor(port?: number) {
+    constructor(port?: number, development?: boolean) {
         super();
 
         User.setStoragePath(Paths.data(State.id));
@@ -128,6 +130,7 @@ export default class Server extends EventEmitter {
         this.storageService.initSync();
 
         this.running = false;
+        this.development = development || false;
         this.instance = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = {
@@ -190,12 +193,17 @@ export default class Server extends EventEmitter {
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
-        const plugins = Plugins.load(State.id);
+        const plugins = Plugins.load(State.id, this.development);
 
         for (let i = 0; i < plugins.length; i += 1) {
-            if ((this.config.plugins || []).indexOf(plugins[i].identifier) >= 0 && existsSync(join(plugins[i].directory, plugins[i].library))) {
+            if (((this.config.plugins || []).indexOf(plugins[i].identifier) >= 0 || this.development) && existsSync(join(plugins[i].directory, plugins[i].library))) {
                 // @ts-ignore
                 if (!this.pluginManager.plugins.get(plugins[i].identifier)) {
+                    if (this.development) {
+                        Console.info(`Development plugin "${plugins[i].name}"`);
+                        Console.info(`Project path "${plugins[i].directory}"`);
+                    }
+
                     const plugin = new Plugin(plugins[i].name, plugins[i].directory, plugins[i].pjson, plugins[i].scope);
 
                     // @ts-ignore
@@ -203,15 +211,16 @@ export default class Server extends EventEmitter {
 
                     try {
                         plugin.load();
+
+                        Console.info(`Loaded plugin '${plugins[i].identifier}'`);
                     } catch (error) {
                         Console.error(`Error loading plugin "${plugins[i].identifier}"`);
-                        Console.error(error.stack);
+                        Console.error(error.message || "");
+                        Console.error(error.stack.toString());
 
                         // @ts-ignore
                         this.pluginManager.plugins.delete(plugins[i].identifier);
                     }
-
-                    Console.info(`Loaded plugin '${plugins[i].identifier}'`);
 
                     // @ts-ignore
                     if (this.pluginManager.plugins.get(plugins[i].identifier)) {
