@@ -48,16 +48,16 @@ export default class Cache {
 
     filter(value: string, clear?: boolean): boolean {
         if (
-            !value.startsWith("system/")
-         && (clear && !value.startsWith("release/"))
-         && !value.startsWith("accessories/")
-         && !value.startsWith("plugin/definition:")
-         && !value.startsWith("plugin/schema:")
+            value.indexOf("system/") === 0
+         || value.indexOf("accessories/") === 0
+         || value.indexOf("plugin/") === 0
         ) {
-            return true;
+            return false;
         }
 
-        return false;
+        if (clear && value.indexOf("release/") === 0) return false;
+
+        return true;
     }
 
     clear() {
@@ -87,9 +87,8 @@ export default class Cache {
 
     save(path: string) {
         if (existsSync(path)) {
-            const keys = this.client.keys();
             const cache = [];
-
+            const keys = this.client.keys();
             const filtered = keys.filter((item) => this.filter(item));
 
             for (let i = 0; i < filtered.length; i += 1) {

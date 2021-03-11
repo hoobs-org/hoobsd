@@ -20,6 +20,7 @@ import _ from "lodash";
 
 import HTTP from "http";
 import Express from "express";
+import Compression from "compression";
 import IO from "socket.io";
 import CORS from "cors";
 import Process from "child_process";
@@ -96,6 +97,7 @@ export default class API extends EventEmitter {
         this.processes = {};
 
         State.app = Express();
+        State.app.use(Compression());
 
         State.app?.use(CORS({
             origin: this.settings.origin || "*",

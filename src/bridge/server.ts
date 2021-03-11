@@ -26,8 +26,6 @@ import {
     existsSync,
     writeFileSync,
     unlinkSync,
-    openSync,
-    closeSync,
 } from "fs-extra";
 
 import {
@@ -330,7 +328,7 @@ export default class Server extends EventEmitter {
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
         let cachedAccessories: SerializedPlatformAccessory[] | null = null;
 
-        if (!existsSync(join(Paths.accessories, "cachedAccessories"))) closeSync(openSync(join(Paths.accessories, "cachedAccessories"), "w"));
+        if (!existsSync(join(Paths.accessories, "cachedAccessories"))) writeFileSync(join(Paths.accessories, "cachedAccessories"), "{}");
 
         try {
             cachedAccessories = await this.storageService.getItem<SerializedPlatformAccessory[]>("cachedAccessories");
@@ -384,7 +382,7 @@ export default class Server extends EventEmitter {
             try {
                 const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
 
-                if (!existsSync(join(Paths.accessories, "cachedAccessories"))) closeSync(openSync(join(Paths.accessories, "cachedAccessories"), "w"));
+                if (!existsSync(join(Paths.accessories, "cachedAccessories"))) writeFileSync(join(Paths.accessories, "cachedAccessories"), "{}");
 
                 this.storageService.setItemSync("cachedAccessories", serializedAccessories);
             } catch (error) {

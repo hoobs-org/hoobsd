@@ -33,7 +33,7 @@ import System from "./services/system";
 import Hub from "./hub";
 import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
 
-const PROCESS_KILL_DELAY = 1000;
+const PROCESS_KILL_DELAY = 3 * 1000;
 
 if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
