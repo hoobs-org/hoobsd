@@ -33,7 +33,7 @@ export default class StatusController {
         const results: { [key: string]: any } = {};
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") {
+            if (State.bridges[i].type !== "hub") {
                 const status = await Socket.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {

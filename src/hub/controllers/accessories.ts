@@ -615,7 +615,7 @@ export default class AccessoriesController {
             if (accessories) results = [...results, ...accessories];
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
-                if (State.bridges[i].type === "bridge") {
+                if (State.bridges[i].type !== "hub") {
                     const accessories = await Socket.fetch(State.bridges[i].id, "accessories:list");
 
                     if (accessories) results = [...results, ...accessories];

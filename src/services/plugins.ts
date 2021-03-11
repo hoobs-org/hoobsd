@@ -53,8 +53,8 @@ export default class Plugins {
     static load(bridge: string, development?: boolean): { [key: string]: any }[] {
         const results: { [key: string]: any }[] = [];
 
-        if (development && State.project && existsSync(join(State.project, "package.json"))) {
-            const pjson = Plugins.loadPackage(State.project);
+        if (development) {
+            const pjson = Plugins.loadPackage(State.project || "") || {};
 
             results.push({
                 identifier: pjson.name,

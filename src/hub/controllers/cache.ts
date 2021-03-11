@@ -43,7 +43,7 @@ export default class CacheController {
         const results = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") {
+            if (State.bridges[i].type !== "hub") {
                 const parings = Bridges.parings(State.bridges[i].id);
                 const accessories = Bridges.accessories(State.bridges[i].id);
 

@@ -412,7 +412,7 @@ export default class Bridges {
         await State.hub?.stop();
         await Bridges.backup();
 
-        const bridges = Bridges.list().filter((item) => item.type === "bridge");
+        const bridges = Bridges.list().filter((item) => item.type !== "hub");
 
         for (let i = 0; i < bridges.length; i += 1) Bridges.uninstall(bridges[i].id);
 

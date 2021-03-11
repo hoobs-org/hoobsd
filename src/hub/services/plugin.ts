@@ -36,7 +36,7 @@ export default async function Plugin(request: Request, response: Response, next:
     const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
     for (let i = 0; i < State.bridges.length; i += 1) {
-        if (State.bridges[i].type === "bridge") {
+        if (State.bridges[i].type !== "hub") {
             const plugin: { [key: string]: any } | undefined = Plugins.load(State.bridges[i].id).find((item) => item.identifier === identifier);
 
             if (plugin) {

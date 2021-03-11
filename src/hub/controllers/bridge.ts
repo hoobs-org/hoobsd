@@ -34,7 +34,7 @@ export default class BridgeController {
         const results = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge") {
+            if (State.bridges[i].type !== "hub") {
                 const status = await Socket.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {

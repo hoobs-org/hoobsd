@@ -36,17 +36,17 @@ export default class BridgesController {
     }
 
     list(_request: Request, response: Response): Response {
-        return response.send(State.bridges.filter((item) => item.type === "bridge" || (State.mode === "development" && item.type === "dev")));
+        return response.send(State.bridges.filter((item) => item.type !== "hub"));
     }
 
     count(_request: Request, response: Response): Response {
         return response.send({
-            bridges: (State.bridges.filter((item) => item.type === "bridge")).length,
+            bridges: (State.bridges.filter((item) => item.type !== "hub")).length,
         });
     }
 
     create(request: Request, response: Response): Response {
-        if (State.bridges.filter((item) => item.type === "bridge").length > 0 && !request.user?.permissions.bridges) {
+        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

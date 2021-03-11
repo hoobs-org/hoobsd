@@ -332,7 +332,7 @@ export default class API extends EventEmitter {
                 }
             }
 
-            const bridges = State.bridges.filter((item) => item.type === "bridge" || (State.mode === "development" && item.type === "dev"));
+            const bridges = State.bridges.filter((item) => item.type !== "hub");
             const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(Path.join(Paths.data(), item)).isDirectory());
             const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
@@ -418,7 +418,7 @@ export default class API extends EventEmitter {
 
                 this.running = false;
 
-                const bridges = State.bridges.filter((item) => item.type === "bridge");
+                const bridges = State.bridges.filter((item) => item.type !== "hub");
                 const waiters: Promise<void>[] = [];
 
                 for (let i = 0; i < bridges.length; i += 1) {

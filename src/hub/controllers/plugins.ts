@@ -17,6 +17,7 @@
  **************************************************************************************************/
 
 import Axios from "axios";
+import { join } from "path";
 import { Request, Response } from "express-serve-static-core";
 import { PluginManager } from "homebridge/lib/pluginManager";
 import State from "../../state";
@@ -25,6 +26,7 @@ import Security from "../../services/security";
 import Plugins from "../../services/plugins";
 import Client from "../../bridge/services/client";
 import { Console } from "../../services/logger";
+import { loadJson } from "../../services/formatters";
 
 export default class PluginsController {
     private readonly client: Client;
@@ -46,7 +48,7 @@ export default class PluginsController {
         const results = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type === "bridge" || (State.mode === "development" && State.bridges[i].type === "dev")) {
+            if (State.bridges[i].type !== "hub") {
                 const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
 
                 if (plugins) {
@@ -198,16 +200,17 @@ export default class PluginsController {
         }));
     }
 
-    private async bridge(bridge: string, development?: boolean): Promise<{ [key:string]: any }[]> {
+    private async bridge(id: string, development?: boolean): Promise<{ [key:string]: any }[]> {
         const results = [];
-        const plugins = Plugins.installed(bridge, development);
+        const bridge = State.bridges.find((item) => item.id === id);
+        const plugins = Plugins.installed(id, development);
 
         for (let i = 0; i < plugins.length; i += 1) {
             const plugin = plugins[i];
-            const identifier = plugin.getPluginIdentifier();
-            const directory = plugin.getPluginPath();
+            const directory = bridge?.type === "dev" ? bridge?.project || "" : plugin.getPluginPath();
             const pjson = Plugins.loadPackage(directory) || {};
-            const details: any[] = (await Plugins.getPluginType(bridge, identifier, directory, pjson)) || [];
+            const identifier = bridge?.type === "dev" ? pjson.name : plugin.getPluginIdentifier();
+            const details: any[] = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
 
             const name = PluginManager.extractPluginName(identifier);
             const scope = PluginManager.extractPluginScope(identifier);
@@ -217,11 +220,27 @@ export default class PluginsController {
             let rating = 0;
             let icon = "";
 
-            const definition = await this.pluginDefinition(identifier);
-            const schema = await this.pluginSchema(identifier);
+            let definition: { [key: string]: any } | undefined;
+            let schema: { [key: string]: any } | undefined;
 
-            // development
-            // plugin.schema
+            if (bridge?.type === "dev") {
+                const raw: { [key: string]: any } = loadJson(join(bridge?.project || "", "config.schema.json"), {});
+
+                if (raw) {
+                    schema = {
+                        name: pjson.name,
+                        alias: raw.alias || raw.pluginAlias,
+                        accessory: raw.pluginType === "accessory",
+                        config: {
+                            type: "object",
+                            properties: (raw.schema || raw.config).properties || {},
+                        },
+                    };
+                }
+            } else {
+                definition = await this.pluginDefinition(identifier);
+                schema = await this.pluginSchema(identifier);
+            }
 
             if (definition) {
                 if ((definition.tags || {}).latest) {
@@ -240,7 +259,7 @@ export default class PluginsController {
                 scope,
                 name,
                 icon,
-                alias: schema.alias || schema.plugin_alias || schema.pluginAlias || details[0].alias || name,
+                alias: schema?.alias || schema?.plugin_alias || schema?.pluginAlias || details[0].alias || name,
                 version: (plugin.version || "").replace(/v/gi, ""),
                 latest,
                 certified,
