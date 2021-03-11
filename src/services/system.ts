@@ -198,7 +198,7 @@ export default class System {
                 for (let i = 0; i < messages.length; i += 1) {
                     const message = messages[i].trim();
 
-                    if (message !== "") Console.error(messages[i].trim());
+                    if (message !== "") Console.debug(messages[i].trim());
                 }
             });
 
