@@ -37,7 +37,7 @@ export default class Client {
 
             const cached = State.cache?.get<{ [key: string]: any }[]>(key);
 
-            if (cached) {
+            if (cached && Array.isArray(cached) && cached.length > 0) {
                 resolve(this.process(bridge, cached));
 
                 return;
