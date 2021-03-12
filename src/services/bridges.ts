@@ -115,6 +115,8 @@ export default class Bridges {
             if (existsSync(join(Paths.data(bridges[i].id), "package.json"))) bridges[i].plugins = join(Paths.data(bridges[i].id), "node_modules");
         }
 
+        if (State.mode !== "development") return bridges.filter((item) => item.type !== "dev");
+
         return bridges;
     }
 
@@ -295,6 +297,7 @@ export default class Bridges {
                     ports: bridge.ports,
                     autostart: bridge.autostart,
                     advertiser: bridge.advertiser,
+                    project: bridge.project,
                 });
             }
         }

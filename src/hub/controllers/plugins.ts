@@ -210,7 +210,6 @@ export default class PluginsController {
             const directory = bridge?.type === "dev" ? bridge?.project || "" : plugin.getPluginPath();
             const pjson = Plugins.loadPackage(directory) || {};
             const identifier = bridge?.type === "dev" ? pjson.name : plugin.getPluginIdentifier();
-            const details: any[] = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
 
             const name = PluginManager.extractPluginName(identifier);
             const scope = PluginManager.extractPluginScope(identifier);
@@ -222,14 +221,25 @@ export default class PluginsController {
 
             let definition: { [key: string]: any } | undefined;
             let schema: { [key: string]: any } | undefined;
+            let details: any[];
 
             if (bridge?.type === "dev") {
                 const raw: { [key: string]: any } = loadJson(join(bridge?.project || "", "config.schema.json"), {});
 
+                schema = {
+                    name: pjson.name,
+                    alias: pjson.name,
+                    accessory: false,
+                    config: {
+                        type: "object",
+                        properties: {},
+                    },
+                };
+
                 if (raw) {
                     schema = {
                         name: pjson.name,
-                        alias: raw.alias || raw.pluginAlias,
+                        alias: raw.alias || raw.pluginAlias || pjson.name,
                         accessory: raw.pluginType === "accessory",
                         config: {
                             type: "object",
@@ -237,9 +247,16 @@ export default class PluginsController {
                         },
                     };
                 }
+
+                details = [{
+                    name: pjson.name,
+                    alias: schema.alias,
+                    type: schema.accessory ? "accessory" : "platform",
+                }];
             } else {
                 definition = await this.pluginDefinition(identifier);
                 schema = await this.pluginSchema(identifier);
+                details = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
             }
 
             if (definition) {

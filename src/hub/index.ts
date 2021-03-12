@@ -44,6 +44,7 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
+import Bridges from "../services/bridges";
 import { Console, Events } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -265,7 +266,9 @@ export default class API extends EventEmitter {
         if (!State.orphans) flags.push("--orphans");
 
         this.processes[id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).on("exit", () => {
-            this.launch(id, port, display);
+            State.bridges = Bridges.list();
+
+            if (State.bridges.findIndex((item) => item.id === id) >= 0) this.launch(id, port, display);
         });
 
         this.processes[id].stdout?.on("data", (data) => {
@@ -332,13 +335,14 @@ export default class API extends EventEmitter {
                 }
             }
 
-            const bridges = State.bridges.filter((item) => item.type !== "hub");
             const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(Path.join(Paths.data(), item)).isDirectory());
-            const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
+            const remove = directories.filter((item) => State.bridges.filter((bridge) => bridge.type !== "hub").findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {
                 removeSync(Path.join(Paths.data(), remove[i]));
             }
+
+            const bridges = State.bridges.filter((item) => item.type !== "hub");
 
             for (let i = 0; i < bridges.length; i += 1) {
                 if (!this.processes[bridges[i].id] || this.processes[bridges[i].id].killed) {
