@@ -63,7 +63,7 @@ export interface Application {
     project: string | undefined;
 }
 
-const bridge: Application = {
+const state: Application = {
     version: loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
     mode: "production",
     enviornment: {},
@@ -95,4 +95,4 @@ const bridge: Application = {
     project: undefined,
 };
 
-export default bridge;
+export default state;
