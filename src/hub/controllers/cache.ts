@@ -124,13 +124,13 @@ export default class CacheController {
             });
         }
 
+        await State.hub?.teardown(request.params.bridge);
+
         const bridge = State.bridges.find((item) => item.id === request.params.bridge);
 
         if (bridge) {
-            await State.hub?.teardown(bridge.id);
-
             Bridges.purge(bridge.id, request.params?.uuid);
-            State.hub?.launch(bridge.id, bridge.port, bridge.display);
+            State.hub?.launch(bridge);
 
             return response.send({
                 success: true,

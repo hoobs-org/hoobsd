@@ -44,7 +44,7 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
-import Bridges from "../services/bridges";
+import Bridges, { BridgeRecord } from "../services/bridges";
 import { Console, Events } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -252,12 +252,12 @@ export default class API extends EventEmitter {
         this.settings = (this.config || {}).api || {};
     }
 
-    launch(id: string, port: number, display?: string): void {
+    launch(bridge: BridgeRecord): void {
         const flags: string[] = [
             "bridge",
             "--mode", State.mode,
-            "--bridge", id,
-            "--port", `${port}`,
+            "--bridge", bridge.id,
+            "--port", `${bridge.port}`,
         ];
 
         if (State.debug) flags.push("--debug");
@@ -265,34 +265,36 @@ export default class API extends EventEmitter {
         if (State.container) flags.push("--container");
         if (!State.orphans) flags.push("--orphans");
 
-        this.processes[id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).on("exit", () => {
+        Console.info(`${bridge.display || bridge.id} starting`);
+
+        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).once("exit", () => {
             State.bridges = Bridges.list();
 
-            if (State.bridges.findIndex((item) => item.id === id) >= 0) this.launch(id, port, display);
+            if (State.bridges.findIndex((item) => item.id === bridge.id) >= 0) this.launch(bridge);
         });
 
-        this.processes[id].stdout?.on("data", (data) => {
+        this.processes[bridge.id].stdout?.on("data", (data) => {
             const messages: string[] = data.toString().split("\n");
 
             for (let i = 0; i < messages.length; i += 1) {
                 Console.log(LogLevel.DEBUG, {
                     level: LogLevel.DEBUG,
-                    bridge: id,
-                    display: display || id,
+                    bridge: bridge.id,
+                    display: bridge.display || bridge.id,
                     timestamp: new Date().getTime(),
                     message: messages[i].trim(),
                 });
             }
         });
 
-        this.processes[id].stderr?.on("data", (data) => {
+        this.processes[bridge.id].stderr?.on("data", (data) => {
             const messages: string[] = data.toString().split("\n");
 
             for (let i = 0; i < messages.length; i += 1) {
                 Console.log(LogLevel.ERROR, {
                     level: LogLevel.ERROR,
-                    bridge: id,
-                    display: display || id,
+                    bridge: bridge.id,
+                    display: bridge.display || bridge.id,
                     timestamp: new Date().getTime(),
                     message: messages[i].trim(),
                 });
@@ -300,12 +302,16 @@ export default class API extends EventEmitter {
         });
     }
 
-    teardown(id: string): Promise<void> {
+    teardown(bridge: BridgeRecord | string): Promise<void> {
+        const id = typeof bridge === "string" ? bridge : bridge.id;
+
         return new Promise((resolve) => {
             if (this.processes[id] && !this.processes[id].killed) {
+                Console.info(`${typeof bridge === "string" ? bridge : bridge.display} stopping`);
+
                 this.processes[id].removeAllListeners("exit");
 
-                this.processes[id].on("exit", () => {
+                this.processes[id].once("exit", () => {
                     resolve();
                 });
 
@@ -346,7 +352,7 @@ export default class API extends EventEmitter {
 
             for (let i = 0; i < bridges.length; i += 1) {
                 if (!this.processes[bridges[i].id] || this.processes[bridges[i].id].killed) {
-                    this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
+                    this.launch(bridges[i]);
                 }
             }
 
@@ -374,11 +380,12 @@ export default class API extends EventEmitter {
             State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
         });
 
-        this.socket.on(Events.RESTART, async (data: any) => {
+        this.socket.on(Events.RESTART, async (data: string) => {
+            await this.teardown(data);
+
             const bridge = State.bridges.find((item) => item.id === data);
 
-            if (bridge) await this.teardown(bridge.id);
-            if (bridge) this.launch(bridge.id, bridge.port, bridge.display);
+            if (bridge) this.launch(bridge);
         });
 
         this.socket.start();
@@ -402,14 +409,14 @@ export default class API extends EventEmitter {
             let bridges = State.bridges.filter((item) => item.type === "bridge");
 
             for (let i = 0; i < bridges.length; i += 1) {
-                this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
+                this.launch(bridges[i]);
             }
 
             if (State.mode === "development") {
                 bridges = State.bridges.filter((item) => item.type === "dev");
 
                 for (let i = 0; i < bridges.length; i += 1) {
-                    this.launch(bridges[i].id, bridges[i].port, bridges[i].display);
+                    this.launch(bridges[i]);
                 }
             }
         }, BRIDGE_LAUNCH_DELAY);
@@ -426,7 +433,7 @@ export default class API extends EventEmitter {
                 const waiters: Promise<void>[] = [];
 
                 for (let i = 0; i < bridges.length; i += 1) {
-                    waiters.push(this.teardown(bridges[i].id));
+                    waiters.push(this.teardown(bridges[i]));
                 }
 
                 Promise.all(waiters).then(() => {
