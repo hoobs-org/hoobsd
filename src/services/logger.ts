@@ -71,12 +71,6 @@ export const enum Events {
     PUBLISH_SETUP_URI = "publish_setup_uri",
     REQUEST = "request",
     COMPLETE = "complete",
-    SHELL_OUTPUT = "shell_output",
-    SHELL_INPUT = "shell_input",
-    SHELL_RESIZE = "shell_resize",
-    SHELL_CLEAR = "shell_clear",
-    SHELL_CONNECT = "shell_connect",
-    SHELL_DISCONNECT = "shell_disconnect",
     SHUTDOWN = "shutdown",
     RESTART = "restart",
 }
