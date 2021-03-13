@@ -2637,11 +2637,6 @@ multicast-dns@^7.2.2:
     dns-packet "^4.0.0"
     thunky "^1.0.2"
 
-nan@^2.14.0:
-  version "2.14.2"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.14.2.tgz#f5376400695168f4cc694ac9393d0c9585eeea19"
-  integrity sha512-M2ufzIiINKCuDfBSAUr1vWQ+vuVcA9kqx8JJUsbQi6yf1uGRyb7HfpdfUr5qLXf3B/t8dPvcjhKMmlfnP47EzQ==
-
 natural-compare@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
@@ -2675,13 +2670,6 @@ node-persist@^0.0.11:
   dependencies:
     mkdirp "~0.5.1"
     q "~1.1.1"
-
-node-pty@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/node-pty/-/node-pty-0.10.0.tgz#c98d23967b076b35c9fb216c542a04d0b5db4821"
-  integrity sha512-Q65ookKbjhqWUYKmtZ6iPn0nnqNdzpm3YJOBmzwWJde/TrenBxK9FgqGGtSW0Wjz4YsR1grQF4a7RS5nBwuW9A==
-  dependencies:
-    nan "^2.14.0"
 
 node-uname@^3.0.4:
   version "3.0.4"

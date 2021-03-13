@@ -25,7 +25,6 @@ import IO from "socket.io";
 import CORS from "cors";
 import Process from "child_process";
 import Path from "path";
-import { spawn, IPty } from "node-pty";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
 import { EventEmitter } from "events";
 import { LogLevel } from "homebridge/lib/logger";
@@ -60,7 +59,6 @@ import ExtentionsController from "./controllers/extentions";
 import BridgesController from "./controllers/bridges";
 import PluginController from "./controllers/plugin";
 import PluginsController from "./controllers/plugins";
-import RemoteController from "./controllers/remote";
 import SystemController from "./controllers/system";
 import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
@@ -134,59 +132,6 @@ export default class API extends EventEmitter {
 
         if (existsSync("/etc/ssl/certs/cacert.pem")) this.enviornment.SSL_CERT_FILE = "/etc/ssl/certs/cacert.pem";
 
-        State.io?.on("connection", (socket: IO.Socket): void => {
-            socket.on(Events.SHELL_CONNECT, () => {
-                Console.debug("terminal connect");
-
-                let shell: IPty;
-
-                try {
-                    shell = spawn(existsSync("/bin/bash") ? "/bin/bash" : process.env.SHELL || "sh", [], {
-                        name: "xterm-color",
-                        cwd: Paths.data(),
-                        env: _.create(process.env, this.enviornment),
-                    });
-                } catch (error) {
-                    Console.error(error.message);
-                    Console.debug(error.stack);
-
-                    return;
-                }
-
-                shell.onData((data: any) => {
-                    socket.emit(Events.SHELL_OUTPUT, data);
-                });
-
-                socket.on(Events.SHELL_INPUT, (data: any): void => {
-                    shell.write(`${data}`);
-                });
-
-                socket.on(Events.SHELL_RESIZE, (data: any): void => {
-                    Console.debug("terminal resize");
-
-                    const parts = `${data}`.split(":");
-
-                    if (parts.length === 2 && !Number.isNaN(parseInt(parts[0], 10)) && !Number.isNaN(parseInt(parts[1], 10))) {
-                        shell.resize(
-                            parseInt(parts[0], 10),
-                            parseInt(parts[1], 10),
-                        );
-                    }
-                });
-
-                socket.on(Events.SHELL_CLEAR, (): void => {
-                    shell.write("clear\r");
-                });
-
-                socket.on(Events.SHELL_DISCONNECT, (): void => {
-                    Console.debug("terminal disconnect");
-
-                    shell.write("exit\r");
-                    shell.kill();
-                });
-            });
-        });
-
         State.app?.use(Express.json({ limit: "2gb" }));
 
         if (State.debug) {
@@ -216,7 +161,6 @@ export default class API extends EventEmitter {
         new BridgesController();
         new PluginController();
         new PluginsController();
-        new RemoteController();
         new SystemController();
         new ThemesController();
         new WeatherController();

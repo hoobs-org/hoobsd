@@ -291,13 +291,13 @@ export const LightTheme: Theme = {
     },
     navigation: {
         text: {
-            default: "#a1a1a1",
+            default: "#999",
             highlight: "#fff",
             active: "#feb400",
         },
-        background: "#262626",
+        background: "#141414",
         highlight: "#feb400",
-        border: "#5a5a5a",
+        border: "#4b4b4b",
     },
     accessory: {
         text: "#0000003d",

@@ -1,6 +1,6 @@
 {
     "name": "hoobsd",
-    "version": "4.0.21",
+    "version": "4.0.22",
     "description": "Server component for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "repository": {
@@ -38,7 +38,6 @@
         "macaddress": "^0.5.1",
         "node-cache": "^5.1.2",
         "node-ipc": "^9.1.1",
-        "node-pty": "^0.10.0",
         "node-uname": "^3.0.4",
         "sanitize-filename": "^1.6.3",
         "semver": "^7.3.4",
