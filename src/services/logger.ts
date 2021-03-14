@@ -149,6 +149,7 @@ class Logger {
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
         let data: Message;
 
+        const prefixes = [];
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
 
         if (typeof message === "string") {
@@ -177,41 +178,17 @@ class Logger {
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
+        let colored: string;
+
         switch (data.level) {
             case LogLevel.WARN:
+                colored = data.message;
+
+                if (State.bridge) Socket.fetch(Events.LOG, data);
                 if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
-                break;
 
-            case LogLevel.ERROR:
-                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
-                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
-                break;
-
-            case LogLevel.DEBUG:
-                if (State.debug || !data.bridge || data.bridge === "hub" || data.bridge === "") {
-                    if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
-                    if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
-                }
-
-                break;
-
-            default:
-                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
-
-                State.io?.sockets.emit(Events.LOG, data);
-                break;
-        }
-
-        if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
-        if (State.bridge) Socket.fetch(Events.LOG, data);
-
-        if (State.id === "hub" || State.debug) {
-            const prefixes = [];
-            let colored = data.message;
-
-            switch (data.level) {
-                case LogLevel.WARN:
+                if (State.id === "hub" || State.debug) {
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
                     if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
                     if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
@@ -219,9 +196,18 @@ class Logger {
                     colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
 
                     CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
-                    break;
+                }
 
-                case LogLevel.ERROR:
+                break;
+
+            case LogLevel.ERROR:
+                colored = data.message;
+
+                if (State.bridge) Socket.fetch(Events.LOG, data);
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+
+                if (State.id === "hub" || State.debug) {
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
                     if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
                     if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
@@ -229,33 +215,48 @@ class Logger {
                     colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
 
                     CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
-                    break;
+                }
 
-                case LogLevel.DEBUG:
-                    if (State.debug) {
-                        if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
-                        if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
-                        if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+                break;
 
-                        colored = Chalk.gray(data.message);
+            case LogLevel.DEBUG:
+                if (State.id === "hub" || State.debug) {
+                    colored = data.message;
 
-                        CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
-                    }
+                    if (State.bridge) Socket.fetch(Events.LOG, data);
+                    if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                    if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
-                    break;
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
-                default:
-                    if (State.id === "hub" || State.debug) {
-                        if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
-                        if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
-                        if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+                    colored = Chalk.gray(data.message);
 
-                        CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
-                    }
+                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                }
 
-                    break;
-            }
+                break;
+
+            default:
+                colored = data.message;
+
+                if (State.bridge) Socket.fetch(Events.LOG, data);
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+
+                if (State.id === "hub" || State.debug) {
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
+                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                }
+
+                break;
         }
+
+        if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
     }
 
     debug(message: string, ...parameters: any[]): void {
