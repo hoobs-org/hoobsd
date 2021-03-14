@@ -37,6 +37,8 @@ if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
+const PROCESS_KILL_DELAY = 3 * 1000;
+
 export = function Daemon(): void {
     Program.version(State.version, "-v, --version", "output the current version");
     Program.allowUnknownOption();
@@ -192,17 +194,31 @@ export = function Daemon(): void {
         if (State.bridge) await State.bridge.stop();
         if (State.hub) await State.hub.stop();
 
-        process.exit();
+        setTimeout(() => {
+            process.exit();
+        }, PROCESS_KILL_DELAY);
     };
 
-    process.on("exit", teardown);
-    process.on("SIGINT", teardown);
-    process.on("SIGUSR1", teardown);
-    process.on("SIGUSR2", teardown);
+    process.on("exit", async () => {
+        await teardown();
+    });
 
-    process.on("uncaughtException", (error) => {
+    process.on("SIGINT", async () => {
+        await teardown();
+    });
+
+    process.on("SIGUSR1", async () => {
+        await teardown();
+    });
+
+    process.on("SIGUSR2", async () => {
+        await teardown();
+    });
+
+    process.on("uncaughtException", async (error) => {
         Console.error(`${error.stack}`);
-        teardown();
+
+        await teardown();
     });
 
     process.on("unhandledRejection", (reason) => {

@@ -75,7 +75,7 @@ import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 import { formatJson } from "../services/formatters";
 
-const INSTANCE_KILL_DELAY = 3000;
+const INSTANCE_KILL_DELAY = 3 * 1000;
 
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
@@ -140,7 +140,6 @@ export default class Server extends EventEmitter {
                 username: this.instance?.username || "",
                 advertiser: this.getAdvertiser(this.instance?.advertiser),
             },
-            plugins: [],
             accessories: [],
             platforms: [],
         };
@@ -176,7 +175,6 @@ export default class Server extends EventEmitter {
         this.api.on(InternalAPIEvent.PUBLISH_EXTERNAL_ACCESSORIES, this.handlePublishExternalAccessories.bind(this));
 
         const pluginManagerOptions: PluginManagerOptions = {
-            activePlugins: this.config.plugins,
             customPluginPath: join(Paths.data(State.id), "node_modules"),
         };
 
@@ -196,7 +194,7 @@ export default class Server extends EventEmitter {
         const plugins = Plugins.load(State.id, this.development);
 
         for (let i = 0; i < plugins.length; i += 1) {
-            if (((this.config.plugins || []).indexOf(plugins[i].identifier) >= 0 || this.development) && existsSync(join(plugins[i].directory, plugins[i].library))) {
+            if (existsSync(join(plugins[i].directory, plugins[i].library))) {
                 // @ts-ignore
                 if (!this.pluginManager.plugins.get(plugins[i].identifier)) {
                     if (this.development) {

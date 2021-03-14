@@ -85,7 +85,6 @@ export default class Config {
             };
         } else {
             config = {
-                plugins: [],
                 accessories: [],
                 platforms: [],
             };

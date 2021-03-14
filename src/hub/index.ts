@@ -63,7 +63,8 @@ import SystemController from "./controllers/system";
 import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
-const BRIDGE_LAUNCH_DELAY = 1000;
+const BRIDGE_LAUNCH_DELAY = 1 * 1000;
+const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -254,7 +255,9 @@ export default class API extends EventEmitter {
                 this.processes[id].removeAllListeners("exit");
 
                 this.processes[id].once("exit", () => {
-                    resolve();
+                    setTimeout(() => {
+                        resolve();
+                    }, BRIDGE_TEARDOWN_DELAY);
                 });
 
                 this.processes[id].kill();

@@ -107,9 +107,6 @@ export default class Plugins {
                         const pjson = Plugins.loadPackage(path);
                         const config = Config.configuration(bridge);
 
-                        config.plugins?.push(name);
-                        config.plugins = [...new Set(config.plugins)];
-
                         if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
                             Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
                                 let found = false;
@@ -186,11 +183,7 @@ export default class Plugins {
                 if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
                     const config = Config.configuration(bridge);
 
-                    let index = config.plugins?.indexOf(name);
-
-                    if (index! > -1) config.plugins?.splice(index!, 1);
-
-                    index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+                    let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
 
                     while (index >= 0) {
                         config.platforms.splice(index, 1);
