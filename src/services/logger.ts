@@ -177,63 +177,82 @@ class Logger {
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
 
-        if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) {
-            CACHE.push(data);
+        switch (data.level) {
+            case LogLevel.WARN:
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                break;
 
-            if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
+            case LogLevel.ERROR:
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                break;
+
+            case LogLevel.DEBUG:
+                if (State.debug || !data.bridge || data.bridge === "hub" || data.bridge === "") {
+                    if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                    if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                }
+
+                break;
+
+            default:
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+
+                State.io?.sockets.emit(Events.LOG, data);
+                break;
         }
 
-        if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+        if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
         if (State.bridge) Socket.fetch(Events.LOG, data);
 
         if (State.id === "hub" || State.debug) {
             const prefixes = [];
-
-            if (State.timestamps && data.message && data.message !== "") {
-                prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
-            }
-
-            if (data.bridge && data.bridge !== "" && data.bridge !== State.id) {
-                prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
-            }
-
-            if (data.prefix && data.prefix !== "") {
-                prefixes.push(colorize(data.prefix)(data.prefix));
-            }
-
             let colored = data.message;
 
             switch (data.level) {
                 case LogLevel.WARN:
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
                     colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
+
+                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                     break;
 
                 case LogLevel.ERROR:
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
                     colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
+
+                    CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                     break;
 
                 case LogLevel.DEBUG:
-                    colored = Chalk.gray(data.message);
-                    break;
-            }
+                    if (State.debug) {
+                        if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                        if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                        if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
-            const formatted = prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored;
+                        colored = Chalk.gray(data.message);
 
-            switch (data.level) {
-                case LogLevel.WARN:
-                    CONSOLE_LOG(formatted);
-                    break;
+                        CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    }
 
-                case LogLevel.ERROR:
-                    CONSOLE_ERROR(formatted);
-                    break;
-
-                case LogLevel.DEBUG:
-                    if (State.debug) CONSOLE_LOG(formatted);
                     break;
 
                 default:
-                    if (State.id === "hub" || State.debug) CONSOLE_LOG(formatted);
+                    if (State.id === "hub" || State.debug) {
+                        if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                        if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                        if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
+                        CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    }
+
                     break;
             }
         }

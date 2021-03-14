@@ -213,19 +213,21 @@ export default class API extends EventEmitter {
 
         this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags);
 
-        this.processes[bridge.id].stdout?.on("data", (data) => {
-            const messages: string[] = data.toString().split("\n");
+        if (State.debug) {
+            this.processes[bridge.id].stdout?.on("data", (data) => {
+                const messages: string[] = data.toString().split("\n");
 
-            for (let i = 0; i < messages.length; i += 1) {
-                Console.log(LogLevel.DEBUG, {
-                    level: LogLevel.DEBUG,
-                    bridge: bridge.id,
-                    display: bridge.display || bridge.id,
-                    timestamp: new Date().getTime(),
-                    message: messages[i].trim(),
-                });
-            }
-        });
+                for (let i = 0; i < messages.length; i += 1) {
+                    Console.log(LogLevel.DEBUG, {
+                        level: LogLevel.DEBUG,
+                        bridge: bridge.id,
+                        display: bridge.display || bridge.id,
+                        timestamp: new Date().getTime(),
+                        message: messages[i].trim(),
+                    });
+                }
+            });
+        }
 
         this.processes[bridge.id].stderr?.on("data", (data) => {
             const messages: string[] = data.toString().split("\n");
