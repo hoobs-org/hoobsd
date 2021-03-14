@@ -185,40 +185,31 @@ export = function Daemon(): void {
 
     Program.parse(process.argv);
 
-    const teardown = async () => {
-        if (State.terminating) return;
-
-        State.terminating = true;
-
-        if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id));
-        if (State.bridge) await State.bridge.stop();
-        if (State.hub) await State.hub.stop();
-
-        setTimeout(() => {
-            process.exit();
-        }, PROCESS_KILL_DELAY);
+    const signals: { [key: string]: number } = {
+        SIGINT: 2,
+        SIGTERM: 15,
     };
 
-    process.on("exit", async () => {
-        await teardown();
+    Object.keys(signals).forEach((signal) => {
+        process.on(signal, async () => {
+            if (State.terminating) return;
+
+            State.terminating = true;
+
+            if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id));
+            if (State.bridge) await State.bridge.stop();
+            if (State.hub) await State.hub.stop();
+
+            setTimeout(() => {
+                process.exit();
+            }, PROCESS_KILL_DELAY);
+        });
     });
 
-    process.on("SIGINT", async () => {
-        await teardown();
-    });
-
-    process.on("SIGUSR1", async () => {
-        await teardown();
-    });
-
-    process.on("SIGUSR2", async () => {
-        await teardown();
-    });
-
-    process.on("uncaughtException", async (error) => {
+    process.on("uncaughtException", (error) => {
         Console.error(`${error.stack}`);
 
-        await teardown();
+        if (!State.terminating) process.kill(process.pid, "SIGTERM");
     });
 
     process.on("unhandledRejection", (reason) => {

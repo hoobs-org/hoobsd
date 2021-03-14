@@ -43,7 +43,7 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
-import { BridgeRecord } from "../services/bridges";
+import Bridges, { BridgeRecord } from "../services/bridges";
 import { Console, Events } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -212,7 +212,11 @@ export default class API extends EventEmitter {
 
         Console.info(`${bridge.display || bridge.id} starting`);
 
-        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags);
+        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).once("exit", () => {
+            State.bridges = Bridges.list();
+
+            if (State.bridges.findIndex((item) => item.id === bridge.id) >= 0) this.launch(bridge);
+        });
 
         if (State.debug) {
             this.processes[bridge.id].stdout?.on("data", (data) => {
