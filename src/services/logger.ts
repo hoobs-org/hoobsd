@@ -120,6 +120,12 @@ class Logger {
         return results;
     }
 
+    save() {
+        if (State.id === "hub") {
+            writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));
+        }
+    }
+
     load() {
         if (State.id === "hub") {
             try {
@@ -174,13 +180,7 @@ class Logger {
         if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) {
             CACHE.push(data);
 
-            if (CACHE.length > 7000) {
-                CACHE.splice(0, CACHE.length - 7000);
-            }
-
-            if (State.id === "hub") {
-                writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));
-            }
+            if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
         }
 
         if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);

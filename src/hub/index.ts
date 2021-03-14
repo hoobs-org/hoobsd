@@ -43,7 +43,7 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
-import Bridges, { BridgeRecord } from "../services/bridges";
+import { BridgeRecord } from "../services/bridges";
 import { Console, Events } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -381,6 +381,7 @@ export default class API extends EventEmitter {
 
                     this.terminator.terminate().then(() => {
                         Console.debug("Stopped");
+                        Console.save();
 
                         resolve();
                     });
