@@ -211,11 +211,7 @@ export default class API extends EventEmitter {
 
         Console.info(`${bridge.display || bridge.id} starting`);
 
-        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).once("exit", () => {
-            State.bridges = Bridges.list();
-
-            if (State.bridges.findIndex((item) => item.id === bridge.id) >= 0) this.launch(bridge);
-        });
+        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags);
 
         this.processes[bridge.id].stdout?.on("data", (data) => {
             const messages: string[] = data.toString().split("\n");
