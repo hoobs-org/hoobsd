@@ -106,6 +106,8 @@ export default class Bridge extends EventEmitter {
         State.homebridge = new Homebridge(this.port || undefined, this.development);
 
         State.homebridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
+            State.setup = uri;
+
             Console.debug(`Setup URI '${uri}'`);
         });
 

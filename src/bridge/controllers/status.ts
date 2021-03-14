@@ -32,7 +32,6 @@ export default class StatusController {
     }
 
     status(_request: SocketRequest, response: SocketResponse): void {
-        this.id = this.id || State.homebridge?.setupURI();
         this.path = this.path || Paths.data(State.id);
 
         response.send({
@@ -47,7 +46,7 @@ export default class StatusController {
             bridge_username: State.homebridge?.settings.username || "",
             bridge_port: State.homebridge?.port,
             setup_pin: State.homebridge?.settings.pin || "",
-            setup_id: this.id || "",
+            setup_id: State.setup || "",
             bridge_path: this.path || "",
         });
     }

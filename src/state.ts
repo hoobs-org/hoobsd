@@ -43,6 +43,7 @@ export interface Application {
     hub: Hub | undefined;
     bridge: Bridge | undefined;
     homebridge: Homebridge | undefined;
+    setup: string | undefined;
 
     id: string;
     display: string;
@@ -75,6 +76,7 @@ const state: Application = {
     hub: undefined,
     bridge: undefined,
     homebridge: undefined,
+    setup: undefined,
 
     id: "default",
     display: "Default",
