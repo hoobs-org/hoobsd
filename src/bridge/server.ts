@@ -331,7 +331,23 @@ export default class Server extends EventEmitter {
         const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
 
         if (cached && cached.length > 0) {
-            this.cachedPlatformAccessories = cached.map((serialized) => PlatformAccessory.deserialize(serialized));
+            this.cachedPlatformAccessories = cached.map((serialized) => {
+                const accessory = PlatformAccessory.deserialize(serialized);
+
+                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                        if (service) {
+                            service.refresh((results: any) => {
+                                service.values = results.values;
+                            }).finally(() => {
+                                this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                            });
+                        }
+                    });
+                });
+
+                return accessory;
+            });
 
             copyFileSync(join(Paths.accessories, "cachedAccessories"), join(Paths.accessories, ".cachedAccessories.bak"));
         }

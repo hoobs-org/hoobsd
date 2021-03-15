@@ -74,7 +74,7 @@ export default class Cache {
         const now = (new Date()).getTime();
 
         if (existsSync(join(path, "cache"))) {
-            const cache = Paths.loadJson<any>(join(path, "cache"), [], "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo").filter((item: any) => this.filter(item.key));
+            const cache = Paths.loadJson<any>(join(path, "cache"), [], "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo", true).filter((item: any) => this.filter(item.key));
 
             for (let i = 0; i < cache.length; i += 1) {
                 const ttl = (cache[i].ttl - now) / 1000;
@@ -100,7 +100,7 @@ export default class Cache {
                 });
             }
 
-            Paths.saveJson(join(path, "cache"), cache, false, "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo");
+            Paths.saveJson(join(path, "cache"), cache, false, "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo", true);
         }
     }
 }

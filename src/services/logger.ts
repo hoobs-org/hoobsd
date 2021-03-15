@@ -149,7 +149,6 @@ class Logger {
             if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
-            if (message.match(/\b(coolingsetpoint|heatingsetpoint)\b/gmi)) return;
 
             data = {
                 level,
@@ -169,6 +168,7 @@ class Logger {
         if (data.message === "" && (data.bridge !== State.id || (data.prefix && data.prefix !== ""))) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
         if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
+        if (data.message.match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
 
         let colored: string;
 

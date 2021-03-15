@@ -22,12 +22,21 @@ import { gzipSync, gunzipSync } from "zlib";
 import { createCipheriv, createDecipheriv } from "crypto";
 import State from "../state";
 import { parseJson, formatJson } from "./json";
+import { Console } from "./logger";
 
 export default class Paths {
     static loadJson<T>(file: string, replacement: T, key?: string, compressed?: boolean): T {
         if (!File.existsSync(file)) return replacement;
 
-        const contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
+        let contents: Buffer;
+
+        try {
+            contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
+        } catch (error) {
+            Console.error(error.message);
+
+            return replacement;
+        }
 
         if (key) {
             const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
