@@ -341,7 +341,7 @@ export default class Bridges {
         ensureDirSync(join(Paths.data(), `${bridge}.persist`));
         ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
 
-        return Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), []);
+        return Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), [], undefined, true);
     }
 
     static parings(bridge: string): { [key: string]: any }[] {
@@ -376,7 +376,7 @@ export default class Bridges {
             ensureDirSync(join(Paths.data(), `${bridge}.persist`));
             ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
 
-            const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), []);
+            const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), [], undefined, true);
 
             let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
 
@@ -385,7 +385,7 @@ export default class Bridges {
                 index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
             }
 
-            Paths.saveJson(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), working);
+            Paths.saveJson(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), working, false, undefined, true);
         } else {
             if (existsSync(join(Paths.data(), `${bridge}.persist`))) removeSync(join(Paths.data(), `${bridge}.persist`));
             if (existsSync(join(Paths.data(), `${bridge}.accessories`))) removeSync(join(Paths.data(), `${bridge}.accessories`));

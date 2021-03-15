@@ -18,13 +18,13 @@
 
 import Utility from "util";
 import Chalk from "chalk";
-import { gzipSync, gunzipSync } from "zlib";
-import { readFileSync, writeFileSync } from "fs-extra";
+import { gzipSync } from "zlib";
+import { writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
 import Socket from "../bridge/services/socket";
-import { parseJson, formatJson } from "./json";
+import { formatJson } from "./json";
 import { colorize } from "./formatters";
 
 export interface Message {
@@ -118,17 +118,13 @@ class Logger {
 
     save() {
         if (State.id === "hub") {
-            writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));
+            Paths.saveJson(Paths.log, CACHE, false, undefined, true);
         }
     }
 
     load() {
         if (State.id === "hub") {
-            try {
-                CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.log)).toString(), []);
-            } catch (_error) {
-                CACHE = [];
-            }
+            CACHE = Paths.loadJson<Message[]>(Paths.log, [], undefined, true);
 
             CACHE.sort((a, b) => {
                 if (a.timestamp > b.timestamp) return 1;

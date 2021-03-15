@@ -18,31 +18,37 @@
 
 import File from "fs-extra";
 import { join } from "path";
+import { gzipSync, gunzipSync } from "zlib";
 import { createCipheriv, createDecipheriv } from "crypto";
 import State from "../state";
 import { parseJson, formatJson } from "./json";
 
 export default class Paths {
-    static loadJson<T>(file: string, replacement: T, key?: string): T {
+    static loadJson<T>(file: string, replacement: T, key?: string, compressed?: boolean): T {
         if (!File.existsSync(file)) return replacement;
+
+        const contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
 
         if (key) {
             const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
-            const decrypted = cipher.update(File.readFileSync(file).toString(), "hex", "utf8") + cipher.final("utf8");
+            const decrypted = cipher.update(contents.toString(), "hex", "utf8") + cipher.final("utf8");
 
             return parseJson<T>(decrypted, replacement);
         }
 
-        return parseJson<T>(File.readFileSync(file).toString(), replacement);
+        return parseJson<T>(contents.toString(), replacement);
     }
 
-    static saveJson<T>(file: string, value: T, pretty?: boolean, key?: string): void {
+    static saveJson<T>(file: string, value: T, pretty?: boolean, key?: string, compress?: boolean): void {
         if (key) {
             const cipher = createCipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+            const contents = cipher.update(formatJson(value, pretty), "utf8", "hex") + cipher.final("hex");
 
-            File.writeFileSync(file, cipher.update(formatJson(value, pretty), "utf8", "hex") + cipher.final("hex"));
+            File.writeFileSync(file, compress ? gzipSync(contents) : contents);
         } else {
-            File.writeFileSync(file, formatJson(value, pretty));
+            const contents = formatJson(value, pretty);
+
+            File.writeFileSync(file, compress ? gzipSync(contents) : contents);
         }
     }
 

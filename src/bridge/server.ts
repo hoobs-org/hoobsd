@@ -327,8 +327,8 @@ export default class Server extends EventEmitter {
     }
 
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
-        const backup = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, ".cachedAccessories.bak"), []);
-        const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup);
+        const backup = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, ".cachedAccessories.bak"), [], undefined, true);
+        const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
 
         if (cached && cached.length > 0) {
             this.cachedPlatformAccessories = cached.map((serialized) => PlatformAccessory.deserialize(serialized));
@@ -374,7 +374,7 @@ export default class Server extends EventEmitter {
     }
 
     private saveCachedPlatformAccessoriesOnDisk(): void {
-        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)));
+        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
     }
 
     private loadAccessories(): void {
