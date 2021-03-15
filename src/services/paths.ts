@@ -18,9 +18,34 @@
 
 import File from "fs-extra";
 import { join } from "path";
+import { createCipheriv, createDecipheriv } from "crypto";
 import State from "../state";
+import { parseJson, formatJson } from "./json";
 
 export default class Paths {
+    static loadJson<T>(file: string, replacement: T, key?: string): T {
+        if (!File.existsSync(file)) return replacement;
+
+        if (key) {
+            const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+            const decrypted = cipher.update(File.readFileSync(file).toString(), "hex", "utf8") + cipher.final("utf8");
+
+            return parseJson<T>(decrypted, replacement);
+        }
+
+        return parseJson<T>(File.readFileSync(file).toString(), replacement);
+    }
+
+    static saveJson<T>(file: string, value: T, pretty?: boolean, key?: string): void {
+        if (key) {
+            const cipher = createCipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+
+            File.writeFileSync(file, cipher.update(formatJson(value, pretty), "utf8", "hex") + cipher.final("hex"));
+        } else {
+            File.writeFileSync(file, formatJson(value, pretty));
+        }
+    }
+
     static tryCommand(command: string): boolean {
         const paths = (process.env.PATH || "").split(":");
 

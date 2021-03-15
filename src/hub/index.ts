@@ -43,7 +43,7 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
-import Bridges, { BridgeRecord } from "../services/bridges";
+import { BridgeRecord } from "../services/bridges";
 import { Console, Events } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -64,7 +64,7 @@ import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
-const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
+const BRIDGE_TEARDOWN_DELAY = 5 * 1000;
 
 export default class API extends EventEmitter {
     declare time: number;

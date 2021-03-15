@@ -17,11 +17,7 @@
  **************************************************************************************************/
 
 import { join } from "path";
-
-import {
-    existsSync,
-    readFileSync,
-} from "fs-extra";
+import { existsSync, readFileSync } from "fs-extra";
 
 import {
     uuid,
@@ -39,7 +35,6 @@ import Paths from "./paths";
 import Config from "./config";
 import System from "./system";
 import { Console, NotificationType } from "./logger";
-import { loadJson } from "./formatters";
 
 export default class Plugins {
     static get directory(): string {
@@ -65,7 +60,7 @@ export default class Plugins {
                 library: pjson.main || "./index.js",
             });
         } else if (existsSync(join(Paths.data(bridge), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
+            const plugins = Object.keys(Paths.loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {

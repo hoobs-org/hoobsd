@@ -18,19 +18,13 @@
 
 import _ from "lodash";
 import { Request, Response } from "express-serve-static-core";
-import { writeFileSync } from "fs-extra";
 import State from "../../state";
 import Security from "../../services/security";
 import Socket from "../services/socket";
 import Paths from "../../services/paths";
 import { Console, Events } from "../../services/logger";
-
-import {
-    loadJson,
-    jsonEquals,
-    formatJson,
-    sanitize,
-} from "../../services/formatters";
+import { jsonEquals } from "../../services/json";
+import { sanitize } from "../../services/formatters";
 
 export default class AccessoriesController {
     constructor() {
@@ -53,7 +47,7 @@ export default class AccessoriesController {
 
         if (cached) return cached;
 
-        const results: { [key: string]: any } = loadJson<{ [key: string]: any }>(Paths.layout, {});
+        const results: { [key: string]: any } = Paths.loadJson<{ [key: string]: any }>(Paths.layout, {});
 
         results.rooms = results.rooms || [];
         results.accessories = results.accessories || {};
@@ -81,7 +75,7 @@ export default class AccessoriesController {
         value.rooms = value.rooms || [];
         value.accessories = value.accessories || {};
 
-        const current: { [key: string]: any } = loadJson<{ [key: string]: any }>(Paths.layout, {});
+        const current: { [key: string]: any } = Paths.loadJson<{ [key: string]: any }>(Paths.layout, {});
         const keys = _.keys(value.accessories);
 
         for (let i = 0; i < keys.length; i += 1) {
@@ -94,7 +88,7 @@ export default class AccessoriesController {
 
         if (!jsonEquals(current, value)) {
             State.cache?.remove("accessories/layout");
-            writeFileSync(Paths.layout, formatJson(value));
+            Paths.saveJson(Paths.layout, value);
         }
     }
 

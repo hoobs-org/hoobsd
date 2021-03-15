@@ -24,12 +24,8 @@ import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
 import Socket from "../bridge/services/socket";
-
-import {
-    formatJson,
-    parseJson,
-    colorize,
-} from "./formatters";
+import { parseJson, formatJson } from "./json";
+import { colorize } from "./formatters";
 
 export interface Message {
     level: LogLevel;

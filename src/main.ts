@@ -31,13 +31,14 @@ import Cache from "./services/cache";
 import Paths from "./services/paths";
 import System from "./services/system";
 import Hub from "./hub";
-import { sanitize, cloneJson, jsonEquals } from "./services/formatters";
+import { jsonEquals, cloneJson } from "./services/json";
+import { sanitize } from "./services/formatters";
 
 if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
-const PROCESS_KILL_DELAY = 3 * 1000;
+const PROCESS_KILL_DELAY = 5 * 1000;
 
 export = function Daemon(): void {
     Program.version(State.version, "-v, --version", "output the current version");
@@ -201,7 +202,7 @@ export = function Daemon(): void {
             if (State.hub) await State.hub.stop();
 
             setTimeout(() => {
-                process.exit();
+                process.exit(128 + signals[signal]);
             }, PROCESS_KILL_DELAY);
         });
     });

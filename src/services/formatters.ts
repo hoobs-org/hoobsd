@@ -17,8 +17,6 @@
  **************************************************************************************************/
 
 import Sanitize from "sanitize-filename";
-import { existsSync, readFileSync } from "fs-extra";
-import { createCipheriv, createDecipheriv } from "crypto";
 import Chalk from "chalk";
 
 const reserved = [
@@ -57,48 +55,6 @@ export function format(value: number | string): string | undefined {
     if (Number.isNaN(parsed) || parsed <= 0) return undefined;
 
     return parsed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-export function parseJson<T>(value: string, replacement: T): T {
-    try {
-        return <T>JSON.parse(value);
-    } catch (_error) {
-        return replacement;
-    }
-}
-
-export function loadJson<T>(file: string, replacement: T, key?: string): T {
-    if (!existsSync(file)) return replacement;
-
-    if (key) {
-        const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
-        const decrypted = cipher.update(readFileSync(file).toString(), "hex", "utf8") + cipher.final("utf8");
-
-        return parseJson<T>(decrypted, replacement);
-    }
-
-    return parseJson<T>(readFileSync(file).toString(), replacement);
-}
-
-export function jsonEquals(source: any, value: any): boolean {
-    if (JSON.stringify(source) === JSON.stringify(value)) return true;
-
-    return false;
-}
-
-export function cloneJson(object: any): any {
-    return JSON.parse(JSON.stringify(object));
-}
-
-export function formatJson(object: any, key?: string): string {
-    if (key) {
-        const cipher = createCipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
-        const encrypted = cipher.update(JSON.stringify(object, null, 4), "utf8", "hex") + cipher.final("hex");
-
-        return encrypted;
-    }
-
-    return JSON.stringify(object, null, 4);
 }
 
 export function colorize(value: number | string, bright?: boolean): any {

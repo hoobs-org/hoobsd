@@ -21,12 +21,12 @@ import { join } from "path";
 import { Request, Response } from "express-serve-static-core";
 import { PluginManager } from "homebridge/lib/pluginManager";
 import State from "../../state";
+import Paths from "../../services/paths";
 import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
 import Client from "../../bridge/services/client";
 import { Console } from "../../services/logger";
-import { loadJson } from "../../services/formatters";
 
 export default class PluginsController {
     private readonly client: Client;
@@ -224,7 +224,7 @@ export default class PluginsController {
             let details: any[];
 
             if (bridge?.type === "dev") {
-                const raw: { [key: string]: any } = loadJson(join(bridge?.project || "", "config.schema.json"), {});
+                const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
 
                 schema = {
                     name: pjson.name,

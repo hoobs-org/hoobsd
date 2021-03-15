@@ -18,10 +18,10 @@
 
 import Crypto from "crypto";
 import { join } from "path";
-import { existsSync, writeFileSync } from "fs-extra";
+import { existsSync } from "fs-extra";
 import State from "../state";
 import Paths from "./paths";
-import { parseJson, formatJson, loadJson } from "./formatters";
+import { parseJson } from "./json";
 
 export interface UserRecord {
     id: number;
@@ -34,9 +34,9 @@ export interface UserRecord {
 
 export default class Users {
     static list() {
-        if (!existsSync(join(Paths.data(), "access"))) writeFileSync(join(Paths.data(), "access"), formatJson([], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+        if (!existsSync(join(Paths.data(), "access"))) Paths.saveJson(join(Paths.data(), "access"), [], false, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
 
-        return loadJson<UserRecord[]>(join(Paths.data(), "access"), [], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
+        return Paths.loadJson<UserRecord[]>(join(Paths.data(), "access"), [], "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
     }
 
     static count(): number {
@@ -172,7 +172,7 @@ export default class Users {
 
         State.users.push(user);
 
-        writeFileSync(join(Paths.data(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+        Paths.saveJson(join(Paths.data(), "access"), State.users, false, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
 
         return user;
     }
@@ -187,7 +187,7 @@ export default class Users {
             if (permissions) State.users[index].permissions = permissions;
             if (password) State.users[index].password = await this.hashValue(password, State.users[index].salt);
 
-            writeFileSync(join(Paths.data(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+            Paths.saveJson(join(Paths.data(), "access"), State.users, false, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
 
             return State.users[index];
         }
@@ -201,7 +201,7 @@ export default class Users {
         if (index >= 0) {
             State.users.splice(index, 1);
 
-            writeFileSync(join(Paths.data(), "access"), formatJson(State.users, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1"));
+            Paths.saveJson(join(Paths.data(), "access"), State.users, false, "tGXnkdWOnl@p817684zOB7qUs!A2t!$1");
 
             return true;
         }
