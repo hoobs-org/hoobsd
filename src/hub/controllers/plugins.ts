@@ -18,6 +18,7 @@
 
 import Axios from "axios";
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import { Request, Response } from "express-serve-static-core";
 import { PluginManager } from "homebridge/lib/pluginManager";
 import State from "../../state";
@@ -26,6 +27,7 @@ import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
 import Client from "../../bridge/services/client";
+import { BridgeRecord } from "../../services/bridges";
 import { Console } from "../../services/logger";
 
 export default class PluginsController {
@@ -224,38 +226,16 @@ export default class PluginsController {
             let details: any[];
 
             if (bridge?.type === "dev") {
-                const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
-
-                schema = {
-                    name: pjson.name,
-                    alias: pjson.name,
-                    accessory: false,
-                    config: {
-                        type: "object",
-                        properties: {},
-                    },
-                };
-
-                if (raw) {
-                    schema = {
-                        name: pjson.name,
-                        alias: raw.alias || raw.pluginAlias || pjson.name,
-                        accessory: raw.pluginType === "accessory",
-                        config: {
-                            type: "object",
-                            properties: (raw.schema || raw.config).properties || {},
-                        },
-                    };
-                }
+                schema = await this.pluginSchema(bridge, identifier, {});
 
                 details = [{
-                    name: pjson.name,
+                    name: identifier,
                     alias: schema.alias,
                     type: schema.accessory ? "accessory" : "platform",
                 }];
             } else {
                 definition = await this.pluginDefinition(identifier);
-                schema = await this.pluginSchema(identifier);
+                schema = await this.pluginSchema(bridge, identifier, definition || {});
                 details = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
             }
 
@@ -310,11 +290,43 @@ export default class PluginsController {
         return undefined;
     }
 
-    private async pluginSchema(identifier: string): Promise<{ [key: string]: any }> {
+    private async pluginSchema(bridge: BridgeRecord | undefined, identifier: string, definition: { [key: string]: any }): Promise<{ [key: string]: any }> {
         const key = `plugin/schema:${identifier}`;
         const cached = State.cache?.get<{ [key: string]: any }>(key);
 
         if (cached) return cached;
+
+        if (bridge?.type === "dev") {
+            const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
+
+            return {
+                name: identifier,
+                alias: raw.alias || raw.pluginAlias || identifier,
+                accessory: raw.pluginType === "accessory",
+                config: {
+                    type: "object",
+                    properties: (raw.schema || raw.config).properties || {},
+                },
+            };
+        }
+
+        if (bridge && !definition.override_schema && existsSync(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"))) {
+            const raw: { [key: string]: any } = Paths.loadJson(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"), {});
+
+            const schema = {
+                name: identifier,
+                alias: raw.alias || raw.pluginAlias || identifier,
+                accessory: raw.pluginType === "accessory",
+                config: {
+                    type: "object",
+                    properties: (raw.schema || raw.config).properties || {},
+                },
+            };
+
+            State.cache?.set(key, schema, 60);
+
+            return schema;
+        }
 
         try {
             const schema = ((await Axios.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {};
