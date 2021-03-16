@@ -25,6 +25,16 @@ import { Print, Events } from "../../services/logger";
 const PING_INTERVAL = 5000;
 const SOCKETS: { [key: string]: any } = {};
 
+const VOID_EVENTS = [
+    Events.LOG,
+    Events.RESTART,
+    Events.NOTIFICATION,
+    Events.ACCESSORY_CHANGE,
+    Events.CONFIG_CHANGE,
+    Events.ROOM_CHANGE,
+    Events.MONITOR,
+];
+
 export interface SocketRequest {
     params?: { [key: string]: any };
     body?: any;
@@ -172,24 +182,30 @@ export default class Socket {
             }
 
             SOCKETS["api.sock"].connectTo("api.sock", () => {
-                SOCKETS["api.sock"].of["api.sock"].on(session, () => {
-                    SOCKETS["api.sock"].of["api.sock"].off(session, "*");
-                    SOCKETS["api.sock"].disconnect();
+                if (VOID_EVENTS.indexOf(event) === -1) {
+                    SOCKETS["api.sock"].of["api.sock"].on(session, () => {
+                        SOCKETS["api.sock"].of["api.sock"].off(session, "*");
+                        SOCKETS["api.sock"].disconnect();
 
-                    resolve();
-                });
+                        resolve();
+                    });
 
-                SOCKETS["api.sock"].of["api.sock"].on("error", () => {
-                    SOCKETS["api.sock"].of["api.sock"].off(session, "*");
-                    SOCKETS["api.sock"].disconnect();
+                    SOCKETS["api.sock"].of["api.sock"].on("error", () => {
+                        SOCKETS["api.sock"].of["api.sock"].off(session, "*");
+                        SOCKETS["api.sock"].disconnect();
 
-                    resolve();
-                });
+                        resolve();
+                    });
+                }
 
                 SOCKETS["api.sock"].of["api.sock"].emit(event, {
                     session,
                     body,
                 });
+
+                if (VOID_EVENTS.indexOf(event) >= 0) {
+                    resolve();
+                }
             });
         });
     }
