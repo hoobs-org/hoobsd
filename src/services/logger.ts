@@ -18,8 +18,6 @@
 
 import Utility from "util";
 import Chalk from "chalk";
-import { gzipSync } from "zlib";
-import { writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
