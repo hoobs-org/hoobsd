@@ -143,6 +143,8 @@ class Logger {
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
 
         if (typeof message === "string") {
+            if (!message || message === "") return;
+
             if (message.match(/^(?=.*\binitializing\b)(?=.*\bhap-nodejs\b).*$/gmi)) return;
             if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
@@ -164,9 +166,9 @@ class Logger {
         data.message = data.message || "";
 
         if (data.message === "" && (data.bridge !== State.id || (data.prefix && data.prefix !== ""))) return;
-        if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
-        if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
-        if (data.message.match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
+        if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("version") >= 0) return;
+        if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("recommended") >= 0) return;
+        if ((data.message || "").match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
 
         let colored: string;
 
