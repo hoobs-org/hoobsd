@@ -110,7 +110,7 @@ export default class Users {
 
         if (!token || token === "") return {};
 
-        const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
+        const data = parseJson<any>(Buffer.from(token, "base64").toString("utf8"), undefined);
 
         if (data) {
             const user: UserRecord = State.users.filter((u) => u.id === data.id)[0];
@@ -131,7 +131,7 @@ export default class Users {
 
         if (!server || server <= 0) return false;
 
-        const data = parseJson<any>(Buffer.from(token, "base64").toString(), undefined);
+        const data = parseJson<any>(Buffer.from(token, "base64").toString("utf8"), undefined);
 
         if (data) {
             const user = State.users.filter((u) => u.id === data.id)[0];
