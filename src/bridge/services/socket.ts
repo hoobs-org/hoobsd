@@ -20,20 +20,10 @@ import RawIPC from "node-ipc";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../../services/paths";
-import { Print, Events } from "../../services/logger";
+import { Events } from "../../services/logger";
 
 const PING_INTERVAL = 5000;
 const SOCKETS: { [key: string]: any } = {};
-
-const VOID_EVENTS = [
-    Events.LOG,
-    Events.RESTART,
-    Events.NOTIFICATION,
-    Events.ACCESSORY_CHANGE,
-    Events.CONFIG_CHANGE,
-    Events.ROOM_CHANGE,
-    Events.MONITOR,
-];
 
 export interface SocketRequest {
     params?: { [key: string]: any };
@@ -65,7 +55,7 @@ export default class Socket {
         this.running = false;
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = true;
-        this.pipe.config.logger = Print;
+        this.pipe.config.logger = () => {};
         this.pipe.config.appspace = "/";
         this.pipe.config.socketRoot = Paths.data();
         this.pipe.config.id = `${this.name}.sock`;
@@ -98,39 +88,27 @@ export default class Socket {
     }
 
     heartbeat() {
-        if (!SOCKETS[`${this.name}.sock`]) {
-            SOCKETS[`${this.name}.sock`] = new RawIPC.IPC();
+        const socket = Socket.connect(`${this.name}.sock`);
 
-            SOCKETS[`${this.name}.sock`].config.appspace = "/";
-            SOCKETS[`${this.name}.sock`].config.socketRoot = Paths.data();
-            SOCKETS[`${this.name}.sock`].config.logInColor = true;
-            SOCKETS[`${this.name}.sock`].config.logger = () => {};
-            SOCKETS[`${this.name}.sock`].config.maxRetries = 0;
-            SOCKETS[`${this.name}.sock`].config.stopRetrying = true;
-            SOCKETS[`${this.name}.sock`].config.id = `${this.name}.sock`;
-        }
-
-        SOCKETS[`${this.name}.sock`].connectTo(`${this.name}.sock`, () => {
-            SOCKETS[`${this.name}.sock`].of[`${this.name}.sock`].on(Events.PONG, () => {
-                SOCKETS[`${this.name}.sock`].of[`${this.name}.sock`].off(Events.PONG, "*");
-                SOCKETS[`${this.name}.sock`].disconnect();
+        socket.connectTo(`${this.name}.sock`, () => {
+            socket.of[`${this.name}.sock`].on(Events.PONG, () => {
+                socket.of[`${this.name}.sock`].off(Events.PONG, "*");
+                socket.disconnect();
 
                 setTimeout(() => {
                     this.heartbeat();
                 }, PING_INTERVAL);
             });
 
-            SOCKETS[`${this.name}.sock`].of[`${this.name}.sock`].on("error", () => {
-                SOCKETS[`${this.name}.sock`].of[`${this.name}.sock`].off(Events.PONG, "*");
-                SOCKETS[`${this.name}.sock`].disconnect();
-
-                Print("Restarting IPC Socket");
+            socket.of[`${this.name}.sock`].on("error", () => {
+                socket.of[`${this.name}.sock`].off(Events.PONG, "*");
+                socket.disconnect();
 
                 this.stop();
                 this.start();
             });
 
-            SOCKETS[`${this.name}.sock`].of[`${this.name}.sock`].emit(Events.PING);
+            socket.of[`${this.name}.sock`].emit(Events.PING);
         });
     }
 
@@ -140,8 +118,6 @@ export default class Socket {
 
     start(): void {
         if (!this.running) {
-            Print("Starting IPC Socket");
-
             this.pipe.server.start();
             this.running = true;
         }
@@ -156,56 +132,70 @@ export default class Socket {
         }
     }
 
+    static connect(name: string): any {
+        if (!SOCKETS[name]) {
+            SOCKETS[name] = new RawIPC.IPC();
+
+            SOCKETS[name].config.appspace = "/";
+            SOCKETS[name].config.socketRoot = Paths.data();
+            SOCKETS[name].config.logInColor = true;
+            SOCKETS[name].config.logger = () => {};
+            SOCKETS[name].config.maxRetries = 0;
+            SOCKETS[name].config.stopRetrying = true;
+            SOCKETS[name].config.id = name;
+        }
+
+        return SOCKETS[name];
+    }
+
     static up() {
         return existsSync(join(Paths.data(), "api.sock"));
     }
 
+    static emit(event: Events, body: any): void {
+        if (!existsSync(join(Paths.data(), "api.sock"))) return;
+
+        const session = `${new Date().getTime()}:${Math.random()}`;
+        const socket = Socket.connect("api.sock");
+
+        socket.connectTo("api.sock", () => {
+            socket.of["api.sock"].emit(event, {
+                session,
+                body,
+            });
+        });
+    }
+
     static fetch(event: Events, body: any): Promise<void> {
         return new Promise((resolve) => {
-            const session = `${new Date().getTime()}:${Math.random()}`;
-
             if (!existsSync(join(Paths.data(), "api.sock"))) {
                 resolve();
 
                 return;
             }
 
-            if (!SOCKETS["api.sock"]) {
-                SOCKETS["api.sock"] = new RawIPC.IPC();
+            const session = `${new Date().getTime()}:${Math.random()}`;
+            const socket = Socket.connect("api.sock");
 
-                SOCKETS["api.sock"].config.appspace = "/";
-                SOCKETS["api.sock"].config.socketRoot = Paths.data();
-                SOCKETS["api.sock"].config.logInColor = true;
-                SOCKETS["api.sock"].config.logger = Print;
-                SOCKETS["api.sock"].config.maxRetries = 0;
-                SOCKETS["api.sock"].config.stopRetrying = true;
-            }
+            socket.connectTo("api.sock", () => {
+                socket.of["api.sock"].on(session, () => {
+                    socket.of["api.sock"].off(session, "*");
+                    socket.disconnect();
 
-            SOCKETS["api.sock"].connectTo("api.sock", () => {
-                if (VOID_EVENTS.indexOf(event) === -1) {
-                    SOCKETS["api.sock"].of["api.sock"].on(session, () => {
-                        SOCKETS["api.sock"].of["api.sock"].off(session, "*");
-                        SOCKETS["api.sock"].disconnect();
+                    resolve();
+                });
 
-                        resolve();
-                    });
+                socket.of["api.sock"].on("error", () => {
+                    socket.of["api.sock"].off(session, "*");
+                    socket.disconnect();
 
-                    SOCKETS["api.sock"].of["api.sock"].on("error", () => {
-                        SOCKETS["api.sock"].of["api.sock"].off(session, "*");
-                        SOCKETS["api.sock"].disconnect();
+                    resolve();
+                });
 
-                        resolve();
-                    });
-                }
-
-                SOCKETS["api.sock"].of["api.sock"].emit(event, {
+                socket.of["api.sock"].emit(event, {
                     session,
                     body,
                 });
-
-                if (VOID_EVENTS.indexOf(event) >= 0) {
-                    resolve();
-                }
             });
         });
     }

@@ -176,7 +176,7 @@ class Logger {
             case LogLevel.WARN:
                 colored = data.message;
 
-                if (State.bridge) Socket.fetch(Events.LOG, data);
+                if (State.bridge) Socket.emit(Events.LOG, data);
                 if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
@@ -195,7 +195,7 @@ class Logger {
             case LogLevel.ERROR:
                 colored = data.message;
 
-                if (State.bridge) Socket.fetch(Events.LOG, data);
+                if (State.bridge) Socket.emit(Events.LOG, data);
                 if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
@@ -215,7 +215,7 @@ class Logger {
                 if (State.id === "hub" || State.debug) {
                     colored = data.message;
 
-                    if (State.bridge) Socket.fetch(Events.LOG, data);
+                    if (State.bridge) Socket.emit(Events.LOG, data);
                     if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
                     if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
@@ -233,7 +233,7 @@ class Logger {
             default:
                 colored = data.message;
 
-                if (State.bridge) Socket.fetch(Events.LOG, data);
+                if (State.bridge) Socket.emit(Events.LOG, data);
                 if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
@@ -301,7 +301,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.fetch(Events.NOTIFICATION, {
+            Socket.emit(Events.NOTIFICATION, {
                 bridge,
                 data: {
                     title,
@@ -322,7 +322,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.fetch(event, {
+            Socket.emit(event, {
                 bridge,
                 data,
             });

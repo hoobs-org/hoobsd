@@ -96,7 +96,7 @@ export default class Bridge extends EventEmitter {
     }
 
     restart() {
-        Socket.fetch(Events.RESTART, State.id);
+        Socket.emit(Events.RESTART, State.id);
     }
 
     start(): void {
