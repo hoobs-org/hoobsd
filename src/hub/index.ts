@@ -44,7 +44,7 @@ import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
 import { BridgeRecord } from "../services/bridges";
-import { Console, Events } from "../services/logger";
+import { Console, Events, NotificationType } from "../services/logger";
 
 import IndexController from "./controllers/index";
 import AuthController from "./controllers/auth";
@@ -214,6 +214,15 @@ export default class API extends EventEmitter {
 
         this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags);
 
+        this.processes[bridge.id].on("exit", () => {
+            Console.notify(
+                bridge.id,
+                "Bridge Stopped",
+                `${bridge.display || bridge.id} has stopped.`,
+                NotificationType.ERROR,
+            );
+        });
+
         if (State.debug) {
             this.processes[bridge.id].stdout?.on("data", (data) => {
                 const messages: string[] = data.toString().split("\n");
@@ -256,6 +265,13 @@ export default class API extends EventEmitter {
 
                 this.processes[id].once("exit", () => {
                     setTimeout(() => {
+                        Console.notify(
+                            typeof bridge === "string" ? bridge : bridge.id,
+                            "Bridge Stopped",
+                            `${typeof bridge === "string" ? bridge : bridge.display} has stopped.`,
+                            NotificationType.ERROR,
+                        );
+
                         resolve();
                     }, BRIDGE_TEARDOWN_DELAY);
                 });

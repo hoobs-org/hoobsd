@@ -252,7 +252,7 @@ export default class Bridges {
             Console.notify(
                 "hub",
                 "Bridge Removed",
-                `Bridge "${name}" removed.`,
+                `${name} removed.`,
                 NotificationType.WARN,
                 "layers",
             );
@@ -331,7 +331,7 @@ export default class Bridges {
         Console.notify(
             "hub",
             "Bridge Added",
-            `Bridge "${name}" added.`,
+            `${name} added.`,
             NotificationType.SUCCESS,
             "layers",
         );
