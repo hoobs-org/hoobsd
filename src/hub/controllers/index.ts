@@ -24,9 +24,15 @@ export default class IndexController {
         State.app?.get("/api", (request, response) => this.info(request, response));
     }
 
-    async info(_request: Request, response: Response): Promise<Response> {
+    info(_request: Request, response: Response): Response {
         return response.send({
+            application: "hoobsd",
             version: State.version,
+            authentication: {
+                state: "/api/auth",
+                login: "/api/auth/logon",
+                validate: "/api/auth/validate",
+            },
         });
     }
 }
