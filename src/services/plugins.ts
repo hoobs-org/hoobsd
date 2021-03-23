@@ -17,11 +17,7 @@
  **************************************************************************************************/
 
 import { join } from "path";
-
-import {
-    existsSync,
-    readFileSync,
-} from "fs-extra";
+import { existsSync, readFileSync } from "fs-extra";
 
 import {
     uuid,
@@ -39,7 +35,6 @@ import Paths from "./paths";
 import Config from "./config";
 import System from "./system";
 import { Console, NotificationType } from "./logger";
-import { loadJson } from "./formatters";
 
 export default class Plugins {
     static get directory(): string {
@@ -65,7 +60,7 @@ export default class Plugins {
                 library: pjson.main || "./index.js",
             });
         } else if (existsSync(join(Paths.data(bridge), "package.json"))) {
-            const plugins = Object.keys(loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
+            const plugins = Object.keys(Paths.loadJson<any>(join(Paths.data(bridge), "package.json"), {}).dependencies || {});
 
             for (let i = 0; i < plugins.length; i += 1) {
                 if (plugins[i] !== "hap-nodejs") {
@@ -106,9 +101,6 @@ export default class Plugins {
                     if (existsSync(path) && existsSync(join(path, "package.json"))) {
                         const pjson = Plugins.loadPackage(path);
                         const config = Config.configuration(bridge);
-
-                        config.plugins?.push(name);
-                        config.plugins = [...new Set(config.plugins)];
 
                         if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
                             Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
@@ -186,11 +178,7 @@ export default class Plugins {
                 if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
                     const config = Config.configuration(bridge);
 
-                    let index = config.plugins?.indexOf(name);
-
-                    if (index! > -1) config.plugins?.splice(index!, 1);
-
-                    index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+                    let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
 
                     while (index >= 0) {
                         config.platforms.splice(index, 1);

@@ -96,7 +96,7 @@ export default class Bridge extends EventEmitter {
     }
 
     restart() {
-        Socket.fetch(Events.RESTART, State.id);
+        Socket.emit(Events.RESTART, State.id);
     }
 
     start(): void {
@@ -106,6 +106,8 @@ export default class Bridge extends EventEmitter {
         State.homebridge = new Homebridge(this.port || undefined, this.development);
 
         State.homebridge?.on(Events.PUBLISH_SETUP_URI, (uri) => {
+            State.setup = uri;
+
             Console.debug(`Setup URI '${uri}'`);
         });
 

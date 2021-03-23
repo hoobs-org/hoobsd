@@ -43,8 +43,8 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
-import Bridges, { BridgeRecord } from "../services/bridges";
-import { Console, Events } from "../services/logger";
+import { BridgeRecord } from "../services/bridges";
+import { Console, Events, NotificationType } from "../services/logger";
 
 import IndexController from "./controllers/index";
 import AuthController from "./controllers/auth";
@@ -63,7 +63,8 @@ import SystemController from "./controllers/system";
 import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
-const BRIDGE_LAUNCH_DELAY = 1000;
+const BRIDGE_LAUNCH_DELAY = 1 * 1000;
+const BRIDGE_TEARDOWN_DELAY = 5 * 1000;
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -211,25 +212,32 @@ export default class API extends EventEmitter {
 
         Console.info(`${bridge.display || bridge.id} starting`);
 
-        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags).once("exit", () => {
-            State.bridges = Bridges.list();
+        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags);
 
-            if (State.bridges.findIndex((item) => item.id === bridge.id) >= 0) this.launch(bridge);
+        this.processes[bridge.id].on("exit", () => {
+            Console.notify(
+                bridge.id,
+                "Bridge Stopped",
+                `${bridge.display || bridge.id} has stopped.`,
+                NotificationType.ERROR,
+            );
         });
 
-        this.processes[bridge.id].stdout?.on("data", (data) => {
-            const messages: string[] = data.toString().split("\n");
+        if (State.debug) {
+            this.processes[bridge.id].stdout?.on("data", (data) => {
+                const messages: string[] = data.toString().split("\n");
 
-            for (let i = 0; i < messages.length; i += 1) {
-                Console.log(LogLevel.DEBUG, {
-                    level: LogLevel.DEBUG,
-                    bridge: bridge.id,
-                    display: bridge.display || bridge.id,
-                    timestamp: new Date().getTime(),
-                    message: messages[i].trim(),
-                });
-            }
-        });
+                for (let i = 0; i < messages.length; i += 1) {
+                    Console.log(LogLevel.DEBUG, {
+                        level: LogLevel.DEBUG,
+                        bridge: bridge.id,
+                        display: bridge.display || bridge.id,
+                        timestamp: new Date().getTime(),
+                        message: messages[i].trim(),
+                    });
+                }
+            });
+        }
 
         this.processes[bridge.id].stderr?.on("data", (data) => {
             const messages: string[] = data.toString().split("\n");
@@ -256,7 +264,16 @@ export default class API extends EventEmitter {
                 this.processes[id].removeAllListeners("exit");
 
                 this.processes[id].once("exit", () => {
-                    resolve();
+                    setTimeout(() => {
+                        Console.notify(
+                            typeof bridge === "string" ? bridge : bridge.id,
+                            "Bridge Stopped",
+                            `${typeof bridge === "string" ? bridge : bridge.display} has stopped.`,
+                            NotificationType.ERROR,
+                        );
+
+                        resolve();
+                    }, BRIDGE_TEARDOWN_DELAY);
                 });
 
                 this.processes[id].kill();
@@ -385,6 +402,7 @@ export default class API extends EventEmitter {
 
                     this.terminator.terminate().then(() => {
                         Console.debug("Stopped");
+                        Console.save();
 
                         resolve();
                     });

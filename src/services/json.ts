@@ -16,42 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import State from "../../state";
-import Paths from "../../services/paths";
-import { Console } from "../../services/logger";
-import { SocketRequest, SocketResponse } from "../services/socket";
-
-export default class StatusController {
-    declare id: string | undefined;
-
-    declare path: string | undefined;
-
-    constructor() {
-        State.socket?.route("status:get", (request: SocketRequest, response: SocketResponse) => this.status(request, response));
-        State.socket?.route("status:log", (request: SocketRequest, response: SocketResponse) => this.log(request, response));
+export function parseJson<T>(value: string, replacement: T): T {
+    try {
+        return <T>JSON.parse(value);
+    } catch (_error) {
+        return replacement;
     }
+}
 
-    status(_request: SocketRequest, response: SocketResponse): void {
-        this.path = this.path || Paths.data(State.id);
+export function jsonEquals(source: any, value: any): boolean {
+    if (JSON.stringify(source) === JSON.stringify(value)) return true;
 
-        response.send({
-            id: State.id,
-            bridge: State.display || State.id,
-            running: State.homebridge?.running,
-            status: State.homebridge?.running ? "running" : "stopped",
-            uptime: new Date().getTime() - (State.bridge?.time || 0),
-            product: "HOOBS State",
-            version: State.version,
-            bridge_name: State.homebridge?.settings.name || "",
-            bridge_username: State.homebridge?.settings.username || "",
-            bridge_port: State.homebridge?.port,
-            setup_pin: State.homebridge?.settings.pin || "",
-            setup_id: State.setup || "",
-            bridge_path: this.path || "",
-        });
-    }
+    return false;
+}
 
-    log(_request: SocketRequest, response: SocketResponse): void {
-        response.send(Console.cache());
-    }
+export function cloneJson(object: any): any {
+    return JSON.parse(JSON.stringify(object));
+}
+
+export function formatJson(object: any, pretty?: boolean): string {
+    if (pretty) return JSON.stringify(object, null, 4);
+
+    return JSON.stringify(object);
 }

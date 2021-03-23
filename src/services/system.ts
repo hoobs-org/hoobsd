@@ -31,9 +31,9 @@ import {
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
 import Semver from "semver";
 import State from "../state";
+import Paths from "./paths";
 import Releases from "./releases";
 import { Console } from "./logger";
-import { loadJson } from "./formatters";
 
 export default class System {
     static preload(): void {
@@ -242,7 +242,7 @@ export default class System {
 
                 if (!existsSync(join(path, "package.json"))) path = join(__dirname, "../../../../gui");
                 if (!existsSync(join(path, "package.json"))) path = undefined;
-                if (path) installed = (loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
+                if (path) installed = (Paths.loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
                 const release = await System.gui.release(beta);

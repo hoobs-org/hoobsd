@@ -27,9 +27,9 @@ import Socket from "./bridge/services/socket";
 import Bridge from "./bridge";
 import Homebridge from "./bridge/server";
 import Hub from "./hub";
+import Paths from "./services/paths";
 import { BridgeRecord } from "./services/bridges";
 import { UserRecord } from "./services/users";
-import { loadJson } from "./services/formatters";
 
 export interface Application {
     version: string;
@@ -43,6 +43,7 @@ export interface Application {
     hub: Hub | undefined;
     bridge: Bridge | undefined;
     homebridge: Homebridge | undefined;
+    setup: string | undefined;
 
     id: string;
     display: string;
@@ -64,7 +65,7 @@ export interface Application {
 }
 
 const state: Application = {
-    version: loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
+    version: Paths.loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
     mode: "production",
     enviornment: {},
 
@@ -75,6 +76,7 @@ const state: Application = {
     hub: undefined,
     bridge: undefined,
     homebridge: undefined,
+    setup: undefined,
 
     id: "default",
     display: "Default",

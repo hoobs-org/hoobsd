@@ -20,11 +20,12 @@
 import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
-import { StorageService } from "homebridge/lib/storageService";
 
 import {
     existsSync,
+    readFileSync,
     writeFileSync,
+    copyFileSync,
     unlinkSync,
 } from "fs-extra";
 
@@ -73,9 +74,8 @@ import Config from "../services/config";
 import Client from "./services/client";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
-import { formatJson } from "../services/formatters";
 
-const INSTANCE_KILL_DELAY = 3000;
+const INSTANCE_KILL_DELAY = 5 * 1000;
 
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
@@ -103,13 +103,9 @@ export default class Server extends EventEmitter {
 
     private readonly allowInsecureAccess: boolean;
 
-    private storageService: StorageService;
-
     private readonly externalPortService: ExternalPortService;
 
     private cachedPlatformAccessories: PlatformAccessory[] = [];
-
-    private cachedAccessoriesFileLoaded = false;
 
     private development = false;
 
@@ -126,9 +122,6 @@ export default class Server extends EventEmitter {
         // @ts-ignore
         Logger.internal = Console;
 
-        this.storageService = new StorageService(Paths.accessories);
-        this.storageService.initSync();
-
         this.running = false;
         this.development = development || false;
         this.instance = State.bridges.find((n: any) => n.id === State.id);
@@ -140,7 +133,6 @@ export default class Server extends EventEmitter {
                 username: this.instance?.username || "",
                 advertiser: this.getAdvertiser(this.instance?.advertiser),
             },
-            plugins: [],
             accessories: [],
             platforms: [],
         };
@@ -176,7 +168,6 @@ export default class Server extends EventEmitter {
         this.api.on(InternalAPIEvent.PUBLISH_EXTERNAL_ACCESSORIES, this.handlePublishExternalAccessories.bind(this));
 
         const pluginManagerOptions: PluginManagerOptions = {
-            activePlugins: this.config.plugins,
             customPluginPath: join(Paths.data(State.id), "node_modules"),
         };
 
@@ -189,14 +180,14 @@ export default class Server extends EventEmitter {
 
         await Plugins.linkLibs(State.id);
 
-        writeFileSync(join(Paths.data(State.id), "config.json"), formatJson(this.config));
+        Paths.saveJson(join(Paths.data(State.id), "config.json"), this.config);
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
         const plugins = Plugins.load(State.id, this.development);
 
         for (let i = 0; i < plugins.length; i += 1) {
-            if (((this.config.plugins || []).indexOf(plugins[i].identifier) >= 0 || this.development) && existsSync(join(plugins[i].directory, plugins[i].library))) {
+            if (existsSync(join(plugins[i].directory, plugins[i].library))) {
                 // @ts-ignore
                 if (!this.pluginManager.plugins.get(plugins[i].identifier)) {
                     if (this.development) {
@@ -323,6 +314,7 @@ export default class Server extends EventEmitter {
             port: this.port,
             pincode: this.settings.pin,
             category: Categories.BRIDGE,
+            bind: this.settings.bind,
             mdns: this.config.mdns,
             addIdentifyingMaterial: true,
             advertiser: this.settings.advertiser,
@@ -335,19 +327,30 @@ export default class Server extends EventEmitter {
     }
 
     private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
-        let cachedAccessories: SerializedPlatformAccessory[] | null = null;
+        const backup = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, ".cachedAccessories.bak"), [], undefined, true);
+        const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
 
-        if (!existsSync(join(Paths.accessories, "cachedAccessories"))) writeFileSync(join(Paths.accessories, "cachedAccessories"), "[]");
+        if (cached && cached.length > 0) {
+            this.cachedPlatformAccessories = cached.map((serialized) => {
+                const accessory = PlatformAccessory.deserialize(serialized);
 
-        try {
-            cachedAccessories = await this.storageService.getItem<SerializedPlatformAccessory[]>("cachedAccessories");
-        } catch (error) {
-            Console.error(`Failed to load cached accessories from disk: ${error.message}`);
+                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                        if (service) {
+                            service.refresh((results: any) => {
+                                service.values = results.values;
+                            }).finally(() => {
+                                this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                            });
+                        }
+                    });
+                });
+
+                return accessory;
+            });
+
+            copyFileSync(join(Paths.accessories, "cachedAccessories"), join(Paths.accessories, ".cachedAccessories.bak"));
         }
-
-        if (cachedAccessories) this.cachedPlatformAccessories = cachedAccessories.map((serialized) => PlatformAccessory.deserialize(serialized));
-
-        this.cachedAccessoriesFileLoaded = true;
     }
 
     private restoreCachedPlatformAccessories(): void {
@@ -387,17 +390,7 @@ export default class Server extends EventEmitter {
     }
 
     private saveCachedPlatformAccessoriesOnDisk(): void {
-        if (this.cachedAccessoriesFileLoaded) {
-            try {
-                const serializedAccessories = this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory));
-
-                if (!existsSync(join(Paths.accessories, "cachedAccessories"))) writeFileSync(join(Paths.accessories, "cachedAccessories"), "[]");
-
-                this.storageService.setItemSync("cachedAccessories", serializedAccessories);
-            } catch (error) {
-                Console.error(`Failed to save cached accessories to disk: ${error.message}`);
-            }
-        }
+        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
     }
 
     private loadAccessories(): void {

@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import OS from "os";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 
@@ -24,9 +25,29 @@ export default class IndexController {
         State.app?.get("/api", (request, response) => this.info(request, response));
     }
 
-    async info(_request: Request, response: Response): Promise<Response> {
+    info(_request: Request, response: Response): Response {
+        const interfaces = OS.networkInterfaces();
+        const network: { [key: string]: any } = [];
+        const keys = Object.keys(interfaces);
+
+        for (let i = 0; i < keys.length; i += 1) {
+            let current: { [key: string]: any }[] = [];
+
+            current = interfaces[keys[i]]?.filter((item: { [key: string]: any }) => !item.internal && item.family === "IPv4") || [];
+            current = current.map((item: { [key: string]: any }) => ({ interface: keys[i], ip_address: item.address, mac_address: item.mac }));
+
+            if (current.length > 0) network.push(...current);
+        }
+
         return response.send({
+            application: "hoobsd",
             version: State.version,
+            authentication: {
+                state: "/api/auth",
+                login: "/api/auth/logon",
+                validate: "/api/auth/validate",
+            },
+            network,
         });
     }
 }

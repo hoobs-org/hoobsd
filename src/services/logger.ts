@@ -18,18 +18,12 @@
 
 import Utility from "util";
 import Chalk from "chalk";
-import { gzipSync, gunzipSync } from "zlib";
-import { readFileSync, writeFileSync } from "fs-extra";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
 import Socket from "../bridge/services/socket";
-
-import {
-    formatJson,
-    parseJson,
-    colorize,
-} from "./formatters";
+import { formatJson } from "./json";
+import { colorize } from "./formatters";
 
 export interface Message {
     level: LogLevel;
@@ -120,13 +114,15 @@ class Logger {
         return results;
     }
 
+    save() {
+        if (State.id === "hub") {
+            Paths.saveJson(Paths.log, CACHE, false, undefined, true);
+        }
+    }
+
     load() {
         if (State.id === "hub") {
-            try {
-                CACHE = parseJson<Message[]>(gunzipSync(readFileSync(Paths.log)).toString(), []);
-            } catch (_error) {
-                CACHE = [];
-            }
+            CACHE = Paths.loadJson<Message[]>(Paths.log, [], undefined, true);
 
             CACHE.sort((a, b) => {
                 if (a.timestamp > b.timestamp) return 1;
@@ -134,8 +130,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 20000) {
-                CACHE.splice(0, CACHE.length - 20000);
+            if (CACHE.length > 7000) {
+                CACHE.splice(0, CACHE.length - 7000);
             }
         }
     }
@@ -143,14 +139,16 @@ class Logger {
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
         let data: Message;
 
+        const prefixes = [];
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
 
         if (typeof message === "string") {
+            if (!message || message === "") return;
+
             if (message.match(/^(?=.*\binitializing\b)(?=.*\bhap-nodejs\b).*$/gmi)) return;
             if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
-            if (message.match(/\b(coolingsetpoint|heatingsetpoint)\b/gmi)) return;
 
             data = {
                 level,
@@ -168,75 +166,89 @@ class Logger {
         data.message = data.message || "";
 
         if (data.message === "" && (data.bridge !== State.id || (data.prefix && data.prefix !== ""))) return;
-        if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("version") >= 0) return;
-        if (data.message.toLowerCase().indexOf("node") >= 0 && data.message.toLowerCase().indexOf("recommended") >= 0) return;
+        if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("version") >= 0) return;
+        if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("recommended") >= 0) return;
+        if ((data.message || "").match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
 
-        if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) {
-            CACHE.push(data);
+        let colored: string;
 
-            if (CACHE.length > 20000) {
-                CACHE.splice(0, CACHE.length - 20000);
-            }
+        switch (data.level) {
+            case LogLevel.WARN:
+                colored = data.message;
 
-            if (State.id === "hub") {
-                writeFileSync(Paths.log, gzipSync(formatJson(CACHE)));
-            }
-        }
+                if (State.bridge) Socket.emit(Events.LOG, data);
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
-        if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
-        if (State.bridge) Socket.fetch(Events.LOG, data);
+                if (State.id === "hub" || State.debug) {
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
-        if (State.id === "hub" || State.debug) {
-            const prefixes = [];
-
-            if (State.timestamps && data.message && data.message !== "") {
-                prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
-            }
-
-            if (data.bridge && data.bridge !== "" && data.bridge !== State.id) {
-                prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
-            }
-
-            if (data.prefix && data.prefix !== "") {
-                prefixes.push(colorize(data.prefix)(data.prefix));
-            }
-
-            let colored = data.message;
-
-            switch (data.level) {
-                case LogLevel.WARN:
                     colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
-                    break;
 
-                case LogLevel.ERROR:
+                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                }
+
+                break;
+
+            case LogLevel.ERROR:
+                colored = data.message;
+
+                if (State.bridge) Socket.emit(Events.LOG, data);
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+
+                if (State.id === "hub" || State.debug) {
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
                     colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
-                    break;
 
-                case LogLevel.DEBUG:
+                    CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                }
+
+                break;
+
+            case LogLevel.DEBUG:
+                if (State.id === "hub" || State.debug) {
+                    colored = data.message;
+
+                    if (State.bridge) Socket.emit(Events.LOG, data);
+                    if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                    if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
                     colored = Chalk.gray(data.message);
-                    break;
-            }
 
-            const formatted = prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored;
+                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                }
 
-            switch (data.level) {
-                case LogLevel.WARN:
-                    CONSOLE_LOG(formatted);
-                    break;
+                break;
 
-                case LogLevel.ERROR:
-                    CONSOLE_ERROR(formatted);
-                    break;
+            default:
+                colored = data.message;
 
-                case LogLevel.DEBUG:
-                    if (State.debug) CONSOLE_LOG(formatted);
-                    break;
+                if (State.bridge) Socket.emit(Events.LOG, data);
+                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
-                default:
-                    if (State.id === "hub" || State.debug) CONSOLE_LOG(formatted);
-                    break;
-            }
+                if (State.id === "hub" || State.debug) {
+                    if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
+                    if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
+                    if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
+
+                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                }
+
+                break;
         }
+
+        if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
     }
 
     debug(message: string, ...parameters: any[]): void {
@@ -289,7 +301,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.fetch(Events.NOTIFICATION, {
+            Socket.emit(Events.NOTIFICATION, {
                 bridge,
                 data: {
                     title,
@@ -310,7 +322,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.fetch(event, {
+            Socket.emit(event, {
                 bridge,
                 data,
             });

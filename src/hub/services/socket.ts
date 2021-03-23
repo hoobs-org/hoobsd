@@ -21,7 +21,7 @@ import { EventEmitter } from "events";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../../services/paths";
-import { Print, Events } from "../../services/logger";
+import { Events } from "../../services/logger";
 
 const SOCKETS: { [key: string]: any } = {};
 const PING_INTERVAL = 5000;
@@ -38,7 +38,7 @@ export default class Socket extends EventEmitter {
 
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = true;
-        this.pipe.config.logger = Print;
+        this.pipe.config.logger = () => {};
         this.pipe.config.appspace = "/";
         this.pipe.config.socketRoot = Paths.data();
         this.pipe.config.id = "api.sock";
@@ -81,44 +81,31 @@ export default class Socket extends EventEmitter {
     }
 
     heartbeat() {
-        if (!SOCKETS["api.sock"]) {
-            SOCKETS["api.sock"] = new RawIPC.IPC();
+        const socket = Socket.connect("api.sock");
 
-            SOCKETS["api.sock"].config.appspace = "/";
-            SOCKETS["api.sock"].config.socketRoot = Paths.data();
-            SOCKETS["api.sock"].config.logInColor = true;
-            SOCKETS["api.sock"].config.logger = () => {};
-            SOCKETS["api.sock"].config.maxRetries = 0;
-            SOCKETS["api.sock"].config.stopRetrying = true;
-        }
-
-        SOCKETS["api.sock"].connectTo("api.sock", () => {
-            SOCKETS["api.sock"].of["api.sock"].on(Events.PONG, () => {
-                SOCKETS["api.sock"].of["api.sock"].off(Events.PONG, "*");
-                SOCKETS["api.sock"].disconnect();
+        socket.connectTo("api.sock", () => {
+            socket.of["api.sock"].on(Events.PONG, () => {
+                socket.of["api.sock"].off(Events.PONG, "*");
+                socket.disconnect();
 
                 setTimeout(() => {
                     this.heartbeat();
                 }, PING_INTERVAL);
             });
 
-            SOCKETS["api.sock"].of["api.sock"].on("error", () => {
-                SOCKETS["api.sock"].of["api.sock"].off(Events.PONG, "*");
-                SOCKETS["api.sock"].disconnect();
-
-                Print("Restarting IPC Socket");
+            socket.of["api.sock"].on("error", () => {
+                socket.of["api.sock"].off(Events.PONG, "*");
+                socket.disconnect();
 
                 this.stop();
                 this.start();
             });
 
-            SOCKETS["api.sock"].of["api.sock"].emit(Events.PING);
+            socket.of["api.sock"].emit(Events.PING);
         });
     }
 
     start(): void {
-        Print("Starting IPC Socket");
-
         this.pipe.server.start();
     }
 
@@ -128,43 +115,65 @@ export default class Socket extends EventEmitter {
         if (existsSync(join(Paths.data(), "api.sock"))) unlinkSync(join(Paths.data(), "api.sock"));
     }
 
+    static connect(name: string): any {
+        if (!SOCKETS[name]) {
+            SOCKETS[name] = new RawIPC.IPC();
+
+            SOCKETS[name].config.appspace = "/";
+            SOCKETS[name].config.socketRoot = Paths.data();
+            SOCKETS[name].config.logInColor = true;
+            SOCKETS[name].config.logger = () => {};
+            SOCKETS[name].config.maxRetries = 0;
+            SOCKETS[name].config.stopRetrying = true;
+            SOCKETS[name].config.id = name;
+        }
+
+        return SOCKETS[name];
+    }
+
+    static emit(bridge: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): void {
+        if (!existsSync(join(Paths.data(), `${bridge}.sock`))) return;
+
+        const session = `${new Date().getTime()}:${Math.random()}`;
+        const socket = Socket.connect(`${bridge}.sock`);
+
+        socket.connectTo(`${bridge}.sock`, () => {
+            socket.of[`${bridge}.sock`].emit(Events.REQUEST, {
+                path,
+                session,
+                params,
+                body,
+            });
+        });
+    }
+
     static fetch(bridge: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
         return new Promise((resolve) => {
-            const session = `${new Date().getTime()}:${Math.random()}`;
-
             if (!existsSync(join(Paths.data(), `${bridge}.sock`))) {
                 resolve(null);
 
                 return;
             }
 
-            if (!SOCKETS[`${bridge}.sock`]) {
-                SOCKETS[`${bridge}.sock`] = new RawIPC.IPC();
+            const session = `${new Date().getTime()}:${Math.random()}`;
+            const socket = Socket.connect(`${bridge}.sock`);
 
-                SOCKETS[`${bridge}.sock`].config.appspace = "/";
-                SOCKETS[`${bridge}.sock`].config.socketRoot = Paths.data();
-                SOCKETS[`${bridge}.sock`].config.logInColor = true;
-                SOCKETS[`${bridge}.sock`].config.logger = Print;
-                SOCKETS[`${bridge}.sock`].config.maxRetries = 0;
-                SOCKETS[`${bridge}.sock`].config.stopRetrying = true;
-            }
-
-            SOCKETS[`${bridge}.sock`].connectTo(`${bridge}.sock`, () => {
-                SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].on(session, (data: any) => {
-                    SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].off(session, "*");
-                    SOCKETS[`${bridge}.sock`].disconnect();
+            socket.connectTo(`${bridge}.sock`, () => {
+                socket.of[`${bridge}.sock`].on(session, (data: any) => {
+                    socket.of[`${bridge}.sock`].off(session, "*");
+                    socket.disconnect();
 
                     resolve(data);
                 });
 
-                SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].on("error", () => {
-                    SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].off(session, "*");
-                    SOCKETS[`${bridge}.sock`].disconnect();
+                socket.of[`${bridge}.sock`].on("error", () => {
+                    socket.of[`${bridge}.sock`].off(session, "*");
+                    socket.disconnect();
 
                     resolve(null);
                 });
 
-                SOCKETS[`${bridge}.sock`].of[`${bridge}.sock`].emit(Events.REQUEST, {
+                socket.of[`${bridge}.sock`].emit(Events.REQUEST, {
                     path,
                     session,
                     params,

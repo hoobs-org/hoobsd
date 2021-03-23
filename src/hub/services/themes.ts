@@ -26,7 +26,7 @@ import {
 } from "fs-extra";
 
 import Paths from "../../services/paths";
-import { sanitize, loadJson, formatJson } from "../../services/formatters";
+import { sanitize } from "../../services/formatters";
 
 export interface InputTheme {
     background: string;
@@ -395,8 +395,7 @@ export default class Themes {
         theme.display = name;
 
         ensureDirSync(join(Paths.themes, theme.name));
-
-        writeFileSync(join(Paths.themes, theme.name, "theme.js"), formatJson(theme));
+        Paths.saveJson(join(Paths.themes, theme.name, "theme.js"), theme);
         writeFileSync(join(Paths.themes, theme.name, "theme.css"), Themes.generate(theme.name, theme));
     }
 
@@ -446,7 +445,7 @@ export default class Themes {
 
             default:
                 if (existsSync(join(Paths.themes, sanitize(name), "theme.js"))) {
-                    return loadJson<Theme>(join(Paths.themes, sanitize(name), "theme.js"), DarkTheme);
+                    return Paths.loadJson<Theme>(join(Paths.themes, sanitize(name), "theme.js"), DarkTheme);
                 }
 
                 return DarkTheme;
