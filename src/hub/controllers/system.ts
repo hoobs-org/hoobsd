@@ -54,7 +54,7 @@ export default class SystemController {
         const system: { [key: string]: any } = await SystemInfo.system();
         const distro: { [key: string]: any } = System.info();
 
-        if (distro.product === "box" || distro.product === "card") {
+        if (distro.product === "box" || distro.product === "card" || distro.product === "headless") {
             system.manufacturer = "HOOBS.org";
             system.model = distro.model;
             system.sku = distro.sku;
@@ -263,7 +263,7 @@ export default class SystemController {
 
         let data = await System.runtime.info();
 
-        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get" && !data.node_upgraded) {
+        if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get" && !data.node_upgraded) {
             Console.info("upgrading node");
 
             await System.runtime.upgrade();
