@@ -57,6 +57,15 @@ Program.command("server", { isDefault: true })
 
         copySync(join(root, "var"), join(root, "lib/hoobsd/static"));
 
+        if (existsSync(join(root, "../desktop", "package.json"))) {
+            const desktop =  JSON.parse(readFileSync(join(root, "../desktop", "package.json")).toString());
+
+            if (existsSync(join(root, "../builds", `hoobs-desktop-v${desktop.version}.exe`)) && existsSync(join(root, "../builds", `hoobs-desktop-v${desktop.version}.dmg`))) {
+                copySync(join(root, "../builds", `hoobs-desktop-v${desktop.version}.exe`), join(root, "lib/hoobsd/static", "hoobs-desktop.exe"));
+                copySync(join(root, "../builds", `hoobs-desktop-v${desktop.version}.dmg`), join(root, "lib/hoobsd/static", "hoobs-desktop.dmg"));
+            }
+        }
+
         if (command.pack) {
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
 
