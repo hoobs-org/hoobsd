@@ -252,6 +252,14 @@ export default class API extends EventEmitter {
                 });
             }
         });
+
+        Console.notify(
+            typeof bridge === "string" ? bridge : bridge.id,
+            "Bridge Started",
+            `${typeof bridge === "string" ? bridge : bridge.display} has started.`,
+            NotificationType.SUCCESS,
+            "layers",
+        );
     }
 
     teardown(bridge: BridgeRecord | string): Promise<void> {

@@ -271,19 +271,19 @@ class Logger {
         if (!icon) {
             switch (type) {
                 case NotificationType.ERROR:
-                    icon = "error";
+                    icon = "alert-octagon";
                     break;
 
                 case NotificationType.WARN:
-                    icon = "warning";
+                    icon = "alert";
                     break;
 
                 case NotificationType.DEBUG:
-                    icon = "bug_report";
+                    icon = "bug";
                     break;
 
                 default:
-                    icon = "notifications_active";
+                    icon = "bell";
                     break;
             }
         }
