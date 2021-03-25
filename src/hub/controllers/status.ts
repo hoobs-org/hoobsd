@@ -74,8 +74,8 @@ export default class StatusController {
         let product = "custom";
         let upgraded = true;
 
-        if (system.product === "box" || system.product === "card") product = system.product;
-        if ((system.product === "box" || system.product === "card") && system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
+        if (system.product === "box" || system.product === "card" || system.product === "headless") product = system.product;
+        if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
 
         if (applications.gui?.gui_version) {
             return response.send({
