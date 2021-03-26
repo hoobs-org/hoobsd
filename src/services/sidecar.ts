@@ -19,6 +19,7 @@
 import { join } from "path";
 import { existsSync } from "fs-extra";
 import Paths from "./paths";
+import Config from "./config";
 import System from "./system";
 
 export default class Sidecar {
@@ -32,6 +33,7 @@ export default class Sidecar {
                         sidecars[identifier] = name;
 
                         Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                        Config.touchConfig(bridge);
                         resolve();
                     } else {
                         reject();
@@ -50,6 +52,7 @@ export default class Sidecar {
                     delete sidecars[identifier];
 
                     Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                    Config.touchConfig(bridge);
                     resolve();
                 } else {
                     reject();
@@ -80,6 +83,7 @@ export default class Sidecar {
                         sidecars[identifier] = name;
 
                         Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                        Config.touchConfig(bridge);
                         resolve();
                     } else {
                         reject();
