@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import Request from "axios";
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
 
@@ -34,6 +35,7 @@ import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
 import System from "./system";
+import { BridgeRecord } from "./bridges";
 import { Console, NotificationType } from "./logger";
 
 export default class Plugins {
@@ -95,44 +97,74 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${name}@${tag}`, { cwd: Paths.data(bridge) }).then(() => {
-                const path = join(Paths.data(bridge), "node_modules", name);
+            Plugins.pluginDefinition(name).then((definition) => {
+                const identifiers = [];
 
-                setTimeout(() => {
-                    if (existsSync(path) && existsSync(join(path, "package.json"))) {
-                        const pjson = Plugins.loadPackage(path);
-                        const config = Config.configuration(bridge);
+                identifiers.push(`${name}@${tag}`);
 
-                        if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
-                            Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
-                                let found = false;
-                                let alias = "";
+                if ((definition || {}).sidecar) {
+                    identifiers.push(definition?.sidecar);
+                }
 
-                                for (let i = 0; i < details.length; i += 1) {
-                                    if (details[i].type === "platform") {
-                                        const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
+                System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
+                    const path = join(Paths.data(bridge), "node_modules", name);
 
-                                        if (index >= 0) {
-                                            config.platforms[index].plugin_map = {
-                                                plugin_name: name,
-                                            };
+                    if ((definition || {}).sidecar) {
+                        const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(bridge), "sidecars.json"), {});
 
-                                            found = true;
-                                        } else if (alias === "") {
-                                            alias = details[i].alias;
+                        sidecars[name] = definition?.sidecar;
+
+                        Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                    }
+
+                    setTimeout(() => {
+                        if (existsSync(path) && existsSync(join(path, "package.json"))) {
+                            const pjson = Plugins.loadPackage(path);
+                            const config = Config.configuration(bridge);
+
+                            if (config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name) === -1) {
+                                Plugins.getPluginType(bridge, name, path, pjson).then((details: any[]) => {
+                                    let found = false;
+                                    let alias = "";
+
+                                    for (let i = 0; i < details.length; i += 1) {
+                                        if (details[i].type === "platform") {
+                                            const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
+
+                                            if (index >= 0) {
+                                                config.platforms[index].plugin_map = {
+                                                    plugin_name: name,
+                                                };
+
+                                                found = true;
+                                            } else if (alias === "") {
+                                                alias = details[i].alias;
+                                            }
                                         }
                                     }
-                                }
 
-                                if (!found && alias !== "") {
-                                    config.platforms.push({
-                                        platform: alias,
-                                        plugin_map: {
-                                            plugin_name: name,
-                                        },
-                                    });
-                                }
-                            }).finally(() => {
+                                    if (!found && alias !== "") {
+                                        config.platforms.push({
+                                            platform: alias,
+                                            plugin_map: {
+                                                plugin_name: name,
+                                            },
+                                        });
+                                    }
+                                }).finally(() => {
+                                    Config.saveConfig(config, bridge, true);
+
+                                    Console.notify(
+                                        bridge,
+                                        "Plugin Installed",
+                                        `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
+                                        NotificationType.SUCCESS,
+                                        "puzzle",
+                                    );
+
+                                    resolve();
+                                });
+                            } else {
                                 Config.saveConfig(config, bridge, true);
 
                                 Console.notify(
@@ -144,76 +176,82 @@ export default class Plugins {
                                 );
 
                                 resolve();
-                            });
+                            }
                         } else {
-                            Config.saveConfig(config, bridge, true);
-
                             Console.notify(
                                 bridge,
-                                "Plugin Installed",
-                                `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been installed.`,
-                                NotificationType.SUCCESS,
-                                "puzzle",
+                                "Plugin Not Installed",
+                                `Unable to install ${PluginManager.extractPluginName(name)}.`,
+                                NotificationType.ERROR,
                             );
 
-                            resolve();
+                            reject();
                         }
-                    } else {
-                        Console.notify(
-                            bridge,
-                            "Plugin Not Installed",
-                            `Unable to install ${PluginManager.extractPluginName(name)}.`,
-                            NotificationType.ERROR,
-                        );
-
-                        reject();
-                    }
-                }, 2 * 1000);
+                    }, 2 * 1000);
+                });
             });
         });
     }
 
     static uninstall(bridge: string, name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            System.execute(`${Paths.yarn} remove ${name}`, { cwd: Paths.data(bridge) }).then(() => {
-                if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
-                    const config = Config.configuration(bridge);
+            Plugins.pluginDefinition(name).then((definition) => {
+                const identifiers = [];
 
-                    let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+                identifiers.push(name);
 
-                    while (index >= 0) {
-                        config.platforms.splice(index, 1);
-                        index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
-                    }
-
-                    index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
-
-                    while (index >= 0) {
-                        config.accessories.splice(index, 1);
-                        index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
-                    }
-
-                    Config.saveConfig(config, bridge);
-
-                    Console.notify(
-                        bridge,
-                        "Plugin Uninstalled",
-                        `${PluginManager.extractPluginName(name)} has been removed.`,
-                        NotificationType.WARN,
-                        "puzzle",
-                    );
-
-                    resolve();
-                } else {
-                    Console.notify(
-                        bridge,
-                        "Plugin Not Uninstalled",
-                        `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
-                        NotificationType.ERROR,
-                    );
-
-                    reject();
+                if ((definition || {}).sidecar) {
+                    identifiers.push(definition?.sidecar);
                 }
+
+                System.execute(`${Paths.yarn} remove ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
+                    if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
+                        if ((definition || {}).sidecar) {
+                            const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(bridge), "sidecars.json"), {});
+
+                            delete sidecars[name];
+
+                            Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                        }
+
+                        const config = Config.configuration(bridge);
+
+                        let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+
+                        while (index >= 0) {
+                            config.platforms.splice(index, 1);
+                            index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
+                        }
+
+                        index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+
+                        while (index >= 0) {
+                            config.accessories.splice(index, 1);
+                            index = config.accessories.findIndex((a: any) => (a.plugin_map || {}).plugin_name === name);
+                        }
+
+                        Config.saveConfig(config, bridge);
+
+                        Console.notify(
+                            bridge,
+                            "Plugin Uninstalled",
+                            `${PluginManager.extractPluginName(name)} has been removed.`,
+                            NotificationType.WARN,
+                            "puzzle",
+                        );
+
+                        resolve();
+                    } else {
+                        Console.notify(
+                            bridge,
+                            "Plugin Not Uninstalled",
+                            `Unable to uninstall ${PluginManager.extractPluginName(name)}.`,
+                            NotificationType.ERROR,
+                        );
+
+                        reject();
+                    }
+                });
             });
         });
     }
@@ -222,26 +260,54 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve) => {
-            const flags = [];
+            if (name) {
+                const flags: string[] = [];
 
-            flags.push("upgrade");
-            flags.push("--ignore-engines");
+                flags.push("add");
+                flags.push("--unsafe-perm");
+                flags.push("--ignore-engines");
 
-            if (name) flags.push(`${name}@${tag}`);
+                flags.push(`${name}@${tag}`);
 
-            System.execute(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
-                Config.touchConfig(bridge);
+                Plugins.pluginDefinition(name).then((definition) => {
+                    if ((definition || {}).sidecar) {
+                        flags.push(definition?.sidecar);
+                    }
 
-                Console.notify(
-                    State.id,
-                    name ? "Plugin Upgraded" : "Plugins Upgraded",
-                    name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
-                    NotificationType.SUCCESS,
-                    "puzzle",
-                );
+                    System.execute(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
+                        const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(bridge), "sidecars.json"), {});
 
-                resolve();
-            });
+                        sidecars[name] = definition?.sidecar;
+
+                        Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                        Config.touchConfig(bridge);
+
+                        Console.notify(
+                            State.id,
+                            name ? "Plugin Upgraded" : "Plugins Upgraded",
+                            name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                            NotificationType.SUCCESS,
+                            "puzzle",
+                        );
+
+                        resolve();
+                    });
+                });
+            } else {
+                System.execute(`${Paths.yarn} upgrade --ignore-engines`, { cwd: Paths.data(bridge) }).then(() => {
+                    Config.touchConfig(bridge);
+
+                    Console.notify(
+                        State.id,
+                        name ? "Plugin Upgraded" : "Plugins Upgraded",
+                        name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                        NotificationType.SUCCESS,
+                        "puzzle",
+                    );
+
+                    resolve();
+                });
+            }
         });
     }
 
@@ -365,5 +431,75 @@ export default class Plugins {
         }
 
         return results;
+    }
+
+    static async pluginSchema(bridge: BridgeRecord | undefined, identifier: string, definition: { [key: string]: any }): Promise<{ [key: string]: any }> {
+        const key = `plugin/schema:${identifier}`;
+        const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+        if (cached) return cached;
+
+        if (bridge?.type === "dev") {
+            const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
+
+            return {
+                name: identifier,
+                alias: raw.alias || raw.pluginAlias || identifier,
+                accessory: raw.pluginType === "accessory",
+                config: {
+                    type: "object",
+                    properties: (raw.schema || raw.config).properties || {},
+                },
+            };
+        }
+
+        if (bridge && !definition.override_schema && existsSync(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"))) {
+            const raw: { [key: string]: any } = Paths.loadJson(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"), {});
+
+            const schema = {
+                name: identifier,
+                alias: raw.alias || raw.pluginAlias || identifier,
+                accessory: raw.pluginType === "accessory",
+                config: {
+                    type: "object",
+                    properties: (raw.schema || raw.config).properties || {},
+                },
+            };
+
+            State.cache?.set(key, schema, 60);
+
+            return schema;
+        }
+
+        try {
+            const schema = ((await Request.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {};
+
+            State.cache?.set(key, schema, 60);
+
+            return schema;
+        } catch (_error) {
+            Console.warn("plugin site unavailable");
+        }
+
+        return {};
+    }
+
+    static async pluginDefinition(identifier: string): Promise<{ [key: string]: any } | undefined> {
+        const key = `plugin/definition:${identifier}`;
+        const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+        if (cached) return cached;
+
+        try {
+            const definition = ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
+
+            State.cache?.set(key, definition, 60);
+
+            return definition;
+        } catch (_error) {
+            Console.warn("plugin site unavailable");
+        }
+
+        return undefined;
     }
 }
