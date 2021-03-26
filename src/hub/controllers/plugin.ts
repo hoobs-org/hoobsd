@@ -26,11 +26,11 @@ import Security from "../../services/security";
 
 export default class PluginController {
     constructor() {
-        State.app?.get("/ui/plugin/:identifier/*", Plugin, (request, response, next) => this.ui(request, response, next));
+        State.app?.get("/ui/plugin/:identifier/*", Plugin, (request, response, next) => this.ui(request, response));
         State.app?.post("/api/plugin/:identifier/:action", Security, Plugin, (request, response, next) => this.execute(request, response, next));
     }
 
-    ui(request: Request, response: Response, next: NextFunction): void {
+    ui(request: Request, response: Response): void {
         const directory = response.locals.sidecar || join(response.locals.directory, "hoobs");
         const filename = join(directory, "ui", request.params[0] ? request.params[0] : "index.html");
 
@@ -40,7 +40,7 @@ export default class PluginController {
             return;
         }
 
-        next();
+        response.send();
     }
 
     async execute(request: Request, response: Response, next: NextFunction): Promise<void> {
