@@ -70,7 +70,7 @@ export default class Bridge extends EventEmitter {
         const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.id), "sidecars.json"), {});
 
         for (let i = 0; i < plugins.length; i += 1) {
-            const directory = sidecars[plugins[i].identifier] ? join(Paths.data(State.bridges[i].id), "node_modules", sidecars[plugins[i].identifier]) : join(plugins[i].directory, "hoobs");
+            const directory = sidecars[plugins[i].identifier] ? join(Paths.data(State.id), "node_modules", sidecars[plugins[i].identifier]) : join(plugins[i].directory, "hoobs");
 
             if (existsSync(join(directory, "routes.js"))) {
                 const plugin = require(join(directory, "routes.js"));

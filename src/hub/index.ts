@@ -166,8 +166,8 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        State.app?.use("/", Express.static(this.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
-        State.app?.use("/touch", Express.static(this.settings.touch_path || existsSync("/usr/lib/hoobs-touch") ? "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
+        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
+        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
         State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
@@ -178,7 +178,7 @@ export default class API extends EventEmitter {
         }));
 
         State.app?.get("*", (_request, response) => {
-            response.sendFile(Path.resolve(Path.join(this.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : Path.join(__dirname, "../static"), "index.html")));
+            response.sendFile(Path.resolve(Path.join(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static"), "index.html")));
         });
     }
 

@@ -66,8 +66,9 @@ export default class Plugins {
                 if (plugins[i] !== "hap-nodejs") {
                     const directory = join(Paths.data(bridge), "node_modules", plugins[i]);
                     const pjson = Plugins.loadPackage(directory);
+                    const keywords: string[] = (pjson || {}).keywords || [];
 
-                    if (existsSync(directory) && pjson) {
+                    if (existsSync(directory) && pjson && (keywords.indexOf("homebridge-plugin") >= 0 || keywords.indexOf("hoobs-plugin") >= 0)) {
                         results.push({
                             identifier: pjson.name,
                             name: PluginManager.extractPluginName(pjson.name),
