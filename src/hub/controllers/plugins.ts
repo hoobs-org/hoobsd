@@ -26,6 +26,7 @@ import Paths from "../../services/paths";
 import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
+import Sidecar from "../../services/sidecar";
 import Client from "../../bridge/services/client";
 import { BridgeRecord } from "../../services/bridges";
 import { Console } from "../../services/logger";
@@ -98,12 +99,24 @@ export default class PluginsController {
             name = (name || "").split("@").shift();
         }
 
-        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
-        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
-        Plugins.install(request.params.bridge, (scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            response.send({
-                success: true,
+        State.cache?.remove(`plugin/definition:${identifier}`);
+        State.cache?.remove(`plugin/schema:${identifier}`);
+
+        Plugins.install(request.params.bridge, identifier, (tag || "")).then(async () => {
+            this.pluginDefinition(identifier).then((definition) => {
+                if ((definition || {}).sidecar) {
+                    Sidecar.install(request.params.bridge, identifier, definition?.sidecar).finally(() => {
+                        response.send({
+                            success: true,
+                        });
+                    });
+                } else {
+                    response.send({
+                        success: true,
+                    });
+                }
             });
         }).catch(() => response.send({
             error: "plugin can not be installed",
@@ -136,12 +149,24 @@ export default class PluginsController {
             name = (name || "").split("@").shift();
         }
 
-        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
-        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
-        Plugins.upgrade(request.params.bridge, (scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
-            response.send({
-                success: true,
+        State.cache?.remove(`plugin/definition:${identifier}`);
+        State.cache?.remove(`plugin/schema:${identifier}`);
+
+        Plugins.upgrade(request.params.bridge, identifier, (tag || "")).then(async () => {
+            this.pluginDefinition(identifier).then((definition) => {
+                if ((definition || {}).sidecar) {
+                    Sidecar.upgrade(request.params.bridge, identifier, definition?.sidecar).finally(() => {
+                        response.send({
+                            success: true,
+                        });
+                    });
+                } else {
+                    response.send({
+                        success: true,
+                    });
+                }
             });
         }).catch(() => response.send({
             error: "plugin can not be upgraded",
@@ -169,14 +194,14 @@ export default class PluginsController {
 
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
-        const plugin = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
-        const accessories = await this.accessories(request.params.bridge, plugin);
+        const accessories = await this.accessories(request.params.bridge, identifier);
 
-        State.cache?.remove(`plugin/definition:${plugin}`);
-        State.cache?.remove(`plugin/schema:${plugin}`);
+        State.cache?.remove(`plugin/definition:${identifier}`);
+        State.cache?.remove(`plugin/schema:${identifier}`);
 
-        Plugins.uninstall(request.params.bridge, plugin).then(() => {
+        Plugins.uninstall(request.params.bridge, identifier).then(() => {
             if (State.hub?.config.dashboard && State.hub?.config.dashboard.items) {
                 const { ...config } = State.hub?.config;
 
@@ -193,9 +218,20 @@ export default class PluginsController {
                 Config.saveConfig(config);
             }
 
-            response.send({
-                success: true,
-                accessories,
+            this.pluginDefinition(identifier).then((definition) => {
+                if ((definition || {}).sidecar) {
+                    Sidecar.uninstall(request.params.bridge, identifier, definition?.sidecar).finally(() => {
+                        response.send({
+                            success: true,
+                            accessories,
+                        });
+                    });
+                } else {
+                    response.send({
+                        success: true,
+                        accessories,
+                    });
+                }
             });
         }).catch(() => response.send({
             error: "plugin can not be removed",

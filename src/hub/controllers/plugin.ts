@@ -33,7 +33,8 @@ export default class PluginController {
     }
 
     ui(request: Request, response: Response, next: NextFunction): void {
-        const filename = join(response.locals.directory, "static", request.params[0] ? request.params[0] : "index.html");
+        const directory = response.locals.sidecar || join(response.locals.directory, "hoobs");
+        const filename = join(directory, "public", request.params[0] ? request.params[0] : "index.html");
 
         if (existsSync(filename)) {
             response.sendFile(filename);
@@ -45,7 +46,9 @@ export default class PluginController {
     }
 
     async execute(request: Request, response: Response, next: NextFunction): Promise<void> {
-        if (existsSync(join(response.locals.directory, response.locals.library, "routes.js"))) {
+        const directory = response.locals.sidecar || join(response.locals.directory, "hoobs");
+
+        if (existsSync(join(directory, "routes.js"))) {
             response.send(await Socket.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body));
 
             return;
