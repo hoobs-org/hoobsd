@@ -275,17 +275,20 @@ export default class Plugins {
                     }
 
                     System.execute(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
-                        const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(bridge), "sidecars.json"), {});
+                        if ((definition || {}).sidecar) {
+                            const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(bridge), "sidecars.json"), {});
 
-                        sidecars[name] = definition?.sidecar;
+                            sidecars[name] = definition?.sidecar;
 
-                        Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                            Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
+                        }
+
                         Config.touchConfig(bridge);
 
                         Console.notify(
                             State.id,
-                            name ? "Plugin Upgraded" : "Plugins Upgraded",
-                            name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                            "Plugin Upgraded",
+                            `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.`,
                             NotificationType.SUCCESS,
                             "puzzle",
                         );
@@ -299,8 +302,8 @@ export default class Plugins {
 
                     Console.notify(
                         State.id,
-                        name ? "Plugin Upgraded" : "Plugins Upgraded",
-                        name ? `${tag !== "latest" ? `${PluginManager.extractPluginName(name)} ${tag}` : PluginManager.extractPluginName(name)} has been upgraded.` : "All plugins have been upgraded",
+                        "Plugins Upgraded",
+                        "All plugins have been upgraded",
                         NotificationType.SUCCESS,
                         "puzzle",
                     );
