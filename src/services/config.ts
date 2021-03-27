@@ -99,6 +99,16 @@ export default class Config {
 
         Config.saveConfig(config, bridge);
 
+        if (id !== "hub") {
+            for (let i = 0; i < (config?.accessories || []).length; i += 1) {
+                delete config.accessories[i].plugin_map;
+            }
+
+            for (let i = 0; i < (config?.platforms || []).length; i += 1) {
+                delete config.platforms[i].plugin_map;
+            }
+        }
+
         return config;
     }
 
@@ -115,6 +125,31 @@ export default class Config {
 
             Config.filterConfig(config?.accessories);
             Config.filterConfig(config?.platforms);
+
+            const maps: { [key: string]: any } = {
+                accessories: {},
+                platforms: {},
+            };
+
+            for (let i = 0; i < (current?.accessories || []).length; i += 1) {
+                maps.accessories[current.accessories[i].accessory] = current.accessories[i].plugin_map.plugin_name;
+            }
+
+            for (let i = 0; i < (current?.platforms || []).length; i += 1) {
+                maps.platforms[current.platforms[i].platform] = current.platforms[i].plugin_map.plugin_name;
+            }
+
+            for (let i = 0; i < (config?.accessories || []).length; i += 1) {
+                config.accessories[i].plugin_map = {
+                    plugin_name: maps.accessories[config.accessories[i].accessory],
+                };
+            }
+
+            for (let i = 0; i < (config?.platforms || []).length; i += 1) {
+                config.platforms[i].plugin_map = {
+                    plugin_name: maps.platforms[config.platforms[i].platform],
+                };
+            }
         }
 
         if (!jsonEquals(current, config)) {
