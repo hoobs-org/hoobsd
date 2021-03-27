@@ -99,16 +99,6 @@ export default class Config {
 
         Config.saveConfig(config, bridge);
 
-        if (id !== "hub") {
-            for (let i = 0; i < (config?.accessories || []).length; i += 1) {
-                delete config.accessories[i].plugin_map;
-            }
-
-            for (let i = 0; i < (config?.platforms || []).length; i += 1) {
-                delete config.platforms[i].plugin_map;
-            }
-        }
-
         return config;
     }
 

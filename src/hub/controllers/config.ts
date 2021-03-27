@@ -62,7 +62,19 @@ export default class ConfigController {
             });
         }
 
-        return response.send(Config.configuration(request.params.bridge));
+        const config = Config.configuration(request.params.bridge);
+
+        if (request.params.bridge !== "hub") {
+            for (let i = 0; i < (config?.accessories || []).length; i += 1) {
+                delete config.accessories[i].plugin_map;
+            }
+
+            for (let i = 0; i < (config?.platforms || []).length; i += 1) {
+                delete config.platforms[i].plugin_map;
+            }
+        }
+
+        return response.send(config);
     }
 
     async saveBridge(request: Request, response: Response): Promise<Response> {
