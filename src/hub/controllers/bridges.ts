@@ -46,7 +46,7 @@ export default class BridgesController {
     }
 
     create(request: Request, response: Response): Response {
-        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions.bridges) {
+        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions?.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -59,7 +59,7 @@ export default class BridgesController {
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.bridges) {
+        if (!request.user?.permissions?.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -78,7 +78,7 @@ export default class BridgesController {
     }
 
     async ports(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.bridges) {
+        if (!request.user?.permissions?.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -91,7 +91,7 @@ export default class BridgesController {
     }
 
     import(request: Request, response: Response): void {
-        if (!request.user?.permissions.reboot) {
+        if (!request.user?.permissions?.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -122,7 +122,7 @@ export default class BridgesController {
     }
 
     export(request: Request, response: Response): void {
-        if (!request.user?.permissions.bridges) {
+        if (!request.user?.permissions?.bridges) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -140,7 +140,7 @@ export default class BridgesController {
     }
 
     remove(request: Request, response: Response): Response {
-        if (!request.user?.permissions.bridges) {
+        if (!request.user?.permissions?.bridges) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

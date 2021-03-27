@@ -54,7 +54,7 @@ export default class BridgeController {
     }
 
     async start(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -69,7 +69,7 @@ export default class BridgeController {
     }
 
     async stop(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -84,7 +84,7 @@ export default class BridgeController {
     }
 
     async restart(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

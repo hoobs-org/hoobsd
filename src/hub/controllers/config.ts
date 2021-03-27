@@ -55,7 +55,7 @@ export default class ConfigController {
     }
 
     async getBridge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -66,7 +66,7 @@ export default class ConfigController {
     }
 
     async saveBridge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

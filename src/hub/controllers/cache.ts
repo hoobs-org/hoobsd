@@ -33,7 +33,7 @@ export default class CacheController {
     }
 
     all(request: Request, response: Response): Response {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -61,7 +61,7 @@ export default class CacheController {
     }
 
     list(request: Request, response: Response): Response {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -78,7 +78,7 @@ export default class CacheController {
     }
 
     listParings(request: Request, response: Response): Response {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -89,7 +89,7 @@ export default class CacheController {
     }
 
     listAccessories(request: Request, response: Response): Response {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -100,7 +100,7 @@ export default class CacheController {
     }
 
     clear(request: Request, response: Response): void {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -117,7 +117,7 @@ export default class CacheController {
     }
 
     async purge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

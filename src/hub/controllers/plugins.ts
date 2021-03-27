@@ -67,7 +67,7 @@ export default class PluginsController {
     }
 
     install(request: Request, response: Response): void {
-        if (!request.user?.permissions.plugins) {
+        if (!request.user?.permissions?.plugins) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -107,7 +107,7 @@ export default class PluginsController {
     }
 
     upgrade(request: Request, response: Response): void {
-        if (!request.user?.permissions.plugins) {
+        if (!request.user?.permissions?.plugins) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -147,7 +147,7 @@ export default class PluginsController {
     }
 
     async uninstall(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.plugins) {
+        if (!request.user?.permissions?.plugins) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
