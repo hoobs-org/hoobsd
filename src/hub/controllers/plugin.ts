@@ -26,7 +26,7 @@ import Security from "../../services/security";
 
 export default class PluginController {
     constructor() {
-        State.app?.get("/ui/plugin/:identifier/*", Plugin, (request, response, next) => this.ui(request, response));
+        State.app?.get("/ui/plugin/:identifier/*", Plugin, (request, response) => this.ui(request, response));
         State.app?.post("/api/plugin/:identifier/:action", Security, Plugin, (request, response, next) => this.execute(request, response, next));
     }
 
