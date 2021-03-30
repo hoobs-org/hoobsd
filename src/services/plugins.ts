@@ -451,7 +451,7 @@ export default class Plugins {
                 accessory: raw.pluginType === "accessory",
                 config: {
                     type: "object",
-                    properties: (raw.schema || raw.config).properties || {},
+                    properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
                 },
             };
         }
@@ -465,7 +465,7 @@ export default class Plugins {
                 accessory: raw.pluginType === "accessory",
                 config: {
                     type: "object",
-                    properties: (raw.schema || raw.config).properties || {},
+                    properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
                 },
             };
 
