@@ -228,6 +228,14 @@ export default class System {
         }
     }
 
+    static shutdown(): void {
+        Console.warn("device shutdown command received");
+
+        if (!State.container && State.mode === "production") {
+            exec("shutdown -h now");
+        }
+    }
+
     static get gui(): { [key: string]: any } {
         const key = "system/gui";
 
