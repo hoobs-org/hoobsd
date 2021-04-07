@@ -103,21 +103,14 @@ class Logger {
     cache(tail?: number, bridge?: string): Message[] {
         const results = [...(CACHE.filter((m) => (bridge ? m.bridge === bridge : true)))];
 
-        if (tail && tail > 0 && tail < results.length) {
-            results.splice(0, results.length - tail);
-        }
-
-        if (State.id !== "hub") {
-            CACHE = [];
-        }
+        if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);
+        if (State.id !== "hub") CACHE = [];
 
         return results;
     }
 
     save() {
-        if (State.id === "hub") {
-            Paths.saveJson(Paths.log, CACHE, false, undefined, true);
-        }
+        if (State.id === "hub") Paths.saveJson(Paths.log, CACHE, false, undefined, true);
     }
 
     load() {
