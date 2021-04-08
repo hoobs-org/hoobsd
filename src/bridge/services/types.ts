@@ -122,6 +122,7 @@ export const Precedence: { [key: string]: number } = {
     "audio_stream": 39,
     "data_stream": 40,
     "data_tunnel": 41,
+    "smoke_detected": 100,
     "leak_detected": 101,
     "current_temperature": 102,
     "current_relative_humidity": 103,

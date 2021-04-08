@@ -371,30 +371,37 @@ export default class Bridges {
         return results;
     }
 
-    static purge(bridge: string, uuid?: string): void {
-        if (uuid) {
-            ensureDirSync(join(Paths.data(), `${bridge}.persist`));
-            ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
+    static purge(name: string, uuid?: string): void {
+        const id = sanitize(name);
+        const index = State.bridges.findIndex((n) => n.id === id);
 
-            const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), [], undefined, true);
+        if (index >= 0 && uuid) {
+            ensureDirSync(join(Paths.data(), `${id}.persist`));
+            ensureDirSync(join(Paths.data(), `${id}.accessories`));
 
-            let index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+            const working = Paths.loadJson<{ [key: string]: any }[]>(join(Paths.data(), `${id}.accessories`, "cachedAccessories"), [], undefined, true);
 
-            while (index >= 0) {
-                working.splice(index, 1);
-                index = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+            let accessory = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
+
+            while (accessory >= 0) {
+                working.splice(accessory, 1);
+                accessory = working.findIndex((item: { [key: string]: any }) => item.UUID === uuid);
             }
 
-            Paths.saveJson(join(Paths.data(), `${bridge}.accessories`, "cachedAccessories"), working, false, undefined, true);
-        } else {
-            if (existsSync(join(Paths.data(), `${bridge}.persist`))) removeSync(join(Paths.data(), `${bridge}.persist`));
-            if (existsSync(join(Paths.data(), `${bridge}.accessories`))) removeSync(join(Paths.data(), `${bridge}.accessories`));
+            Paths.saveJson(join(Paths.data(), `${id}.accessories`, "cachedAccessories"), working, false, undefined, true);
+        } else if (index >= 0) {
+            if (existsSync(join(Paths.data(), `${id}.persist`))) removeSync(join(Paths.data(), `${id}.persist`));
+            if (existsSync(join(Paths.data(), `${id}.accessories`))) removeSync(join(Paths.data(), `${id}.accessories`));
 
-            ensureDirSync(join(Paths.data(), `${bridge}.persist`));
-            ensureDirSync(join(Paths.data(), `${bridge}.accessories`));
+            ensureDirSync(join(Paths.data(), `${id}.persist`));
+            ensureDirSync(join(Paths.data(), `${id}.accessories`));
+
+            State.bridges[index].username = Config.generateUsername();
+
+            Paths.saveJson(Paths.bridges, State.bridges);
 
             Console.notify(
-                bridge,
+                id,
                 "Caches Purged",
                 "Accessory and connection cache purged.",
                 NotificationType.SUCCESS,

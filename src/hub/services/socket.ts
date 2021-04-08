@@ -21,7 +21,7 @@ import { EventEmitter } from "events";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../../services/paths";
-import { Events } from "../../services/logger";
+import { Console, Events } from "../../services/logger";
 
 const SOCKETS: { [key: string]: any } = {};
 const PING_INTERVAL = 5000;
@@ -72,6 +72,18 @@ export default class Socket extends EventEmitter {
                 this.pipe.server.on(Events.RESTART, (payload: any, socket: any) => {
                     this.emit(Events.RESTART, payload.body);
                     this.pipe.server.emit(socket, payload.session, Events.COMPLETE);
+                });
+
+                this.pipe.server.on(Events.REQUEST, (payload: any, socket: any) => {
+                    switch (payload.path) {
+                        case "log":
+                            this.pipe.server.emit(socket, payload.session, Console.cache());
+                            break;
+
+                        default:
+                            this.pipe.server.emit(socket, payload.session);
+                            break;
+                    }
                 });
             }
 
