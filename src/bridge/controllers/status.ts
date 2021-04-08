@@ -48,6 +48,7 @@ export default class StatusController {
             setup_pin: State.homebridge?.settings.pin || "",
             setup_id: State.setup || "",
             bridge_path: this.path || "",
+            heap: process.memoryUsage().heapUsed,
         });
     }
 

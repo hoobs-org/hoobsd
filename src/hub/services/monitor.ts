@@ -37,6 +37,7 @@ export default async function Monitor() {
                     status: status.status,
                     display: State.bridges[i].display,
                     uptime: status.uptime,
+                    heap: status.heap,
                 };
             } else {
                 results[State.bridges[i].id] = {
@@ -44,6 +45,7 @@ export default async function Monitor() {
                     status: "unavailable",
                     display: "Unavailable",
                     uptime: 0,
+                    heap: 0,
                 };
             }
         }
@@ -54,6 +56,7 @@ export default async function Monitor() {
         cpu: await SystemInfo.currentLoad(),
         memory: await SystemInfo.mem(),
         temp: await SystemInfo.cpuTemperature(),
+        heap: process.memoryUsage().heapUsed,
     });
 
     setTimeout(() => {
