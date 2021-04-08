@@ -22,6 +22,7 @@ import * as Enviornment from "dotenv";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import { Console } from "./services/logger";
 import State from "./state";
 import Bridges from "./services/bridges";
@@ -34,7 +35,7 @@ import Hub from "./hub";
 import { jsonEquals, cloneJson } from "./services/json";
 import { sanitize } from "./services/formatters";
 
-if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
