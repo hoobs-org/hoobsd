@@ -267,31 +267,29 @@ export default class Bridges {
         const bridges: BridgeRecord[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            const { ...bridge } = State.bridges[i];
-
-            if (bridge.id === "hub") {
+            if (State.bridges[i].id === "hub") {
                 bridges.unshift({
-                    id: bridge.id,
-                    type: bridge.type,
-                    display: bridge.display,
-                    port: bridge.port,
-                    pin: bridge.pin,
-                    username: bridge.username,
+                    id: State.bridges[i].id,
+                    type: State.bridges[i].type,
+                    display: State.bridges[i].display,
+                    port: State.bridges[i].port,
+                    pin: State.bridges[i].pin,
+                    username: State.bridges[i].username,
                     autostart: 0,
                     advertiser: undefined,
                 });
             } else {
                 bridges.push({
-                    id: bridge.id,
-                    type: bridge.type,
-                    display: bridge.display,
-                    port: bridge.port,
-                    pin: bridge.pin,
-                    username: bridge.username,
-                    ports: bridge.ports,
-                    autostart: bridge.autostart,
-                    advertiser: bridge.advertiser,
-                    project: bridge.project,
+                    id: State.bridges[i].id,
+                    type: State.bridges[i].type,
+                    display: State.bridges[i].display,
+                    port: State.bridges[i].port,
+                    pin: State.bridges[i].pin,
+                    username: State.bridges[i].username,
+                    ports: State.bridges[i].ports,
+                    autostart: State.bridges[i].autostart,
+                    advertiser: State.bridges[i].advertiser,
+                    project: State.bridges[i].project,
                 });
             }
         }

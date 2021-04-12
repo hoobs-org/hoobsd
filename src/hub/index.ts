@@ -226,7 +226,7 @@ export default class API extends EventEmitter {
         if (State.container) flags.push("--container");
         if (!State.orphans) flags.push("--orphans");
 
-        const waits: Promise<void>[] = [];
+        let waits: Promise<void>[] = [];
         const keys = Object.keys(this.bridges).filter((item) => item !== bridge.id && this.bridges[item].port === bridge.port && running(this.bridges[item].process.pid));
 
         for (let i = 0; i < keys.length; i += 1) {
@@ -236,6 +236,8 @@ export default class API extends EventEmitter {
         waits.push(this.teardown(bridge.id));
 
         Promise.all(waits).then(() => {
+            waits = [];
+
             Console.info(`${bridge.display || bridge.id} starting`);
 
             this.bridges[bridge.id] = {
@@ -339,12 +341,12 @@ export default class API extends EventEmitter {
                 return;
             }
 
-            const waiters: Promise<void>[] = [];
+            let waits: Promise<void>[] = [];
             const current = Object.keys(this.bridges);
 
             for (let i = 0; i < current.length; i += 1) {
                 if (!State.bridges.find((item) => item.id === current[i])) {
-                    waiters.push(this.teardown(current[i]));
+                    waits.push(this.teardown(current[i]));
                 }
             }
 
@@ -363,7 +365,9 @@ export default class API extends EventEmitter {
                 }
             }
 
-            Promise.all(waiters).then(() => {
+            Promise.all(waits).then(() => {
+                waits = [];
+
                 resolve();
             });
         });
@@ -437,13 +441,15 @@ export default class API extends EventEmitter {
                 this.running = false;
 
                 const bridges = State.bridges.filter((item) => item.type !== "hub");
-                const waiters: Promise<void>[] = [];
+                let waits: Promise<void>[] = [];
 
                 for (let i = 0; i < bridges.length; i += 1) {
-                    waiters.push(this.teardown(bridges[i]));
+                    waits.push(this.teardown(bridges[i]));
                 }
 
-                Promise.all(waiters).then(() => {
+                Promise.all(waits).then(() => {
+                    waits = [];
+
                     this.socket.stop();
 
                     const keys = Object.keys(this.bridges);

@@ -27,13 +27,7 @@ import Homebridge from "./server";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
-
-import {
-    Console,
-    Prefixed,
-    Events,
-} from "../services/logger";
-
+import { Console, Prefixed, Events } from "../services/logger";
 import StatusController from "./controllers/status";
 import AccessoriesController from "./controllers/accessories";
 

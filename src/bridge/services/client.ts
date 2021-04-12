@@ -26,6 +26,32 @@ import { Services, Characteristics, Precedence } from "./types";
 export default class Client {
     accessories(bridge: string, reload?: boolean): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
+            this.load(bridge, reload).then((results) => {
+                this.updateAll(results);
+                resolve(results);
+            });
+        });
+    }
+
+    accessory(bridge: string, value: string, reload?: boolean): Promise<{ [key: string]: any } | undefined> {
+        return new Promise((resolve) => {
+            if (!value || value === "") {
+                resolve(undefined);
+
+                return;
+            }
+
+            this.load(bridge, reload).then((results) => {
+                const result = results.find((item) => item.accessory_identifier === value);
+
+                this.updateOne(result);
+                resolve(result);
+            });
+        });
+    }
+
+    private load(bridge: string, reload?: boolean): Promise<{ [key: string]: any }[]> {
+        return new Promise((resolve) => {
             const key = `bridge/${bridge}/accessories`;
             const data = State.bridges.find((item) => item.id === bridge);
 
@@ -39,56 +65,36 @@ export default class Client {
                 const cached = State.cache?.get<{ [key: string]: any }[]>(key);
 
                 if (cached && Array.isArray(cached) && cached.length > 0) {
-                    resolve(this.process(bridge, cached));
+                    resolve(cached);
 
                     return;
                 }
             }
 
             Request.get(`http://127.0.0.1:${data.port}/accessories`).then((response) => {
-                if (response.data.accessories) State.cache?.set(key, response.data.accessories, 30);
+                const accessories = this.process(bridge, response.data.accessories);
 
-                resolve(this.process(bridge, response.data.accessories));
+                if (response.data.accessories) State.cache?.set(key, accessories, 30);
+
+                resolve(accessories);
             }).catch(() => {
                 resolve([]);
             });
         });
     }
 
-    accessory(bridge: string, value: string, reload?: boolean): Promise<{ [key: string]: any } | undefined> {
-        return new Promise((resolve) => {
-            if (!value || value === "") {
-                resolve(undefined);
-            } else {
-                this.accessories(bridge, reload).then((services) => {
-                    const result = services.find((item) => item.accessory_identifier === value);
-
-                    if (result || reload) {
-                        resolve(result);
-
-                        return;
-                    }
-
-                    this.accessory(bridge, value, true).then((reloaded) => {
-                        resolve(reloaded);
-                    });
-                }).catch(() => {
-                    resolve(undefined);
-                });
-            }
-        });
-    }
-
-    process(bridge: string, accessories: { [key: string]: any }[]): { [key: string]: any }[] {
+    private process(bridge: string, accessories: { [key: string]: any }[]): { [key: string]: any }[] {
         const services: { [key: string]: any }[] = [];
 
         for (let i = 0; i < accessories.length; i += 1) {
             const information: { [key: string]: any } = accessories[i].services.find((x: { [key: string]: any }) => x.type === "3E");
             const details: { [key: string]: any } = {};
 
-            for (let j = 0; j < ((information || {}).characteristics || []).length; j += 1) {
-                if (information.characteristics[j].value) {
-                    details[Client.decamel(information.characteristics[j].description)] = information.characteristics[j].value;
+            if (information && Array.isArray(information.characteristics)) {
+                for (let j = 0; j < information.characteristics.length; j += 1) {
+                    if (information.characteristics[j].value) {
+                        details[Client.decamel(information.characteristics[j].description)] = information.characteristics[j].value;
+                    }
                 }
             }
 
@@ -133,46 +139,6 @@ export default class Client {
                             service.hidden = true;
                         }
 
-                        service.refresh = (): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
-                            const identifiers = service.characteristics.map((characteristic: { [key: string]: any }) => characteristic.id);
-
-                            Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${identifiers.map((id: string) => `${service.id}.${id}`).join(",")}`).then((response) => {
-                                response.data.characteristics.forEach((characteristic: { [key: string]: any }) => {
-                                    const idx = service.characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
-
-                                    service.characteristics[idx].value = characteristic.value;
-                                });
-
-                                resolve(service);
-                            }).catch((error) => {
-                                reject(error);
-                            });
-                        });
-
-                        service.set = (type: string, value: any): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
-                            Request.defaults.headers.put.Authorization = State.homebridge?.settings.pin || "031-45-154";
-
-                            const characteristic: { [key: string]: any } | undefined = service.characteristics.find((c: { [key: string]: any }) => c.type === type);
-
-                            if (typeof value === "boolean") value = value ? 1 : 0;
-
-                            if (characteristic) {
-                                Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
-                                    characteristics: [{ aid: service.id, iid: characteristic.id, value }],
-                                }, {
-                                    headers: { "'Authorization'": State.homebridge?.settings.pin || "031-45-154" },
-                                }).then(() => {
-                                    resolve(service);
-                                }).catch((error) => {
-                                    reject(error);
-                                });
-                            } else {
-                                reject(new Error("type not found"));
-                            }
-                        });
-
-                        service.get = (type: string): { [key: string]: any } | undefined => service.characteristics.find((c: { [key: string]: any }) => c.type === type);
-
                         services.push(service);
                     }
 
@@ -204,6 +170,98 @@ export default class Client {
         }
 
         return services;
+    }
+
+    private updateAll(accessories: { [key: string]: any }[]): void {
+        for (let i = 0; i < accessories.length; i += 1) {
+            if (accessories[i].type !== "bridge") {
+                accessories[i].refresh = (): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
+                    const identifiers = accessories[i].characteristics.map((characteristic: { [key: string]: any }) => characteristic.id);
+
+                    Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${identifiers.map((id: string) => `${accessories[i].id}.${id}`).join(",")}`).then((response) => {
+                        response.data.characteristics.forEach((characteristic: { [key: string]: any }) => {
+                            const idx = accessories[i].characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
+
+                            accessories[i].characteristics[idx].value = characteristic.value;
+                        });
+
+                        resolve(accessories[i]);
+                    }).catch((error) => {
+                        reject(error);
+                    });
+                });
+
+                accessories[i].set = (type: string, value: any): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
+                    Request.defaults.headers.put.Authorization = State.homebridge?.settings.pin || "031-45-154";
+
+                    const characteristic: { [key: string]: any } | undefined = accessories[i].characteristics.find((c: { [key: string]: any }) => c.type === type);
+
+                    if (typeof value === "boolean") value = value ? 1 : 0;
+
+                    if (characteristic) {
+                        Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
+                            characteristics: [{ aid: accessories[i].id, iid: characteristic.id, value }],
+                        }, {
+                            headers: { "'Authorization'": State.homebridge?.settings.pin || "031-45-154" },
+                        }).then(() => {
+                            resolve(accessories[i]);
+                        }).catch((error) => {
+                            reject(error);
+                        });
+                    } else {
+                        reject(new Error("type not found"));
+                    }
+                });
+
+                accessories[i].get = (type: string): { [key: string]: any } | undefined => accessories[i].characteristics.find((c: { [key: string]: any }) => c.type === type);
+            }
+        }
+    }
+
+    private updateOne(accessory: { [key: string]: any } | undefined): void {
+        if (!accessory) return;
+
+        if (accessory.type !== "bridge") {
+            accessory.refresh = (): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
+                const identifiers = accessory.characteristics.map((characteristic: { [key: string]: any }) => characteristic.id);
+
+                Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${identifiers.map((id: string) => `${accessory.id}.${id}`).join(",")}`).then((response) => {
+                    response.data.characteristics.forEach((characteristic: { [key: string]: any }) => {
+                        const idx = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
+
+                        accessory.characteristics[idx].value = characteristic.value;
+                    });
+
+                    resolve(accessory);
+                }).catch((error) => {
+                    reject(error);
+                });
+            });
+
+            accessory.set = (type: string, value: any): Promise<{ [key: string]: any }> => new Promise((resolve, reject) => {
+                Request.defaults.headers.put.Authorization = State.homebridge?.settings.pin || "031-45-154";
+
+                const characteristic: { [key: string]: any } | undefined = accessory.characteristics.find((c: { [key: string]: any }) => c.type === type);
+
+                if (typeof value === "boolean") value = value ? 1 : 0;
+
+                if (characteristic) {
+                    Request.put(`http://127.0.0.1:${State.homebridge?.port}/characteristics`, {
+                        characteristics: [{ aid: accessory.id, iid: characteristic.id, value }],
+                    }, {
+                        headers: { "'Authorization'": State.homebridge?.settings.pin || "031-45-154" },
+                    }).then(() => {
+                        resolve(accessory);
+                    }).catch((error) => {
+                        reject(error);
+                    });
+                } else {
+                    reject(new Error("type not found"));
+                }
+            });
+
+            accessory.get = (type: string): { [key: string]: any } | undefined => accessory.characteristics.find((c: { [key: string]: any }) => c.type === type);
+        }
     }
 
     static identifier(bridge: string, id?: string): string {

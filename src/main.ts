@@ -40,7 +40,7 @@ if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'doc
 }
 
 function teardown() {
-    const waits: Promise<void>[] = [];
+    let waits: Promise<void>[] = [];
 
     if (State.terminating) return;
 
@@ -51,6 +51,8 @@ function teardown() {
     if (State.hub) waits.push(State.hub.stop());
 
     Promise.all(waits).then(() => {
+        waits = [];
+
         process.exit();
     });
 }

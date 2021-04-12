@@ -23,8 +23,6 @@ import { EventEmitter } from "events";
 
 import {
     existsSync,
-    readFileSync,
-    writeFileSync,
     copyFileSync,
     unlinkSync,
 } from "fs-extra";
@@ -176,7 +174,7 @@ export default class Server extends EventEmitter {
     }
 
     public async start(): Promise<void> {
-        const promises: Promise<void>[] = [];
+        let promises: Promise<void>[] = [];
 
         await Plugins.linkLibs(State.id);
 
@@ -247,6 +245,8 @@ export default class Server extends EventEmitter {
         this.api.signalFinished();
 
         await Promise.all(promises);
+
+        promises = [];
 
         this.publishBridge();
         this.running = true;
@@ -335,15 +335,15 @@ export default class Server extends EventEmitter {
                 const accessory = PlatformAccessory.deserialize(serialized);
 
                 accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                    this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                        if (service) {
-                            service.refresh((results: any) => {
-                                service.values = results.values;
-                            }).finally(() => {
-                                this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                            });
-                        }
-                    });
+                    if (data && data.newValue !== data.oldValue) {
+                        this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                            if (service) {
+                                service.refresh().finally(() => {
+                                    this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                                });
+                            }
+                        });
+                    }
                 });
 
                 return accessory;
@@ -532,15 +532,15 @@ export default class Server extends EventEmitter {
         informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory.UUID}`);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-            this.client.accessory(State.id, Client.identifier(State.id, accessory.UUID)).then((service) => {
-                if (service) {
-                    service.refresh((results: any) => {
-                        service.values = results.values;
-                    }).finally(() => {
-                        this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                    });
-                }
-            });
+            if (data && data.newValue !== data.oldValue) {
+                this.client.accessory(State.id, Client.identifier(State.id, accessory.UUID)).then((service) => {
+                    if (service) {
+                        service.refresh().finally(() => {
+                            this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                        });
+                    }
+                });
+            }
         });
 
         controllers.forEach((controller) => {
@@ -578,15 +578,15 @@ export default class Server extends EventEmitter {
             }
 
             accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                    if (service) {
-                        service.refresh((results: any) => {
-                            service.values = results.values;
-                        }).finally(() => {
-                            this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                        });
-                    }
-                });
+                if (data && data.newValue !== data.oldValue) {
+                    this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                        if (service) {
+                            service.refresh().finally(() => {
+                                this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                            });
+                        }
+                    });
+                }
             });
 
             return accessory._associatedHAPAccessory;

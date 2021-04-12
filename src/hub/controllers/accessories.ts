@@ -604,15 +604,19 @@ export default class AccessoriesController {
         let results: any[] = [];
 
         if (bridge) {
-            const accessories = await Socket.fetch(bridge, "accessories:list");
+            let accessories = await Socket.fetch(bridge, "accessories:list");
 
-            if (accessories) results = [...results, ...accessories];
+            if (accessories) results = results.concat(accessories);
+
+            accessories = undefined;
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    const accessories = await Socket.fetch(State.bridges[i].id, "accessories:list");
+                    let accessories = await Socket.fetch(State.bridges[i].id, "accessories:list");
 
-                    if (accessories) results = [...results, ...accessories];
+                    if (accessories) results = results.concat(accessories);
+
+                    accessories = undefined;
                 }
             }
         }

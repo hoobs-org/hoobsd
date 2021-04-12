@@ -76,54 +76,29 @@ export default class AccessoriesController {
     service(id: string): Promise<any> {
         return new Promise((resolve) => {
             State.homebridge?.client.accessory(State.id, id).then((response: any) => {
-                if (response) {
-                    response.refresh((results: any) => {
-                        response.values = results.values;
-                    }).finally(() => resolve(<{ [key: string]: any }> this.cleanse(response)));
-                } else {
+                if (!response) {
                     resolve(undefined);
+
+                    return;
                 }
+
+                resolve(response);
             });
         });
-    }
-
-    cleanse(value: { [key: string]: any } | { [key: string]: any }[]): { [key: string]: any } | { [key: string]: any }[] {
-        if (Array.isArray(value)) {
-            const results: { [key: string]: any }[] = [];
-
-            for (let i = 0; i < value.length; i += 1) {
-                results.push(<{ [key: string]: any }> this.cleanse(value[i]));
-            }
-
-            return results;
-        }
-
-        return { ...value };
     }
 
     services(): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
             State.homebridge?.client.accessories(State.id).then((services: { [key: string]: any }[]) => {
-                if (!services) resolve([]);
-                if (!Array.isArray(services)) services = [services];
+                if (!services) {
+                    resolve([]);
 
-                const waits: Promise<void>[] = [];
-
-                for (let i = 0; i < services.length; i += 1) {
-                    waits.push(new Promise((complete) => {
-                        services[i].refresh((results: { [key: string]: any }) => {
-                            services[i].values = results.values;
-                        }).finally(() => {
-                            complete();
-                        });
-                    }));
+                    return;
                 }
 
-                Promise.all(waits).then(() => {
-                    services = [...services];
+                if (!Array.isArray(services)) services = [services];
 
-                    resolve(<{ [key: string]: any }[]> this.cleanse(services));
-                });
+                resolve(<{ [key: string]: any }[]> services);
             });
         });
     }

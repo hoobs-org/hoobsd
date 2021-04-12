@@ -49,11 +49,9 @@ export default class PluginsController {
 
                 if (plugins) {
                     for (let j = 0; j < plugins.length; j += 1) {
-                        const { ...plugin } = plugins[j];
+                        plugins[j].bridge = State.bridges[i].id;
 
-                        plugin.bridge = State.bridges[i].id;
-
-                        results.push(plugin);
+                        results.push(plugins[j]);
                     }
                 }
             }
@@ -280,7 +278,6 @@ export default class PluginsController {
 
                 if (!Array.isArray(services)) services = [services];
 
-                services = [...services];
                 services = services.filter((item) => item.plugin === plugin);
 
                 resolve(services.map((item) => item.accessory_identifier));
