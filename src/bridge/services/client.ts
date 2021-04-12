@@ -50,6 +50,18 @@ export default class Client {
         });
     }
 
+    private async cache(accessory: { [key: string]: any }): Promise<void> {
+        const key = `bridge/${accessory.bridge}/accessories`;
+        const accessories = await this.load(accessory.bridge);
+        const index = accessories.findIndex((item) => item.accessory_identifier === accessory.accessory_identifier);
+
+        if (index >= 0) {
+            accessories[index] = accessory;
+        }
+
+        State.cache?.set(key, accessories, 30);
+    }
+
     private load(bridge: string, reload?: boolean): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
             const key = `bridge/${bridge}/accessories`;
@@ -180,12 +192,14 @@ export default class Client {
 
                     Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${identifiers.map((id: string) => `${accessories[i].id}.${id}`).join(",")}`).then((response) => {
                         response.data.characteristics.forEach((characteristic: { [key: string]: any }) => {
-                            const idx = accessories[i].characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
+                            const index = accessories[i].characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
 
-                            accessories[i].characteristics[idx].value = characteristic.value;
+                            accessories[i].characteristics[index].value = characteristic.value;
                         });
 
-                        resolve(accessories[i]);
+                        this.cache(accessories[i]).finally(() => {
+                            resolve(accessories[i]);
+                        });
                     }).catch((error) => {
                         reject(error);
                     });
@@ -227,12 +241,14 @@ export default class Client {
 
                 Request.get(`http://127.0.0.1:${State.homebridge?.port}/characteristics?id=${identifiers.map((id: string) => `${accessory.id}.${id}`).join(",")}`).then((response) => {
                     response.data.characteristics.forEach((characteristic: { [key: string]: any }) => {
-                        const idx = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
+                        const index = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.id === characteristic.iid);
 
-                        accessory.characteristics[idx].value = characteristic.value;
+                        accessory.characteristics[index].value = characteristic.value;
                     });
 
-                    resolve(accessory);
+                    this.cache(accessory).finally(() => {
+                        resolve(accessory);
+                    });
                 }).catch((error) => {
                     reject(error);
                 });

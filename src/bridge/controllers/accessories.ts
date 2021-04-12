@@ -47,14 +47,16 @@ export default class AccessoriesController {
     }
 
     set(request: SocketRequest, response: SocketResponse): void {
-        let accessory = {};
+        let accessory: { [key: string]: any } = {};
 
         this.service(request.params?.id).then((service) => {
             Console.debug(`Update - ${request.params?.service}: ${request.body.value} (${typeof request.body.value})`);
 
             service.set(request.params?.service, request.body.value).then((results: any) => {
                 accessory = results;
-            }).finally(() => response.send(accessory));
+            }).finally(() => {
+                accessory.refresh().finally(() => response.send(accessory));
+            });
         }).catch(() => response.send(accessory));
     }
 
