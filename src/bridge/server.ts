@@ -65,6 +65,7 @@ import { User } from "homebridge/lib/user";
 import * as mac from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
+import { BridgeID, PluginID, DeviceID } from "./services/extentions";
 import Paths from "../services/paths";
 import State from "../state";
 import Plugins from "../services/plugins";
@@ -531,7 +532,9 @@ export default class Server extends EventEmitter {
         const informationService = accessory.getService(Service.AccessoryInformation)!;
         const identifier = plugin.getPluginIdentifier();
 
-        informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
+        informationService.addOptionalCharacteristic(BridgeID);
+        informationService.addOptionalCharacteristic(PluginID);
+        informationService.addOptionalCharacteristic(DeviceID);
 
         services.forEach((service) => {
             if (service instanceof Service.AccessoryInformation) {
@@ -548,7 +551,9 @@ export default class Server extends EventEmitter {
             informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
         }
 
-        informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory.UUID}`);
+        informationService.updateCharacteristic(BridgeID, State.id);
+        informationService.updateCharacteristic(PluginID, identifier);
+        informationService.updateCharacteristic(DeviceID, accessory.UUID);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
             if (data && data.newValue !== data.oldValue) {
@@ -579,13 +584,17 @@ export default class Server extends EventEmitter {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
                 const identifier = plugin.getPluginIdentifier();
 
-                informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
+                informationService.addOptionalCharacteristic(BridgeID);
+                informationService.addOptionalCharacteristic(PluginID);
+                informationService.addOptionalCharacteristic(DeviceID);
 
                 if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
                     informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
                 }
 
-                informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory._associatedHAPAccessory.UUID}`);
+                informationService.updateCharacteristic(BridgeID, State.id);
+                informationService.updateCharacteristic(PluginID, identifier);
+                informationService.updateCharacteristic(DeviceID, accessory._associatedHAPAccessory.UUID);
 
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
@@ -615,7 +624,7 @@ export default class Server extends EventEmitter {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 
-    private handleUpdatePlatformAccessories(accessories: PlatformAccessory[]): void {
+    private handleUpdatePlatformAccessories(_accessories: PlatformAccessory[]): void {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 

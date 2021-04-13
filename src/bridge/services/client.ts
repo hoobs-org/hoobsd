@@ -135,12 +135,8 @@ export default class Client {
                             service[keys[k]] = details[keys[k]];
                         }
 
-                        const data: string[] = (service.accessory_identifier || "").split("|");
-                        const uuid = data.pop();
-                        const plugin = data[0];
-
-                        service.accessory_identifier = Client.identifier(bridge, uuid);
-                        service.plugin = plugin;
+                        service.accessory_identifier = Client.identifier(service.bridge_id, service.device_id);
+                        service.plugin = service.plugin_id;
 
                         if (service.accessory_identifier === service.bridge_identifier) {
                             delete service.bridge_identifier;
@@ -150,6 +146,10 @@ export default class Client {
                             service.type = "bridge";
                             service.hidden = true;
                         }
+
+                        delete service.device_id;
+                        delete service.plugin_id;
+                        delete service.bridge_id;
 
                         services.push(service);
                     }
