@@ -107,6 +107,8 @@ export default class Server extends EventEmitter {
 
     private development = false;
 
+    private cachedAccessoriesFileLoaded = false;
+
     private readonly publishedExternalAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
     constructor(port?: number, development?: boolean) {
@@ -257,14 +259,13 @@ export default class Server extends EventEmitter {
     public stop(): Promise<void> {
         return new Promise((resolve) => {
             this.running = false;
-
-            this.saveCachedPlatformAccessoriesOnDisk();
             this.bridge.unpublish();
 
             for (const accessory of this.publishedExternalAccessories.values()) {
                 accessory._associatedHAPAccessory.unpublish();
             }
 
+            this.saveCachedPlatformAccessoriesOnDisk();
             this.api.signalShutdown();
 
             setTimeout(() => {
@@ -351,6 +352,8 @@ export default class Server extends EventEmitter {
 
             copyFileSync(join(Paths.accessories, "cachedAccessories"), join(Paths.accessories, ".cachedAccessories.bak"));
         }
+
+        this.cachedAccessoriesFileLoaded = true;
     }
 
     private restoreCachedPlatformAccessories(): void {
@@ -368,6 +371,20 @@ export default class Server extends EventEmitter {
             }
 
             const platformPlugins = plugin && plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
+
+            if (plugin) {
+                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    if (data && data.newValue !== data.oldValue) {
+                        this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                            if (service) {
+                                service.refresh().finally(() => {
+                                    this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                                });
+                            }
+                        });
+                    }
+                });
+            }
 
             if (!platformPlugins) {
                 Console.info(`Failed to find plugin to handle accessory ${accessory._associatedHAPAccessory.displayName}`);
@@ -390,7 +407,9 @@ export default class Server extends EventEmitter {
     }
 
     private saveCachedPlatformAccessoriesOnDisk(): void {
-        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
+        if (this.cachedAccessoriesFileLoaded) {
+            Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
+        }
     }
 
     private loadAccessories(): void {
@@ -573,21 +592,21 @@ export default class Server extends EventEmitter {
                 if (!platforms) {
                     Console.warn("The plugin '%s' registered a new accessory for the platform '%s'. The platform couldn't be found though!", accessory._associatedPlugin!, accessory._associatedPlatform!);
                 }
+
+                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    if (data && data.newValue !== data.oldValue) {
+                        this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
+                            if (service) {
+                                service.refresh().finally(() => {
+                                    this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
+                                });
+                            }
+                        });
+                    }
+                });
             } else {
                 Console.warn("A platform configured a new accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
             }
-
-            accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                if (data && data.newValue !== data.oldValue) {
-                    this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                        if (service) {
-                            service.refresh().finally(() => {
-                                this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                            });
-                        }
-                    });
-                }
-            });
 
             return accessory._associatedHAPAccessory;
         });
@@ -646,7 +665,10 @@ export default class Server extends EventEmitter {
                 pincode: accessoryPin,
                 category: accessory.category,
                 port: accessoryPort,
+                bind: this.settings.bind,
                 mdns: this.config.mdns,
+                addIdentifyingMaterial: true,
+                advertiser: this.settings.advertiser,
             }, this.allowInsecureAccess);
         }
     }
