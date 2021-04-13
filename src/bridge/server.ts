@@ -108,8 +108,6 @@ export default class Server extends EventEmitter {
 
     private development = false;
 
-    private cachedAccessoriesFileLoaded = false;
-
     private readonly publishedExternalAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
     constructor(port?: number, development?: boolean) {
@@ -163,10 +161,10 @@ export default class Server extends EventEmitter {
         this.api = new HomebridgeAPI();
         this.client = new Client();
 
-        this.api.on(InternalAPIEvent.REGISTER_PLATFORM_ACCESSORIES, this.handleRegisterPlatformAccessories.bind(this));
-        this.api.on(InternalAPIEvent.UPDATE_PLATFORM_ACCESSORIES, this.handleUpdatePlatformAccessories.bind(this));
-        this.api.on(InternalAPIEvent.UNREGISTER_PLATFORM_ACCESSORIES, this.handleUnregisterPlatformAccessories.bind(this));
-        this.api.on(InternalAPIEvent.PUBLISH_EXTERNAL_ACCESSORIES, this.handlePublishExternalAccessories.bind(this));
+        this.api.on(InternalAPIEvent.REGISTER_PLATFORM_ACCESSORIES, (accessories) => this.handleRegisterPlatformAccessories(accessories));
+        this.api.on(InternalAPIEvent.UPDATE_PLATFORM_ACCESSORIES, () => this.handleUpdatePlatformAccessories());
+        this.api.on(InternalAPIEvent.UNREGISTER_PLATFORM_ACCESSORIES, (accessories) => this.handleUnregisterPlatformAccessories(accessories));
+        this.api.on(InternalAPIEvent.PUBLISH_EXTERNAL_ACCESSORIES, (accessories) => this.handlePublishExternalAccessories(accessories));
 
         const pluginManagerOptions: PluginManagerOptions = {
             customPluginPath: join(Paths.data(State.id), "node_modules"),
@@ -278,8 +276,6 @@ export default class Server extends EventEmitter {
                     Console.warn(error.message);
                 }
 
-                this.cachedPlatformAccessories = [];
-
                 resolve();
             }, INSTANCE_KILL_DELAY);
         });
@@ -328,7 +324,7 @@ export default class Server extends EventEmitter {
         this.emit(Events.PUBLISH_SETUP_URI, this.setupURI());
     }
 
-    private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
+    private loadCachedPlatformAccessoriesFromDisk(): void {
         const backup = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, ".cachedAccessories.bak"), [], undefined, true);
         const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
 
@@ -353,8 +349,10 @@ export default class Server extends EventEmitter {
 
             copyFileSync(join(Paths.accessories, "cachedAccessories"), join(Paths.accessories, ".cachedAccessories.bak"));
         }
+    }
 
-        this.cachedAccessoriesFileLoaded = true;
+    public saveCachedPlatformAccessoriesOnDisk(): void {
+        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
     }
 
     private restoreCachedPlatformAccessories(): void {
@@ -405,12 +403,6 @@ export default class Server extends EventEmitter {
 
             return true;
         });
-    }
-
-    private saveCachedPlatformAccessoriesOnDisk(): void {
-        if (this.cachedAccessoriesFileLoaded) {
-            Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
-        }
     }
 
     private loadAccessories(): void {
@@ -624,7 +616,7 @@ export default class Server extends EventEmitter {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 
-    private handleUpdatePlatformAccessories(_accessories: PlatformAccessory[]): void {
+    private handleUpdatePlatformAccessories(): void {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 

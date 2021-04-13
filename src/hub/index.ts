@@ -350,14 +350,34 @@ export default class API extends EventEmitter {
                 }
             }
 
-            const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(Path.join(Paths.data(), item)).isDirectory());
-            const remove = directories.filter((item) => State.bridges.filter((bridge) => bridge.type !== "hub").findIndex((bridge) => bridge.id === item) === -1);
+            const directories = readdirSync(Paths.data()).filter((item) => {
+                if (item === "hub") return false;
+                if (item === "backups") return false;
+                if (item === "access") return false;
+
+                if (item === "bridges.conf") return false;
+                if (item === "layout.conf") return false;
+                if (item === "hoobs.log") return false;
+                if (item === "hub.log") return false;
+
+                if (item.indexOf(".accessories") >= 0) return false;
+                if (item.indexOf(".persist") >= 0) return false;
+                if (item.indexOf(".conf") >= 0) return false;
+                if (item.indexOf(".sock") >= 0) return false;
+
+                return lstatSync(Path.join(Paths.data(), item)).isDirectory();
+            });
+
+            const bridges = State.bridges.filter((item) => item.type !== "hub");
+            const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {
                 removeSync(Path.join(Paths.data(), remove[i]));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.accessories`));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.persist`));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.conf`));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.sock`));
             }
-
-            const bridges = State.bridges.filter((item) => item.type !== "hub");
 
             for (let i = 0; i < bridges.length; i += 1) {
                 if (!this.bridges[bridges[i].id] || !running(this.bridges[bridges[i].id].process.pid)) {
