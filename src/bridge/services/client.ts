@@ -23,6 +23,8 @@ import { createHash } from "crypto";
 import State from "../../state";
 import { Services, Characteristics, Precedence } from "./types";
 
+const EXCLUDE_SERVICES = ["3E", "A2", "49FB9D4D-0FEA-4BF1-8FA6-E7B18AB86DCE"];
+
 export default class Client {
     accessories(bridge: string, reload?: boolean): Promise<{ [key: string]: any }[]> {
         return new Promise((resolve) => {
@@ -111,7 +113,7 @@ export default class Client {
             }
 
             for (let j = 0; j < accessories[i].services.length; j += 1) {
-                if (accessories[i].services[j].type !== "3E" && accessories[i].services[j].type !== "49FB9D4D-0FEA-4BF1-8FA6-E7B18AB86DCE") {
+                if (EXCLUDE_SERVICES.indexOf(accessories[i].services[j].type) === -1) {
                     let service: { [key: string]: any } = services.find((item) => item.id === accessories[i].aid) || {};
 
                     if (!service.id) {
