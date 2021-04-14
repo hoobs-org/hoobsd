@@ -358,7 +358,7 @@ console.error = function error(message: string, ...parameters: any[]) {
 };
 
 export function Print(...parameters: any[]) {
-    if (State.debug) CONSOLE_LOG(...parameters);
+    if (State.verbose) CONSOLE_LOG(...parameters);
 }
 
 export const Console: Logger = system;

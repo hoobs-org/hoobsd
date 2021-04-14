@@ -21,8 +21,9 @@ import { EventEmitter } from "events";
 import { existsSync, unlinkSync } from "fs-extra";
 import { join } from "path";
 import Paths from "../../services/paths";
-import { Console, Events } from "../../services/logger";
+import { Print, Console, Events } from "../../services/logger";
 
+const SOCKETS: { [key: string]: any } = {};
 const PING_INTERVAL = 5000;
 
 export default class Socket extends EventEmitter {
@@ -37,16 +38,14 @@ export default class Socket extends EventEmitter {
 
         this.pipe = new RawIPC.IPC();
         this.pipe.config.logInColor = true;
-        this.pipe.config.logger = () => {};
+        this.pipe.config.logger = Print;
         this.pipe.config.appspace = "/";
         this.pipe.config.socketRoot = Paths.data();
         this.pipe.config.id = "api.sock";
 
         this.pipe.serve(() => {
             if (!this.defined) {
-                this.pipe.server.on(Events.PING, (_payload: any, socket: any) => {
-                    this.pipe.server.emit(socket, Events.PONG);
-                });
+                this.pipe.server.on(Events.PING, (_payload: any, socket: any) => this.pipe.server.emit(socket, Events.PONG));
 
                 this.pipe.server.on(Events.LOG, (payload: any, socket: any) => {
                     this.emit(Events.LOG, payload.body);
@@ -92,25 +91,17 @@ export default class Socket extends EventEmitter {
     }
 
     heartbeat() {
-        let socket = Socket.connect("api.sock");
+        const socket = Socket.connect("api.sock");
 
         socket.connectTo("api.sock", () => {
             socket.of["api.sock"].on(Events.PONG, () => {
                 socket.of["api.sock"].off(Events.PONG, "*");
-                socket.disconnect();
 
-                socket = undefined;
-
-                setTimeout(() => {
-                    this.heartbeat();
-                }, PING_INTERVAL);
+                setTimeout(() => this.heartbeat(), PING_INTERVAL);
             });
 
             socket.of["api.sock"].on("error", () => {
                 socket.of["api.sock"].off(Events.PONG, "*");
-                socket.disconnect();
-
-                socket = undefined;
 
                 this.stop();
                 this.start();
@@ -131,24 +122,26 @@ export default class Socket extends EventEmitter {
     }
 
     static connect(name: string): any {
-        const socket = new RawIPC.IPC();
+        if (!SOCKETS[name]) {
+            SOCKETS[name] = new RawIPC.IPC();
 
-        socket.config.appspace = "/";
-        socket.config.socketRoot = Paths.data();
-        socket.config.logInColor = true;
-        socket.config.logger = () => {};
-        socket.config.maxRetries = 0;
-        socket.config.stopRetrying = true;
-        socket.config.id = name;
+            SOCKETS[name].config.appspace = "/";
+            SOCKETS[name].config.socketRoot = Paths.data();
+            SOCKETS[name].config.logInColor = true;
+            SOCKETS[name].config.logger = () => {};
+            SOCKETS[name].config.maxRetries = 0;
+            SOCKETS[name].config.stopRetrying = true;
+            SOCKETS[name].config.id = name;
+        }
 
-        return socket;
+        return SOCKETS[name];
     }
 
     static emit(bridge: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): void {
         if (!existsSync(join(Paths.data(), `${bridge}.sock`))) return;
 
-        let session: string | undefined = `${new Date().getTime()}:${Math.random()}`;
-        let socket = Socket.connect(`${bridge}.sock`);
+        const session = `${new Date().getTime()}:${Math.random()}`;
+        const socket = Socket.connect(`${bridge}.sock`);
 
         socket.connectTo(`${bridge}.sock`, () => {
             socket.of[`${bridge}.sock`].emit(Events.REQUEST, {
@@ -157,9 +150,6 @@ export default class Socket extends EventEmitter {
                 params,
                 body,
             });
-
-            session = undefined;
-            socket = undefined;
         });
     }
 
@@ -171,26 +161,18 @@ export default class Socket extends EventEmitter {
                 return;
             }
 
-            let session: string | undefined = `${new Date().getTime()}:${Math.random()}`;
-            let socket = Socket.connect(`${bridge}.sock`);
+            const session = `${new Date().getTime()}:${Math.random()}`;
+            const socket = Socket.connect(`${bridge}.sock`);
 
             socket.connectTo(`${bridge}.sock`, () => {
                 socket.of[`${bridge}.sock`].on(session, (data: any) => {
                     socket.of[`${bridge}.sock`].off(session, "*");
-                    socket.disconnect();
-
-                    session = undefined;
-                    socket = undefined;
 
                     resolve(data);
                 });
 
                 socket.of[`${bridge}.sock`].on("error", () => {
                     socket.of[`${bridge}.sock`].off(session, "*");
-                    socket.disconnect();
-
-                    session = undefined;
-                    socket = undefined;
 
                     resolve(null);
                 });
