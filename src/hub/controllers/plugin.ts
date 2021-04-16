@@ -20,7 +20,6 @@ import { join } from "path";
 import { existsSync } from "fs-extra";
 import { Request, Response, NextFunction } from "express-serve-static-core";
 import State from "../../state";
-import Socket from "../services/socket";
 import Plugin from "../services/plugin";
 import Security from "../../services/security";
 
@@ -47,7 +46,7 @@ export default class PluginController {
         const directory = response.locals.sidecar || join(response.locals.directory, "hoobs");
 
         if (existsSync(join(directory, "routes.js"))) {
-            response.send(await Socket.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body));
+            response.send(await State.socket?.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body));
 
             return;
         }

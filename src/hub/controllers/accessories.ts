@@ -20,7 +20,6 @@ import _ from "lodash";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Security from "../../services/security";
-import Socket from "../services/socket";
 import Paths from "../../services/paths";
 import { Console, Events } from "../../services/logger";
 import { jsonEquals } from "../../services/json";
@@ -153,7 +152,7 @@ export default class AccessoriesController {
 
     async get(request: Request, response: Response, push?: boolean, value?: any): Promise<void> {
         const working = AccessoriesController.layout;
-        const accessory = await Socket.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
+        const accessory = await State.socket?.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
 
         if (accessory) {
             if (working.accessories[accessory.accessory_identifier]) _.extend(accessory, working.accessories[accessory.accessory_identifier]);
@@ -282,13 +281,13 @@ export default class AccessoriesController {
                 break;
 
             default:
-                response.send(await Socket.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
+                response.send(await State.socket?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
                 break;
         }
     }
 
     async characteristics(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
+        response.send(await State.socket?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
     }
 
     async rooms(_request: Request, response: Response): Promise<Response> {
@@ -541,7 +540,7 @@ export default class AccessoriesController {
                             value: 0,
                         });
 
-                        await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
+                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
                     }
                 }
 
@@ -561,7 +560,7 @@ export default class AccessoriesController {
                             value,
                         });
 
-                        await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
+                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
                     }
                 }
 
@@ -604,7 +603,7 @@ export default class AccessoriesController {
         let results: any[] = [];
 
         if (bridge) {
-            let accessories = await Socket.fetch(bridge, "accessories:list");
+            let accessories = await State.socket?.fetch(bridge, "accessories:list");
 
             if (accessories) results = results.concat(accessories);
 
@@ -612,7 +611,7 @@ export default class AccessoriesController {
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    let accessories = await Socket.fetch(State.bridges[i].id, "accessories:list");
+                    let accessories = await State.socket?.fetch(State.bridges[i].id, "accessories:list");
 
                     if (accessories) results = results.concat(accessories);
 

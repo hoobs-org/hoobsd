@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { IPCRequest, IPCResponse } from "@hoobs/ipc";
 import State from "../../state";
 import { Console } from "../../services/logger";
-import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class AccessoriesController {
     declare rooms: any[];
@@ -26,19 +26,19 @@ export default class AccessoriesController {
     constructor() {
         this.rooms = [];
 
-        State.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
-        State.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
-        State.socket?.route("accessory:set", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
-        State.socket?.route("accessory:characteristics", (request: SocketRequest, response: SocketResponse) => this.characteristics(request, response));
+        State.socket?.route("accessories:list", (request, response) => this.list(request, response));
+        State.socket?.route("accessory:get", (request, response) => this.get(request, response));
+        State.socket?.route("accessory:set", (request, response) => this.set(request, response));
+        State.socket?.route("accessory:characteristics", (request, response) => this.characteristics(request, response));
     }
 
-    list(_request: SocketRequest, response: SocketResponse): void {
+    list(_request: IPCRequest, response: IPCResponse): void {
         this.services().then((accessories) => {
             response.send(accessories);
         });
     }
 
-    get(request: SocketRequest, response: SocketResponse): void {
+    get(request: IPCRequest, response: IPCResponse): void {
         let accessory = {};
 
         this.service(request.params?.id).then((results) => {
@@ -46,7 +46,7 @@ export default class AccessoriesController {
         }).finally(() => response.send(accessory));
     }
 
-    set(request: SocketRequest, response: SocketResponse): void {
+    set(request: IPCRequest, response: IPCResponse): void {
         let accessory: { [key: string]: any } = {};
 
         this.service(request.params?.id).then((service) => {
@@ -60,7 +60,7 @@ export default class AccessoriesController {
         }).catch(() => response.send(accessory));
     }
 
-    characteristics(request: SocketRequest, response: SocketResponse): void {
+    characteristics(request: IPCRequest, response: IPCResponse): void {
         let results: string[] = [];
 
         this.service(request.params?.id).then((service) => {

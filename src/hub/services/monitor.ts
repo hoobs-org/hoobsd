@@ -19,7 +19,6 @@
 import SystemInfo from "systeminformation";
 import State from "../../state";
 import { Console, Events } from "../../services/logger";
-import Socket from "./socket";
 
 const DEFAULT_POLLING = 5;
 
@@ -30,7 +29,7 @@ export default async function Monitor() {
     for (let i = 0; i < State.bridges.length; i += 1) {
         if (State.bridges[i].type !== "hub") {
             waits.push(new Promise((resolve) => {
-                Socket.fetch(State.bridges[i].id, "status:get").then((status) => {
+                State.socket?.fetch(State.bridges[i].id, "status:get").then((status) => {
                     if (status) {
                         results[State.bridges[i].id] = {
                             version: status.version,

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { IPCRequest, IPCResponse } from "@hoobs/ipc";
 import State from "../state";
 import Config from "./config";
 import { Prefixed, PluginLogger } from "./logger";
-import { SocketRequest, SocketResponse } from "../bridge/services/socket";
 
 export default class Plugin {
     declare readonly identifier: string;
@@ -41,9 +41,9 @@ export default class Plugin {
         this.logger = Prefixed(identifier, this.display);
     }
 
-    registerRoute(action: string, controller: (request: SocketRequest, response: SocketResponse) => any) {
+    registerRoute(action: string, controller: (request: IPCRequest, response: IPCResponse) => any) {
         if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            State.socket?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: SocketRequest, response: SocketResponse) => {
+            State.socket?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
                 try {
                     controller(request, response);
                 } catch (error) {

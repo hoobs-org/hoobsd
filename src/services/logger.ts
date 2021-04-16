@@ -21,7 +21,6 @@ import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
-import Socket from "../bridge/services/socket";
 import { formatJson } from "./json";
 import { colorize } from "./formatters";
 
@@ -170,7 +169,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) Socket.emit(Events.LOG, data);
+                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -189,7 +188,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) Socket.emit(Events.LOG, data);
+                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -209,7 +208,7 @@ class Logger {
                     colored = data.message;
 
                     if (State.id === "hub") CACHE.push(data);
-                    if (State.bridge) Socket.emit(Events.LOG, data);
+                    if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                     if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -227,7 +226,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) Socket.emit(Events.LOG, data);
+                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -294,7 +293,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.emit(Events.NOTIFICATION, {
+            State.socket?.emit("api", Events.NOTIFICATION, {
                 bridge,
                 data: {
                     title,
@@ -315,7 +314,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.emit(event, {
+            State.socket?.emit("api", event, {
                 bridge,
                 data,
             });

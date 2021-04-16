@@ -41,7 +41,7 @@ import Config from "../services/config";
 import System from "../services/system";
 import State from "../state";
 import Users from "../services/users";
-import Socket from "./services/socket";
+import Socket from "../services/socket";
 import Monitor from "./services/monitor";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Events, NotificationType } from "../services/logger";
@@ -95,8 +95,6 @@ export default class API extends EventEmitter {
 
     declare private bridges: { [key: string]: BridgeProcess };
 
-    declare private socket: Socket;
-
     declare private listner: HTTP.Server;
 
     declare private terminator: HttpTerminator;
@@ -109,6 +107,31 @@ export default class API extends EventEmitter {
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
         this.bridges = {};
+
+        State.socket = new Socket("api");
+
+        State.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
+        State.socket.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
+
+        State.socket.on(Events.ACCESSORY_CHANGE, (data: any) => {
+            const working = AccessoriesController.layout;
+            const { accessory } = data.data;
+
+            if (accessory && working.accessories[accessory.accessory_identifier]) {
+                _.extend(accessory, working.accessories[accessory.accessory_identifier]);
+            }
+
+            data.data.accessory = accessory;
+            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
+        });
+
+        State.socket.on(Events.RESTART, async (data: string) => {
+            await this.teardown(data);
+
+            const bridge = State.bridges.find((item) => item.id === data);
+
+            if (bridge) this.launch(bridge);
+        });
 
         State.app = Express();
         State.app.use(Compression());
@@ -394,32 +417,7 @@ export default class API extends EventEmitter {
     }
 
     async start(): Promise<void> {
-        this.socket = new Socket();
-
-        this.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
-        this.socket.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
-
-        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => {
-            const working = AccessoriesController.layout;
-            const { accessory } = data.data;
-
-            if (accessory && working.accessories[accessory.accessory_identifier]) {
-                _.extend(accessory, working.accessories[accessory.accessory_identifier]);
-            }
-
-            data.data.accessory = accessory;
-            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
-        });
-
-        this.socket.on(Events.RESTART, async (data: string) => {
-            await this.teardown(data);
-
-            const bridge = State.bridges.find((item) => item.id === data);
-
-            if (bridge) this.launch(bridge);
-        });
-
-        this.socket.start();
+        State.socket?.start();
 
         if (State.mode === "development") {
             Console.warn("running in development mode");
@@ -470,7 +468,7 @@ export default class API extends EventEmitter {
                 Promise.all(waits).then(() => {
                     waits = [];
 
-                    this.socket.stop();
+                    State.socket?.stop();
 
                     const keys = Object.keys(this.bridges);
 
