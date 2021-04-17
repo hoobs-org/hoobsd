@@ -20,19 +20,6 @@
 
 import { Characteristic, Formats, Perms } from "hap-nodejs";
 
-export class BridgeID extends Characteristic {
-    static readonly UUID: string = "00000002-0000-1000-8000-0026BB765291";
-
-    constructor() {
-        super("Bridge ID", "00000002-0000-1000-8000-0026BB765291", {
-            format: Formats.STRING,
-            perms: [Perms.PAIRED_READ, Perms.NOTIFY],
-        });
-
-        this.value = this.getDefaultValue();
-    }
-}
-
 export class PluginID extends Characteristic {
     static readonly UUID: string = "00000004-0000-1000-8000-0026BB765291";
 

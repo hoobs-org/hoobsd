@@ -33,75 +33,37 @@ export default class AccessoriesController {
     }
 
     list(_request: IPCRequest, response: IPCResponse): void {
-        this.services().then((accessories) => {
-            response.send(accessories);
-        });
+        response.send(State.homebridge?.accessories.list() || []);
     }
 
     get(request: IPCRequest, response: IPCResponse): void {
-        let accessory = {};
-
-        this.service(request.params?.id).then((results) => {
-            accessory = results;
-        }).finally(() => response.send(accessory));
+        response.send(State.homebridge?.accessories.get(request.params?.id));
     }
 
     set(request: IPCRequest, response: IPCResponse): void {
-        let accessory: { [key: string]: any } = {};
+        const service = State.homebridge?.accessories.get(request.params?.id);
 
-        this.service(request.params?.id).then((service) => {
+        if (service) {
             Console.debug(`Update - ${request.params?.service}: ${request.body.value} (${typeof request.body.value})`);
 
-            service.set(request.params?.service, request.body.value).then((results: any) => {
-                accessory = results;
-            }).finally(() => {
-                accessory.refresh().finally(() => response.send(accessory));
-            });
-        }).catch(() => response.send(accessory));
+            service.set(request.params?.service, request.body.value);
+            response.send(service.refresh());
+        } else {
+            response.send(undefined);
+        }
     }
 
     characteristics(request: IPCRequest, response: IPCResponse): void {
-        let results: string[] = [];
+        const service = State.homebridge?.accessories.get(request.params?.id);
+        const results = service?.characteristics.map((characteristic: any) => characteristic.type);
 
-        this.service(request.params?.id).then((service) => {
-            results = service.characteristics.map((characteristic: any) => characteristic.type);
+        results.sort((a: string, b: string) => {
+            if (a < b) return -1;
+            if (a > b) return 1;
 
-            results.sort((a: string, b: string) => {
-                if (a < b) return -1;
-                if (a > b) return 1;
-
-                return 0;
-            });
-        }).finally(() => response.send(results));
-    }
-
-    service(id: string): Promise<any> {
-        return new Promise((resolve) => {
-            State.homebridge?.client.accessory(State.id, id).then((response: any) => {
-                if (!response) {
-                    resolve(undefined);
-
-                    return;
-                }
-
-                resolve(response);
-            });
+            return 0;
         });
-    }
 
-    services(): Promise<{ [key: string]: any }[]> {
-        return new Promise((resolve) => {
-            State.homebridge?.client.accessories(State.id).then((services: { [key: string]: any }[]) => {
-                if (!services) {
-                    resolve([]);
-
-                    return;
-                }
-
-                if (!Array.isArray(services)) services = [services];
-
-                resolve(<{ [key: string]: any }[]> services);
-            });
-        });
+        response.send(results);
     }
 }

@@ -22,14 +22,9 @@ import State from "../../state";
 import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
-import Client from "../../bridge/services/client";
 
 export default class PluginsController {
-    private readonly client: Client;
-
     constructor() {
-        this.client = new Client();
-
         State.app?.get("/api/plugins", Security, (request, response) => this.all(request, response));
         State.app?.get("/api/plugins/:bridge", Security, (request, response) => this.installed(request, response));
         State.app?.put("/api/plugins/:bridge/:name", Security, (request, response) => this.install(request, response));
@@ -166,7 +161,6 @@ export default class PluginsController {
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
         const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
-
         const accessories = await this.accessories(request.params.bridge, identifier);
 
         State.cache?.remove(`plugin/definition:${identifier}`);
@@ -267,21 +261,7 @@ export default class PluginsController {
         return results;
     }
 
-    private accessories(bridge: string, plugin: string): Promise<string[]> {
-        return new Promise((resolve) => {
-            this.client.accessories(bridge).then((services: { [key: string]: any }[]) => {
-                if (!services) {
-                    resolve([]);
-
-                    return;
-                }
-
-                if (!Array.isArray(services)) services = [services];
-
-                services = services.filter((item) => item.plugin === plugin);
-
-                resolve(services.map((item) => item.accessory_identifier));
-            });
-        });
+    private async accessories(bridge: string, plugin: string): Promise<string[]> {
+        return (await State.socket?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
     }
 }

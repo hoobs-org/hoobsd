@@ -1,7 +1,6 @@
 /**************************************************************************************************
  * hoobsd                                                                                         *
  * Copyright (C) 2020 HOOBS                                                                       *
- * Copyright (C) 2019 Oznu                                                                        *
  *                                                                                                *
  * This program is free software: you can redistribute it and/or modify                           *
  * it under the terms of the GNU General Public License as published by                           *
@@ -16,6 +15,12 @@
  * You should have received a copy of the GNU General Public License                              *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
+
+export const ExcludeServices = [
+    "3E",
+    "A2",
+    "49FB9D4D-0FEA-4BF1-8FA6-E7B18AB86DCE",
+];
 
 export const Services: { [key: string]: string } = {
     "3E": "accessory_information",

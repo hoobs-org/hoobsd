@@ -65,12 +65,12 @@ import { User } from "homebridge/lib/user";
 import * as mac from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
-import { BridgeID, PluginID, DeviceID } from "./services/extentions";
+import { DeviceID, PluginID } from "./services/extentions";
 import Paths from "../services/paths";
 import State from "../state";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
-import Client from "./services/client";
+import Accessories from "./services/accessories";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 
@@ -88,7 +88,7 @@ export default class Server extends EventEmitter {
 
     public readonly instance: BridgeRecord | undefined;
 
-    public readonly client: Client;
+    public readonly accessories: Accessories;
 
     private readonly api: HomebridgeAPI;
 
@@ -103,6 +103,8 @@ export default class Server extends EventEmitter {
     private readonly allowInsecureAccess: boolean;
 
     private readonly externalPortService: ExternalPortService;
+
+    private cachedLegacyAccessories: (PlatformAccessory | Accessory)[] = [];
 
     private cachedPlatformAccessories: PlatformAccessory[] = [];
 
@@ -156,10 +158,10 @@ export default class Server extends EventEmitter {
         this.settings = this.config.bridge;
         this.port = port || 51826;
         this.keepOrphanedCachedAccessories = false;
-        this.allowInsecureAccess = true;
+        this.allowInsecureAccess = false;
         this.externalPortService = new ExternalPortService(this.config.ports);
         this.api = new HomebridgeAPI();
-        this.client = new Client();
+        this.accessories = new Accessories();
 
         this.api.on(InternalAPIEvent.REGISTER_PLATFORM_ACCESSORIES, (accessories) => this.handleRegisterPlatformAccessories(accessories));
         this.api.on(InternalAPIEvent.UPDATE_PLATFORM_ACCESSORIES, () => this.handleUpdatePlatformAccessories());
@@ -324,6 +326,10 @@ export default class Server extends EventEmitter {
         this.emit(Events.PUBLISH_SETUP_URI, this.setupURI());
     }
 
+    public get getAccessories(): (PlatformAccessory | Accessory)[] {
+        return this.cachedLegacyAccessories.concat(this.cachedPlatformAccessories || []);
+    }
+
     private loadCachedPlatformAccessoriesFromDisk(): void {
         const backup = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, ".cachedAccessories.bak"), [], undefined, true);
         const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
@@ -334,13 +340,9 @@ export default class Server extends EventEmitter {
 
                 accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
                     if (data && data.newValue !== data.oldValue) {
-                        this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                            if (service) {
-                                service.refresh().finally(() => {
-                                    this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                                });
-                            }
-                        });
+                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
+
+                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
                     }
                 });
 
@@ -374,13 +376,9 @@ export default class Server extends EventEmitter {
             if (plugin) {
                 accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
                     if (data && data.newValue !== data.oldValue) {
-                        this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                            if (service) {
-                                service.refresh().finally(() => {
-                                    this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                                });
-                            }
-                        });
+                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
+
+                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
                     }
                 });
             }
@@ -432,6 +430,7 @@ export default class Server extends EventEmitter {
             const accessory = this.createHAPAccessory(plugin, accessoryInstance, displayName, accessoryIdentifier, accessoryConfig.uuid_base);
 
             if (accessory) {
+                this.cachedLegacyAccessories.push(accessory);
                 this.bridge.addBridgedAccessory(accessory);
             } else {
                 logger("Accessory %s returned empty set of services. Won't adding it to the bridge!", accessoryIdentifier);
@@ -522,9 +521,7 @@ export default class Server extends EventEmitter {
         }
 
         const informationService = accessory.getService(Service.AccessoryInformation)!;
-        const identifier = plugin.getPluginIdentifier();
 
-        informationService.addOptionalCharacteristic(BridgeID);
         informationService.addOptionalCharacteristic(PluginID);
         informationService.addOptionalCharacteristic(DeviceID);
 
@@ -543,19 +540,14 @@ export default class Server extends EventEmitter {
             informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
         }
 
-        informationService.updateCharacteristic(BridgeID, State.id);
-        informationService.updateCharacteristic(PluginID, identifier);
+        informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
         informationService.updateCharacteristic(DeviceID, accessory.UUID);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
             if (data && data.newValue !== data.oldValue) {
-                this.client.accessory(State.id, Client.identifier(State.id, accessory.UUID)).then((service) => {
-                    if (service) {
-                        service.refresh().finally(() => {
-                            this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                        });
-                    }
-                });
+                const service = this.accessories.get(Accessories.identifier(State.id, accessory.UUID));
+
+                if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
             }
         });
 
@@ -574,9 +566,7 @@ export default class Server extends EventEmitter {
 
             if (plugin) {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
-                const identifier = plugin.getPluginIdentifier();
 
-                informationService.addOptionalCharacteristic(BridgeID);
                 informationService.addOptionalCharacteristic(PluginID);
                 informationService.addOptionalCharacteristic(DeviceID);
 
@@ -584,8 +574,7 @@ export default class Server extends EventEmitter {
                     informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
                 }
 
-                informationService.updateCharacteristic(BridgeID, State.id);
-                informationService.updateCharacteristic(PluginID, identifier);
+                informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
                 informationService.updateCharacteristic(DeviceID, accessory._associatedHAPAccessory.UUID);
 
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
@@ -596,13 +585,9 @@ export default class Server extends EventEmitter {
 
                 accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
                     if (data && data.newValue !== data.oldValue) {
-                        this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                            if (service) {
-                                service.refresh().finally(() => {
-                                    this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                                });
-                            }
-                        });
+                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
+
+                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
                     }
                 });
             } else {
