@@ -86,8 +86,8 @@ export default class Accessories {
         return accessories;
     }
 
-    private loadOne(accessory: string): { [key: string]: any }[] {
-        return State.homebridge?.getAccessories.filter((item) => item.UUID === accessory).map((cached) => this.seralizeAccessory(cached)) || [];
+    private loadOne(accessory: string): { [key: string]: any } {
+        return this.transform(State.homebridge?.getAccessories.filter((item) => item.UUID === accessory).map((cached) => this.seralizeAccessory(cached)) || [])[0];
     }
 
     private seralizeAccessory(cached: PlatformAccessory | Accessory): { [key: string]: any } {
@@ -225,19 +225,11 @@ export default class Accessories {
 
         if (accessory.type !== "bridge") {
             accessory.refresh = (): { [key: string]: any } => {
-                this.loadOne(accessory.uuid).forEach((update) => {
-                    update.services.forEach((service: { [key: string]: any }) => {
-                        service.characteristics.forEach((characteristic: { [key: string]: any }) => {
-                            const index = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.uuid === characteristic.uuid);
+                const updated = this.loadOne(accessory.uuid);
 
-                            if (index >= 0) accessory.characteristics[index].value = characteristic.value;
-                        });
-                    });
-                });
+                if (updated) this.cache(updated);
 
-                this.cache(accessory);
-
-                return accessory;
+                return updated;
             };
 
             accessory.set = (type: string, value: any): { [key: string]: any } => {

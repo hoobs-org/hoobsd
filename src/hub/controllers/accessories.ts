@@ -603,19 +603,11 @@ export default class AccessoriesController {
         let results: any[] = [];
 
         if (bridge) {
-            let accessories = await State.socket?.fetch(bridge, "accessories:list");
-
-            if (accessories) results = results.concat(accessories);
-
-            accessories = undefined;
+            results = results.concat((await State.socket?.fetch(bridge, "accessories:list")) || []);
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    let accessories = await State.socket?.fetch(State.bridges[i].id, "accessories:list");
-
-                    if (accessories) results = results.concat(accessories);
-
-                    accessories = undefined;
+                    results = results.concat((await State.socket?.fetch(State.bridges[i].id, "accessories:list")) || []);
                 }
             }
         }

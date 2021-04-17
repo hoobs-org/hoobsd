@@ -35,6 +35,8 @@ export default class Cache {
     }
 
     set(key: string, value: unknown, age: number): boolean {
+        this.client.del(key);
+
         return this.client.set(key, value, (age || 30) * 60);
     }
 
