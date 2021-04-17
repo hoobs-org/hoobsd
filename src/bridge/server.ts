@@ -633,18 +633,34 @@ export default class Server extends EventEmitter {
             }
 
             const plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
+            const informationService = hapAccessory.getService(Service.AccessoryInformation)!;
+
+            informationService.addOptionalCharacteristic(PluginID);
+            informationService.addOptionalCharacteristic(DeviceID);
 
             if (plugin) {
-                const informationService = hapAccessory.getService(Service.AccessoryInformation)!;
-
                 if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
+
+                informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
             } else if (PluginManager.isQualifiedPluginIdentifier(accessory._associatedPlugin!)) {
                 Console.warn("A platform configured a external accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
             }
 
+            informationService.updateCharacteristic(DeviceID, accessory.UUID);
+
+            hapAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                if (data && data.newValue !== data.oldValue) {
+                    const service = this.accessories.get(Accessories.identifier(State.id, accessory.UUID));
+
+                    if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
+                }
+            });
+
             hapAccessory.on(AccessoryEventTypes.LISTENING, (port: number) => {
                 Console.info("%s is running on port %s.", hapAccessory.displayName, port);
             });
+
+            this.cachedLegacyAccessories.push(hapAccessory);
 
             hapAccessory.publish({
                 username: advertiseAddress,
