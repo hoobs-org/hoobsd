@@ -31,6 +31,7 @@ export default class AccessoriesController {
         State.app?.get("/api/accessories/hidden", Security, (request, response) => this.hidden(request, response));
         State.app?.get("/api/accessories/:bridge", Security, (request, response) => this.list(request, response));
         State.app?.get("/api/accessory/:bridge/:id", Security, (request, response) => this.get(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/snapshot", Security, (request, response) => this.snapshot(request, response));
         State.app?.get("/api/accessory/:bridge/:id/characteristics", Security, (request, response) => this.characteristics(request, response));
         State.app?.put("/api/accessory/:bridge/:id/:service", Security, (request, response) => this.set(request, response));
         State.app?.get("/api/rooms", Security, (request, response) => this.rooms(request, response));
@@ -160,6 +161,10 @@ export default class AccessoriesController {
         }
 
         response.send(accessory);
+    }
+
+    async snapshot(request: Request, response: Response): Promise<void> {
+        response.send({ image: await State.socket?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id }) });
     }
 
     async set(request: Request, response: Response): Promise<void> {

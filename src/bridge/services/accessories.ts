@@ -251,6 +251,27 @@ export default class Accessories {
             };
 
             accessory.get = (type: string): { [key: string]: any } | undefined => accessory.characteristics.find((c: { [key: string]: any }) => c.type === type);
+
+            if (accessory.type === "camera") {
+                accessory.snapshot = (): Promise<string | undefined> => new Promise((resolve) => {
+                    const cached = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
+
+                    // @ts-ignore
+                    const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
+
+                    if (context && context.controller) {
+                        if (context.controller.cachedSnapshot) {
+                            try {
+                                resolve(context.controller.cachedSnapshot.toString("base64"));
+                            } catch (_error) {
+                                resolve(undefined);
+                            }
+                        } else {
+                            context.controller.handleSnapshotRequest(480, 640, accessory.name).then((data: Buffer) => resolve(data.toString("base64"))).catch(() => resolve(undefined));
+                        }
+                    }
+                });
+            }
         }
     }
 
