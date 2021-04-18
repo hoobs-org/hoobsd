@@ -451,7 +451,7 @@ export default class API extends EventEmitter {
             this.streams.splice(index, 1);
         }
 
-        Process.execSync(`rm -f ${Path.join(Paths.streams, `${bridge}_${id}*`)}`);
+        Process.execSync(`rm -f ${Path.join(Paths.streams, `${id}*`)}`);
     }
 
     async start(): Promise<void> {

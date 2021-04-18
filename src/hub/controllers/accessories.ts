@@ -193,10 +193,10 @@ export default class AccessoriesController {
                     "10",
                     "-start_number",
                     "1",
-                    join(Paths.streams, `${request.params.bridge}_${request.params.id}.m3u8`),
+                    join(Paths.streams, `${request.params.id}.m3u8`),
                 ]);
 
-                response.send(`${request.params.bridge}_${request.params.id}.m3u8`);
+                response.send(`${request.params.id}.m3u8`);
             } else {
                 response.send(undefined);
             }
