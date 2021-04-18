@@ -29,6 +29,7 @@ export default class AccessoriesController {
         State.socket?.route("accessories:list", (request, response) => this.list(request, response));
         State.socket?.route("accessory:get", (request, response) => this.get(request, response));
         State.socket?.route("accessory:set", (request, response) => this.set(request, response));
+        State.socket?.route("accessory:stream", (request, response) => this.stream(request, response));
         State.socket?.route("accessory:snapshot", (request, response) => this.snapshot(request, response));
         State.socket?.route("accessory:characteristics", (request, response) => this.characteristics(request, response));
     }
@@ -51,6 +52,16 @@ export default class AccessoriesController {
             response.send(service.refresh());
         } else {
             response.send(undefined);
+        }
+    }
+
+    stream(request: IPCRequest, response: IPCResponse): void {
+        const accessory = State.homebridge?.accessories.get(request.params?.id);
+
+        if (!accessory || accessory.type !== "camera") {
+            response.send(undefined);
+        } else {
+            response.send(accessory.stream());
         }
     }
 

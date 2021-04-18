@@ -46,10 +46,10 @@ export default class Accessories {
         return results;
     }
 
-    public get(uuid: string, reload?: boolean): { [key: string]: any } | undefined {
-        if (!uuid || uuid === "") return undefined;
+    public get(id: string, reload?: boolean): { [key: string]: any } | undefined {
+        if (!id || id === "") return undefined;
 
-        const result = this.load(reload).find((item) => item.accessory_identifier === uuid);
+        const result = this.load(reload).find((item) => item.accessory_identifier === id);
 
         if (!result) return undefined;
 
@@ -260,23 +260,38 @@ export default class Accessories {
                     const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
 
                     if (context && context.controller) {
-                        if (context.controller.cachedSnapshot) {
-                            try {
+                        context.controller.delegate.handleSnapshotRequest({ width: 640, height: 360 }, (_error: any, buffer: Buffer) => {
+                            if (!buffer && context.controller.cachedSnapshot) {
                                 resolve(context.controller.cachedSnapshot.toString("base64"));
-                            } catch (_error) {
+                            } else if (buffer) {
+                                resolve(buffer.toString("base64"));
+                            } else {
                                 resolve(undefined);
                             }
-                        } else {
-                            context.controller.handleSnapshotRequest(480, 640, accessory.name).then((data: Buffer) => resolve(data.toString("base64"))).catch(() => resolve(undefined));
-                        }
+                        });
                     }
                 });
+
+                accessory.stream = (): string | undefined => {
+                    const cached = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
+
+                    // @ts-ignore
+                    const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
+
+                    if (context && context.controller && context.controller.delegate.videoConfig) {
+                        const matches = (` ${context.controller.delegate.videoConfig.source} `).match(/(rtsp)+[:.].*?(?=\s)/i);
+
+                        if (matches) return matches[0];
+                    }
+
+                    return undefined;
+                };
             }
         }
     }
 
-    static identifier(bridge: string, uuid?: string): string {
-        const hash = createHash("md5").update(`${bridge}-${uuid || ""}`).digest("hex");
+    static identifier(bridge: string, id?: string): string {
+        const hash = createHash("md5").update(`${bridge}-${id || ""}`).digest("hex");
 
         return `${hash.substr(0, 8)}-${hash.substr(8, 4)}-${hash.substr(12, 4)}-${hash.substr(16, 4)}-${hash.substr(20)}`;
     }
