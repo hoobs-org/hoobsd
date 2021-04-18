@@ -141,6 +141,9 @@ class Logger {
             if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bgit.io\b).*$/gmi)) return;
 
             data = {
                 level,
