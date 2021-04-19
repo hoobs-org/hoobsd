@@ -16,37 +16,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Axios from "axios";
-import { Console } from "../services/logger";
+/* eslint-disable max-classes-per-file */
 
-export default class Ring {
-    static async login(username: string, password: string, verification?: string): Promise<any> {
-        let results;
+import { Characteristic, Formats, Perms } from "hap-nodejs";
 
-        try {
-            results = await Axios.post("https://oauth.ring.com/oauth/token", {
-                client_id: "ring_official_android",
-                scope: "client",
-                grant_type: "password",
-                password,
-                username,
-            },
-            { headers: { "content-type": "application/json", "2fa-support": "true", "2fa-code": verification || "" } });
+export class PluginID extends Characteristic {
+    static readonly UUID: string = "00000004-0000-1000-8000-0026BB765291";
 
-            return results.data;
-        } catch (error) {
-            if (error.response && error.response.status === 412) {
-                return { status: 412 };
-            }
+    constructor() {
+        super("Plugin ID", "00000004-0000-1000-8000-0026BB765291", {
+            format: Formats.STRING,
+            perms: [Perms.PAIRED_READ, Perms.NOTIFY],
+        });
 
-            if (error.response && error.response.data) {
-                return error.response.data;
-            }
+        this.value = this.getDefaultValue();
+    }
+}
 
-            Console.error("ring login failed");
-            Console.error(error.message);
+export class DeviceID extends Characteristic {
+    static readonly UUID: string = "00000003-0000-1000-8000-0026BB765291";
 
-            return { error };
-        }
+    constructor() {
+        super("Device ID", "00000003-0000-1000-8000-0026BB765291", {
+            format: Formats.STRING,
+            perms: [Perms.PAIRED_READ, Perms.NOTIFY],
+        });
+
+        this.value = this.getDefaultValue();
     }
 }

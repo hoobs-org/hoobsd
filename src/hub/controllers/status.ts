@@ -19,7 +19,6 @@
 import SystemInfo from "systeminformation";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
-import Socket from "../services/socket";
 import System from "../../services/system";
 import Security from "../../services/security";
 
@@ -34,7 +33,7 @@ export default class StatusController {
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await Socket.fetch(State.bridges[i].id, "status:get");
+                const status = await State.socket?.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
                     results[State.bridges[i].id] = {

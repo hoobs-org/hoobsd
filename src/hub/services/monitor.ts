@@ -19,44 +19,59 @@
 import SystemInfo from "systeminformation";
 import State from "../../state";
 import { Console, Events } from "../../services/logger";
-import Socket from "./socket";
 
 const DEFAULT_POLLING = 5;
 
 export default async function Monitor() {
+    const waits: Promise<void>[] = [];
     const results: { [key: string]: any } = {};
 
     for (let i = 0; i < State.bridges.length; i += 1) {
         if (State.bridges[i].type !== "hub") {
-            const status = await Socket.fetch(State.bridges[i].id, "status:get");
+            waits.push(new Promise((resolve) => {
+                State.socket?.fetch(State.bridges[i].id, "status:get").then((status) => {
+                    if (status) {
+                        results[State.bridges[i].id] = {
+                            version: status.version,
+                            running: status.running,
+                            status: status.status,
+                            display: State.bridges[i].display,
+                            uptime: status.uptime,
+                            heap: status.heap,
+                        };
+                    } else {
+                        results[State.bridges[i].id] = {
+                            running: false,
+                            status: "unavailable",
+                            display: "Unavailable",
+                            uptime: 0,
+                            heap: 0,
+                        };
+                    }
 
-            if (status) {
-                results[State.bridges[i].id] = {
-                    version: status.version,
-                    running: status.running,
-                    status: status.status,
-                    display: State.bridges[i].display,
-                    uptime: status.uptime,
-                };
-            } else {
-                results[State.bridges[i].id] = {
-                    running: false,
-                    status: "unavailable",
-                    display: "Unavailable",
-                    uptime: 0,
-                };
-            }
+                    resolve();
+                });
+            }));
         }
     }
 
-    Console.emit(Events.MONITOR, "hub", {
-        bridges: results,
-        cpu: await SystemInfo.currentLoad(),
-        memory: await SystemInfo.mem(),
-        temp: await SystemInfo.cpuTemperature(),
-    });
+    let cpu: SystemInfo.Systeminformation.CurrentLoadData | undefined;
+    let memory: SystemInfo.Systeminformation.MemData | undefined;
+    let temp: SystemInfo.Systeminformation.CpuTemperatureData | undefined;
 
-    setTimeout(() => {
-        Monitor();
-    }, (State.hub?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
+    waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((value) => { cpu = value; }).finally(() => resolve())));
+    waits.push(new Promise((resolve) => SystemInfo.mem().then((value) => { memory = value; }).finally(() => resolve())));
+    waits.push(new Promise((resolve) => SystemInfo.cpuTemperature().then((value) => { temp = value; }).finally(() => resolve())));
+
+    Promise.all(waits).then(() => {
+        Console.emit(Events.MONITOR, "hub", {
+            bridges: results,
+            cpu,
+            memory,
+            temp,
+            heap: process.memoryUsage().heapUsed,
+        });
+
+        setTimeout(() => Monitor(), (State.hub?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
+    });
 }

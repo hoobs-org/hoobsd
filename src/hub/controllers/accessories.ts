@@ -17,10 +17,10 @@
  **************************************************************************************************/
 
 import _ from "lodash";
+import ffmpeg from "fluent-ffmpeg";
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Security from "../../services/security";
-import Socket from "../services/socket";
 import Paths from "../../services/paths";
 import { Console, Events } from "../../services/logger";
 import { jsonEquals } from "../../services/json";
@@ -32,6 +32,8 @@ export default class AccessoriesController {
         State.app?.get("/api/accessories/hidden", Security, (request, response) => this.hidden(request, response));
         State.app?.get("/api/accessories/:bridge", Security, (request, response) => this.list(request, response));
         State.app?.get("/api/accessory/:bridge/:id", Security, (request, response) => this.get(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/stream", (request, response) => this.stream(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/snapshot", Security, (request, response) => this.snapshot(request, response));
         State.app?.get("/api/accessory/:bridge/:id/characteristics", Security, (request, response) => this.characteristics(request, response));
         State.app?.put("/api/accessory/:bridge/:id/:service", Security, (request, response) => this.set(request, response));
         State.app?.get("/api/rooms", Security, (request, response) => this.rooms(request, response));
@@ -153,7 +155,7 @@ export default class AccessoriesController {
 
     async get(request: Request, response: Response, push?: boolean, value?: any): Promise<void> {
         const working = AccessoriesController.layout;
-        const accessory = await Socket.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
+        const accessory = await State.socket?.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
 
         if (accessory) {
             if (working.accessories[accessory.accessory_identifier]) _.extend(accessory, working.accessories[accessory.accessory_identifier]);
@@ -161,6 +163,45 @@ export default class AccessoriesController {
         }
 
         response.send(accessory);
+    }
+
+    async stream(request: Request, response: Response): Promise<void> {
+        const source = await State.socket?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
+
+        if (source) {
+            const stream = ffmpeg(source, { timeout: 432000 });
+
+            stream.addOutputOptions("-movflags +frag_keyframe+separate_moof+omit_tfhd_offset+empty_moov");
+            stream.addOptions("-preset veryfast");
+            stream.format("mp4");
+
+            stream.audioCodec("aac");
+            stream.audioBitrate("160000");
+            stream.audioChannels(2);
+
+            stream.size("640x360");
+            stream.videoCodec("libx264");
+            stream.videoBitrate(1024);
+
+            stream.on("end", () => {
+                stream.kill("SIGTERM");
+            });
+
+            stream.on("error", (error) => {
+                Console.debug(error.message);
+                stream.kill("SIGTERM");
+            });
+
+            Console.debug("Output stream opened");
+
+            stream.pipe(response, { end: true });
+        } else {
+            response.send(undefined);
+        }
+    }
+
+    async snapshot(request: Request, response: Response): Promise<void> {
+        response.send({ image: await State.socket?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id }) });
     }
 
     async set(request: Request, response: Response): Promise<void> {
@@ -282,13 +323,13 @@ export default class AccessoriesController {
                 break;
 
             default:
-                response.send(await Socket.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
+                response.send(await State.socket?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
                 break;
         }
     }
 
     async characteristics(request: Request, response: Response): Promise<void> {
-        response.send(await Socket.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
+        response.send(await State.socket?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
     }
 
     async rooms(_request: Request, response: Response): Promise<Response> {
@@ -541,7 +582,7 @@ export default class AccessoriesController {
                             value: 0,
                         });
 
-                        await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
+                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
                     }
                 }
 
@@ -561,7 +602,7 @@ export default class AccessoriesController {
                             value,
                         });
 
-                        await Socket.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
+                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
                     }
                 }
 
@@ -604,23 +645,17 @@ export default class AccessoriesController {
         let results: any[] = [];
 
         if (bridge) {
-            const accessories = await Socket.fetch(bridge, "accessories:list");
-
-            if (accessories) results = [...results, ...accessories];
+            results = results.concat((await State.socket?.fetch(bridge, "accessories:list")) || []);
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    const accessories = await Socket.fetch(State.bridges[i].id, "accessories:list");
-
-                    if (accessories) results = [...results, ...accessories];
+                    results = results.concat((await State.socket?.fetch(State.bridges[i].id, "accessories:list")) || []);
                 }
             }
         }
 
         for (let i = 0; i < results.length; i += 1) {
-            if (working.accessories[results[i].accessory_identifier]) {
-                _.extend(results[i], working.accessories[results[i].accessory_identifier]);
-            }
+            if (working.accessories[results[i].accessory_identifier]) _.extend(results[i], working.accessories[results[i].accessory_identifier]);
         }
 
         return results;

@@ -40,7 +40,7 @@ export default class UsersController {
     }
 
     get(request: Request, response: Response): void {
-        if (!request.user?.permissions.users) {
+        if (!request.user?.permissions?.users) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -68,7 +68,7 @@ export default class UsersController {
     }
 
     async create(request: Request, response: Response): Promise<void> {
-        if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.permissions.users)) {
+        if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.permissions?.users)) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -123,7 +123,7 @@ export default class UsersController {
     }
 
     async update(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.users && request.user?.id !== parseInt(request.params.id, 10)) {
+        if (!request.user?.permissions?.users && request.user?.id !== parseInt(request.params.id, 10)) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -173,7 +173,7 @@ export default class UsersController {
     }
 
     delete(request: Request, response: Response): void {
-        if (!request.user?.permissions.users) {
+        if (!request.user?.permissions?.users) {
             response.send({
                 token: false,
                 error: "Unauthorized.",

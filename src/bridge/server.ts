@@ -20,14 +20,7 @@
 import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
-
-import {
-    existsSync,
-    readFileSync,
-    writeFileSync,
-    copyFileSync,
-    unlinkSync,
-} from "fs-extra";
+import { existsSync, copyFileSync, unlinkSync } from "fs-extra";
 
 import {
     Accessory,
@@ -67,11 +60,12 @@ import { User } from "homebridge/lib/user";
 import * as mac from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
+import { DeviceID, PluginID } from "./services/extentions";
 import Paths from "../services/paths";
 import State from "../state";
 import Plugins from "../services/plugins";
 import Config from "../services/config";
-import Client from "./services/client";
+import Accessories from "./services/accessories";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 
@@ -89,7 +83,7 @@ export default class Server extends EventEmitter {
 
     public readonly instance: BridgeRecord | undefined;
 
-    public readonly client: Client;
+    public readonly accessories: Accessories;
 
     private readonly api: HomebridgeAPI;
 
@@ -99,17 +93,15 @@ export default class Server extends EventEmitter {
 
     private readonly config: HomebridgeConfig;
 
-    private readonly keepOrphanedCachedAccessories: boolean;
+    private readonly externalPorts: ExternalPortService;
 
-    private readonly allowInsecureAccess: boolean;
+    private hapAccessories: (PlatformAccessory | Accessory)[] = [];
 
-    private readonly externalPortService: ExternalPortService;
-
-    private cachedPlatformAccessories: PlatformAccessory[] = [];
+    private platformAccessories: PlatformAccessory[] = [];
 
     private development = false;
 
-    private readonly publishedExternalAccessories: Map<MacAddress, PlatformAccessory> = new Map();
+    private readonly unbridgedAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
     constructor(port?: number, development?: boolean) {
         super();
@@ -137,12 +129,7 @@ export default class Server extends EventEmitter {
             platforms: [],
         };
 
-        if (this.instance?.ports?.start && this.instance?.ports?.start) {
-            this.config.ports = {
-                start: this.instance.ports.start,
-                end: this.instance.ports.end,
-            };
-        }
+        if (this.instance?.ports?.start && this.instance?.ports?.start) this.config.ports = { start: this.instance.ports.start, end: this.instance.ports.end };
 
         this.config = _.extend(this.config, Config.configuration());
 
@@ -156,27 +143,23 @@ export default class Server extends EventEmitter {
 
         this.settings = this.config.bridge;
         this.port = port || 51826;
-        this.keepOrphanedCachedAccessories = false;
-        this.allowInsecureAccess = true;
-        this.externalPortService = new ExternalPortService(this.config.ports);
+        this.externalPorts = new ExternalPortService(this.config.ports);
         this.api = new HomebridgeAPI();
-        this.client = new Client();
+        this.accessories = new Accessories();
 
-        this.api.on(InternalAPIEvent.REGISTER_PLATFORM_ACCESSORIES, this.handleRegisterPlatformAccessories.bind(this));
-        this.api.on(InternalAPIEvent.UPDATE_PLATFORM_ACCESSORIES, this.handleUpdatePlatformAccessories.bind(this));
-        this.api.on(InternalAPIEvent.UNREGISTER_PLATFORM_ACCESSORIES, this.handleUnregisterPlatformAccessories.bind(this));
-        this.api.on(InternalAPIEvent.PUBLISH_EXTERNAL_ACCESSORIES, this.handlePublishExternalAccessories.bind(this));
+        this.api.on(InternalAPIEvent.REGISTER_PLATFORM_ACCESSORIES, (accessories) => this.handleRegisterPlatformAccessories(accessories));
+        this.api.on(InternalAPIEvent.UPDATE_PLATFORM_ACCESSORIES, () => this.handleUpdatePlatformAccessories());
+        this.api.on(InternalAPIEvent.UNREGISTER_PLATFORM_ACCESSORIES, (accessories) => this.handleUnregisterPlatformAccessories(accessories));
+        this.api.on(InternalAPIEvent.PUBLISH_EXTERNAL_ACCESSORIES, (accessories) => this.handlePublishExternalAccessories(accessories));
 
-        const pluginManagerOptions: PluginManagerOptions = {
-            customPluginPath: join(Paths.data(State.id), "node_modules"),
-        };
+        const pluginManagerOptions: PluginManagerOptions = { customPluginPath: join(Paths.data(State.id), "node_modules") };
 
         this.pluginManager = new PluginManager(this.api, pluginManagerOptions);
         this.bridge = new Bridge(this.settings.name, uuid.generate("HomeBridge"));
     }
 
     public async start(): Promise<void> {
-        const promises: Promise<void>[] = [];
+        let promises: Promise<void>[] = [];
 
         await Plugins.linkLibs(State.id);
 
@@ -202,7 +185,6 @@ export default class Server extends EventEmitter {
 
                     try {
                         plugin.load();
-
                         Console.info(`Loaded plugin '${plugins[i].identifier}'`);
                     } catch (error) {
                         Console.error(`Error loading plugin "${plugins[i].identifier}"`);
@@ -236,10 +218,7 @@ export default class Server extends EventEmitter {
         this.pluginManager.currentInitializingPlugin = undefined;
 
         // @ts-ignore
-        if (this.pluginManager.plugins.size === 0) {
-            Console.warn("No plugins installed.");
-        }
-
+        if (this.pluginManager.plugins.size === 0) Console.warn("No plugins installed.");
         if (this.config.platforms.length > 0) promises.push(...this.loadPlatforms());
         if (this.config.accessories.length > 0) this.loadAccessories();
 
@@ -247,6 +226,8 @@ export default class Server extends EventEmitter {
         this.api.signalFinished();
 
         await Promise.all(promises);
+
+        promises = [];
 
         this.publishBridge();
         this.running = true;
@@ -257,14 +238,13 @@ export default class Server extends EventEmitter {
     public stop(): Promise<void> {
         return new Promise((resolve) => {
             this.running = false;
-
-            this.saveCachedPlatformAccessoriesOnDisk();
             this.bridge.unpublish();
 
-            for (const accessory of this.publishedExternalAccessories.values()) {
+            for (const accessory of this.unbridgedAccessories.values()) {
                 accessory._associatedHAPAccessory.unpublish();
             }
 
+            this.saveCachedPlatformAccessoriesOnDisk();
             this.api.signalShutdown();
 
             setTimeout(() => {
@@ -275,8 +255,6 @@ export default class Server extends EventEmitter {
                 } catch (error) {
                     Console.warn(error.message);
                 }
-
-                this.cachedPlatformAccessories = [];
 
                 resolve();
             }, INSTANCE_KILL_DELAY);
@@ -305,9 +283,7 @@ export default class Server extends EventEmitter {
         info.setCharacteristic(Characteristic.SerialNumber, this.settings.username);
         info.setCharacteristic(Characteristic.FirmwareRevision, State.version);
 
-        this.bridge.on(AccessoryEventTypes.LISTENING, (port: number) => {
-            Console.info("Homebridge is running on port %s.", port);
-        });
+        this.bridge.on(AccessoryEventTypes.LISTENING, (port: number) => Console.info(`Bridge is running on port ${port}.`));
 
         const publishInfo: PublishInfo = {
             username: this.settings.username,
@@ -315,35 +291,34 @@ export default class Server extends EventEmitter {
             pincode: this.settings.pin,
             category: Categories.BRIDGE,
             bind: this.settings.bind,
-            mdns: this.config.mdns,
             addIdentifyingMaterial: true,
             advertiser: this.settings.advertiser,
         };
 
         if (this.settings.setupID && this.settings.setupID.length === 4) publishInfo.setupID = this.settings.setupID;
 
-        this.bridge.publish(publishInfo, this.allowInsecureAccess);
+        this.bridge.publish(publishInfo, false);
         this.emit(Events.PUBLISH_SETUP_URI, this.setupURI());
     }
 
-    private async loadCachedPlatformAccessoriesFromDisk(): Promise<void> {
+    public get getAccessories(): (PlatformAccessory | Accessory)[] {
+        return this.hapAccessories.concat(this.platformAccessories || []);
+    }
+
+    private loadCachedPlatformAccessoriesFromDisk(): void {
         const backup = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, ".cachedAccessories.bak"), [], undefined, true);
         const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
 
         if (cached && cached.length > 0) {
-            this.cachedPlatformAccessories = cached.map((serialized) => {
+            this.platformAccessories = cached.map((serialized) => {
                 const accessory = PlatformAccessory.deserialize(serialized);
 
                 accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                    this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                        if (service) {
-                            service.refresh((results: any) => {
-                                service.values = results.values;
-                            }).finally(() => {
-                                this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                            });
-                        }
-                    });
+                    if (data && data.newValue !== data.oldValue) {
+                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
+
+                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
+                    }
                 });
 
                 return accessory;
@@ -353,8 +328,12 @@ export default class Server extends EventEmitter {
         }
     }
 
+    public saveCachedPlatformAccessoriesOnDisk(): void {
+        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.platformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
+    }
+
     private restoreCachedPlatformAccessories(): void {
-        this.cachedPlatformAccessories = this.cachedPlatformAccessories.filter((accessory) => {
+        this.platformAccessories = this.platformAccessories.filter((accessory) => {
             let plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
 
             if (!plugin) {
@@ -369,15 +348,24 @@ export default class Server extends EventEmitter {
 
             const platformPlugins = plugin && plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
+            if (plugin) {
+                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    if (data && data.newValue !== data.oldValue) {
+                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
+
+                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
+                    }
+                });
+            }
+
             if (!platformPlugins) {
                 Console.info(`Failed to find plugin to handle accessory ${accessory._associatedHAPAccessory.displayName}`);
 
-                if (!this.keepOrphanedCachedAccessories) return false;
-            } else {
-                accessory.getService(Service.AccessoryInformation)!.setCharacteristic(Characteristic.FirmwareRevision, plugin!.version);
-
-                platformPlugins.configureAccessory(accessory);
+                return false;
             }
+
+            accessory.getService(Service.AccessoryInformation)!.setCharacteristic(Characteristic.FirmwareRevision, plugin!.version);
+            platformPlugins.configureAccessory(accessory);
 
             try {
                 this.bridge.addBridgedAccessory(accessory._associatedHAPAccessory);
@@ -387,10 +375,6 @@ export default class Server extends EventEmitter {
 
             return true;
         });
-    }
-
-    private saveCachedPlatformAccessoriesOnDisk(): void {
-        Paths.saveJson(join(Paths.accessories, "cachedAccessories"), this.cachedPlatformAccessories.map((accessory) => PlatformAccessory.serialize(accessory)), false, undefined, true);
     }
 
     private loadAccessories(): void {
@@ -420,9 +404,10 @@ export default class Server extends EventEmitter {
             const accessory = this.createHAPAccessory(plugin, accessoryInstance, displayName, accessoryIdentifier, accessoryConfig.uuid_base);
 
             if (accessory) {
+                this.hapAccessories.push(accessory);
                 this.bridge.addBridgedAccessory(accessory);
             } else {
-                logger("Accessory %s returned empty set of services. Won't adding it to the bridge!", accessoryIdentifier);
+                logger(`Accessory ${accessoryIdentifier} returned empty set of services. Won't adding it to the bridge.`);
             }
         });
     }
@@ -475,7 +460,7 @@ export default class Server extends EventEmitter {
                     if (accessory) {
                         this.bridge.addBridgedAccessory(accessory);
                     } else {
-                        logger("Platform %s returned an accessory at index %d with an empty set of services. Won't adding it to the bridge!", platformType, index);
+                        logger(`Platform %${platformType} returned an accessory at index ${index} with an empty set of services. Won't adding it to the bridge.`);
                     }
                 });
 
@@ -510,9 +495,9 @@ export default class Server extends EventEmitter {
         }
 
         const informationService = accessory.getService(Service.AccessoryInformation)!;
-        const identifier = plugin.getPluginIdentifier();
 
-        informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
+        informationService.addOptionalCharacteristic(PluginID);
+        informationService.addOptionalCharacteristic(DeviceID);
 
         services.forEach((service) => {
             if (service instanceof Service.AccessoryInformation) {
@@ -525,69 +510,55 @@ export default class Server extends EventEmitter {
             }
         });
 
-        if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
-            informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
-        }
+        if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
 
-        informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory.UUID}`);
+        informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
+        informationService.updateCharacteristic(DeviceID, accessory.UUID);
 
         accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-            this.client.accessory(State.id, Client.identifier(State.id, accessory.UUID)).then((service) => {
-                if (service) {
-                    service.refresh((results: any) => {
-                        service.values = results.values;
-                    }).finally(() => {
-                        this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                    });
-                }
-            });
+            if (data && data.newValue !== data.oldValue) {
+                const service = this.accessories.get(Accessories.identifier(State.id, accessory.UUID));
+
+                if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
+            }
         });
 
-        controllers.forEach((controller) => {
-            accessory.configureController(controller);
-        });
+        controllers.forEach((controller) => accessory.configureController(controller));
 
         return accessory;
     }
 
     private handleRegisterPlatformAccessories(accessories: PlatformAccessory[]): void {
         const hapAccessories = accessories.map((accessory) => {
-            this.cachedPlatformAccessories.push(accessory);
+            this.platformAccessories.push(accessory);
 
             const plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
 
             if (plugin) {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
-                const identifier = plugin.getPluginIdentifier();
 
-                informationService.addOptionalCharacteristic(Characteristic.AccessoryIdentifier);
+                informationService.addOptionalCharacteristic(PluginID);
+                informationService.addOptionalCharacteristic(DeviceID);
 
-                if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") {
-                    informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
-                }
+                if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
 
-                informationService.updateCharacteristic(Characteristic.AccessoryIdentifier, `${identifier}|${accessory._associatedHAPAccessory.UUID}`);
+                informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
+                informationService.updateCharacteristic(DeviceID, accessory._associatedHAPAccessory.UUID);
 
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
-                if (!platforms) {
-                    Console.warn("The plugin '%s' registered a new accessory for the platform '%s'. The platform couldn't be found though!", accessory._associatedPlugin!, accessory._associatedPlatform!);
-                }
-            } else {
-                Console.warn("A platform configured a new accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
-            }
+                if (!platforms) Console.warn(`The plugin "${accessory._associatedPlugin!}" registered a new accessory for the platform "${accessory._associatedPlatform!}". The platform couldn't be found though.`);
 
-            accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                this.client.accessory(State.id, Client.identifier(State.id, accessory._associatedHAPAccessory.UUID)).then((service) => {
-                    if (service) {
-                        service.refresh((results: any) => {
-                            service.values = results.values;
-                        }).finally(() => {
-                            this.emit(Events.ACCESSORY_CHANGE, service, data.newValue);
-                        });
+                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    if (data && data.newValue !== data.oldValue) {
+                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
+
+                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
                     }
                 });
-            });
+            } else {
+                Console.warn(`A platform configured a new accessory under the plugin name "${accessory._associatedPlugin}". However no loaded plugin could be found for the name.`);
+            }
 
             return accessory._associatedHAPAccessory;
         });
@@ -596,15 +567,15 @@ export default class Server extends EventEmitter {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 
-    private handleUpdatePlatformAccessories(accessories: PlatformAccessory[]): void {
+    private handleUpdatePlatformAccessories(): void {
         this.saveCachedPlatformAccessoriesOnDisk();
     }
 
     private handleUnregisterPlatformAccessories(accessories: PlatformAccessory[]): void {
         const hapAccessories = accessories.map((accessory) => {
-            const index = this.cachedPlatformAccessories.indexOf(accessory);
+            const index = this.platformAccessories.indexOf(accessory);
 
-            if (index >= 0) this.cachedPlatformAccessories.splice(index, 1);
+            if (index >= 0) this.platformAccessories.splice(index, 1);
 
             return accessory._associatedHAPAccessory;
         });
@@ -614,40 +585,54 @@ export default class Server extends EventEmitter {
     }
 
     private async handlePublishExternalAccessories(accessories: PlatformAccessory[]): Promise<void> {
-        const accessoryPin = this.config.bridge.pin;
+        for (let i = 0; i < accessories.length; i += 1) {
+            const accessory = accessories[i]._associatedHAPAccessory;
+            const username = mac.generate(accessory.UUID);
 
-        for (const accessory of accessories) {
-            const hapAccessory = accessory._associatedHAPAccessory;
-            const advertiseAddress = mac.generate(hapAccessory.UUID);
-            const accessoryPort = await this.externalPortService.requestPort(advertiseAddress);
-
-            if (this.publishedExternalAccessories.has(advertiseAddress)) {
-                throw new Error(`Accessory ${hapAccessory.displayName} experienced an address collision.`);
+            if (this.unbridgedAccessories.has(username)) {
+                Console.error(`Accessory ${accessory.displayName} experienced an address collision.`);
             } else {
-                this.publishedExternalAccessories.set(advertiseAddress, accessory);
+                this.unbridgedAccessories.set(username, accessories[i]);
+
+                const plugin = this.pluginManager.getPlugin(accessories[i]._associatedPlugin!);
+
+                if (plugin) {
+                    const informationService = accessory.getService(Service.AccessoryInformation)!;
+
+                    informationService.addOptionalCharacteristic(PluginID);
+                    informationService.addOptionalCharacteristic(DeviceID);
+
+                    if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
+
+                    informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
+
+                    informationService.updateCharacteristic(DeviceID, accessories[i].UUID);
+
+                    accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                        if (data && data.newValue !== data.oldValue) {
+                            const service = this.accessories.get(Accessories.identifier(State.id, accessories[i].UUID));
+
+                            if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
+                        }
+                    });
+
+                    accessory.on(AccessoryEventTypes.LISTENING, (port: number) => Console.info(`${accessory.displayName} is running on port ${port}.`));
+
+                    this.hapAccessories.push(accessory);
+
+                    accessory.publish({
+                        username,
+                        pincode: this.config.bridge.pin,
+                        category: accessories[i].category,
+                        port: await this.externalPorts.requestPort(username),
+                        bind: this.settings.bind,
+                        addIdentifyingMaterial: true,
+                        advertiser: this.settings.advertiser,
+                    }, false);
+                } else {
+                    Console.warn(`A platform configured a external accessory under the plugin name "${accessories[i]._associatedPlugin}". However no loaded plugin could be found for the name.`);
+                }
             }
-
-            const plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
-
-            if (plugin) {
-                const informationService = hapAccessory.getService(Service.AccessoryInformation)!;
-
-                if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
-            } else if (PluginManager.isQualifiedPluginIdentifier(accessory._associatedPlugin!)) {
-                Console.warn("A platform configured a external accessory under the plugin name '%s'. However no loaded plugin could be found for the name!", accessory._associatedPlugin);
-            }
-
-            hapAccessory.on(AccessoryEventTypes.LISTENING, (port: number) => {
-                Console.info("%s is running on port %s.", hapAccessory.displayName, port);
-            });
-
-            hapAccessory.publish({
-                username: advertiseAddress,
-                pincode: accessoryPin,
-                category: accessory.category,
-                port: accessoryPort,
-                mdns: this.config.mdns,
-            }, this.allowInsecureAccess);
         }
     }
 }

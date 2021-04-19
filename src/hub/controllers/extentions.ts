@@ -31,7 +31,7 @@ export default class ExtentionsController {
     }
 
     list(request: Request, response: Response): Response {
-        if (!request.user?.permissions.controller) {
+        if (!request.user?.permissions?.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -42,7 +42,7 @@ export default class ExtentionsController {
     }
 
     async enable(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.controller) {
+        if (!request.user?.permissions?.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -80,7 +80,7 @@ export default class ExtentionsController {
     }
 
     disable(request: Request, response: Response): Response {
-        if (!request.user?.permissions.controller) {
+        if (!request.user?.permissions?.controller) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

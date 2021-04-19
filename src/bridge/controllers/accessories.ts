@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { IPCRequest, IPCResponse } from "@hoobs/ipc";
 import State from "../../state";
 import { Console } from "../../services/logger";
-import { SocketRequest, SocketResponse } from "../services/socket";
 
 export default class AccessoriesController {
     declare rooms: any[];
@@ -26,105 +26,66 @@ export default class AccessoriesController {
     constructor() {
         this.rooms = [];
 
-        State.socket?.route("accessories:list", (request: SocketRequest, response: SocketResponse) => this.list(request, response));
-        State.socket?.route("accessory:get", (request: SocketRequest, response: SocketResponse) => this.get(request, response));
-        State.socket?.route("accessory:set", (request: SocketRequest, response: SocketResponse) => this.set(request, response));
-        State.socket?.route("accessory:characteristics", (request: SocketRequest, response: SocketResponse) => this.characteristics(request, response));
+        State.socket?.route("accessories:list", (request, response) => this.list(request, response));
+        State.socket?.route("accessory:get", (request, response) => this.get(request, response));
+        State.socket?.route("accessory:set", (request, response) => this.set(request, response));
+        State.socket?.route("accessory:stream", (request, response) => this.stream(request, response));
+        State.socket?.route("accessory:snapshot", (request, response) => this.snapshot(request, response));
+        State.socket?.route("accessory:characteristics", (request, response) => this.characteristics(request, response));
     }
 
-    list(_request: SocketRequest, response: SocketResponse): void {
-        this.services().then((accessories) => {
-            response.send(accessories);
-        });
+    list(_request: IPCRequest, response: IPCResponse): void {
+        response.send(State.homebridge?.accessories.list() || []);
     }
 
-    get(request: SocketRequest, response: SocketResponse): void {
-        let accessory = {};
-
-        this.service(request.params?.id).then((results) => {
-            accessory = results;
-        }).finally(() => response.send(accessory));
+    get(request: IPCRequest, response: IPCResponse): void {
+        response.send(State.homebridge?.accessories.get(request.params?.id));
     }
 
-    set(request: SocketRequest, response: SocketResponse): void {
-        let accessory = {};
+    set(request: IPCRequest, response: IPCResponse): void {
+        const service = State.homebridge?.accessories.get(request.params?.id);
 
-        this.service(request.params?.id).then((service) => {
+        if (service) {
             Console.debug(`Update - ${request.params?.service}: ${request.body.value} (${typeof request.body.value})`);
 
-            service.set(request.params?.service, request.body.value).then((results: any) => {
-                accessory = results;
-            }).finally(() => response.send(accessory));
-        }).catch(() => response.send(accessory));
-    }
-
-    characteristics(request: SocketRequest, response: SocketResponse): void {
-        let results: string[] = [];
-
-        this.service(request.params?.id).then((service) => {
-            results = service.characteristics.map((characteristic: any) => characteristic.type);
-
-            results.sort((a: string, b: string) => {
-                if (a < b) return -1;
-                if (a > b) return 1;
-
-                return 0;
-            });
-        }).finally(() => response.send(results));
-    }
-
-    service(id: string): Promise<any> {
-        return new Promise((resolve) => {
-            State.homebridge?.client.accessory(State.id, id).then((response: any) => {
-                if (response) {
-                    response.refresh((results: any) => {
-                        response.values = results.values;
-                    }).finally(() => resolve(<{ [key: string]: any }> this.cleanse(response)));
-                } else {
-                    resolve(undefined);
-                }
-            });
-        });
-    }
-
-    cleanse(value: { [key: string]: any } | { [key: string]: any }[]): { [key: string]: any } | { [key: string]: any }[] {
-        if (Array.isArray(value)) {
-            const results: { [key: string]: any }[] = [];
-
-            for (let i = 0; i < value.length; i += 1) {
-                results.push(<{ [key: string]: any }> this.cleanse(value[i]));
-            }
-
-            return results;
+            service.set(request.params?.service, request.body.value);
+            response.send(service.refresh());
+        } else {
+            response.send(undefined);
         }
-
-        return { ...value };
     }
 
-    services(): Promise<{ [key: string]: any }[]> {
-        return new Promise((resolve) => {
-            State.homebridge?.client.accessories(State.id).then((services: { [key: string]: any }[]) => {
-                if (!services) resolve([]);
-                if (!Array.isArray(services)) services = [services];
+    stream(request: IPCRequest, response: IPCResponse): void {
+        const accessory = State.homebridge?.accessories.get(request.params?.id);
 
-                const waits: Promise<void>[] = [];
+        if (!accessory || accessory.type !== "camera") {
+            response.send(undefined);
+        } else {
+            response.send(accessory.stream());
+        }
+    }
 
-                for (let i = 0; i < services.length; i += 1) {
-                    waits.push(new Promise((complete) => {
-                        services[i].refresh((results: { [key: string]: any }) => {
-                            services[i].values = results.values;
-                        }).finally(() => {
-                            complete();
-                        });
-                    }));
-                }
+    snapshot(request: IPCRequest, response: IPCResponse): void {
+        const accessory = State.homebridge?.accessories.get(request.params?.id);
 
-                Promise.all(waits).then(() => {
-                    services = [...services];
+        if (!accessory || accessory.type !== "camera") {
+            response.send(undefined);
+        } else {
+            accessory.snapshot().then((data: string) => response.send(data));
+        }
+    }
 
-                    resolve(<{ [key: string]: any }[]> this.cleanse(services));
-                });
-            });
+    characteristics(request: IPCRequest, response: IPCResponse): void {
+        const service = State.homebridge?.accessories.get(request.params?.id);
+        const results = service?.characteristics.map((characteristic: any) => characteristic.type);
+
+        results.sort((a: string, b: string) => {
+            if (a < b) return -1;
+            if (a > b) return 1;
+
+            return 0;
         });
+
+        response.send(results);
     }
 }

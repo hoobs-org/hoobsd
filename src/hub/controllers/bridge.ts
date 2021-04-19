@@ -18,7 +18,6 @@
 
 import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
-import Socket from "../services/socket";
 import Security from "../../services/security";
 
 export default class BridgeController {
@@ -35,7 +34,7 @@ export default class BridgeController {
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await Socket.fetch(State.bridges[i].id, "status:get");
+                const status = await State.socket?.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
                     results.push({
@@ -50,11 +49,11 @@ export default class BridgeController {
     }
 
     async status(request: Request, response: Response): Promise<Response> {
-        return response.send(await Socket.fetch(request.params.bridge, "status:get"));
+        return response.send(await State.socket?.fetch(request.params.bridge, "status:get"));
     }
 
     async start(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -69,7 +68,7 @@ export default class BridgeController {
     }
 
     async stop(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -84,7 +83,7 @@ export default class BridgeController {
     }
 
     async restart(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions.config) {
+        if (!request.user?.permissions?.config) {
             return response.send({
                 token: false,
                 error: "Unauthorized.",

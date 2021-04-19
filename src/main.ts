@@ -22,6 +22,7 @@ import * as Enviornment from "dotenv";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import { Console } from "./services/logger";
 import State from "./state";
 import Bridges from "./services/bridges";
@@ -34,11 +35,27 @@ import Hub from "./hub";
 import { jsonEquals, cloneJson } from "./services/json";
 import { sanitize } from "./services/formatters";
 
-if (System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
+if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }
 
-const PROCESS_KILL_DELAY = 5 * 1000;
+function teardown() {
+    let waits: Promise<void>[] = [];
+
+    if (State.terminating) return;
+
+    State.terminating = true;
+
+    if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id));
+    if (State.bridge) waits.push(State.bridge.stop());
+    if (State.hub) waits.push(State.hub.stop());
+
+    Promise.all(waits).then(() => {
+        waits = [];
+
+        process.exit();
+    });
+}
 
 export = function Daemon(): void {
     Program.version(State.version, "-v, --version", "output the current version");
@@ -186,31 +203,16 @@ export = function Daemon(): void {
 
     Program.parse(process.argv);
 
-    const signals: { [key: string]: number } = {
-        SIGINT: 2,
-        SIGTERM: 15,
-    };
-
-    Object.keys(signals).forEach((signal) => {
-        process.on(signal, async () => {
-            if (State.terminating) return;
-
-            State.terminating = true;
-
-            if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id));
-            if (State.bridge) await State.bridge.stop();
-            if (State.hub) await State.hub.stop();
-
-            setTimeout(() => {
-                process.exit(128 + signals[signal]);
-            }, PROCESS_KILL_DELAY);
-        });
-    });
+    process.on("exit", teardown);
+    process.on("SIGINT", teardown);
+    process.on("SIGTERM", teardown);
+    process.on("SIGUSR1", teardown);
+    process.on("SIGUSR2", teardown);
 
     process.on("uncaughtException", (error) => {
         Console.error(`${error.stack}`);
 
-        if (!State.terminating) process.kill(process.pid, "SIGTERM");
+        teardown();
     });
 
     process.on("unhandledRejection", (reason) => {

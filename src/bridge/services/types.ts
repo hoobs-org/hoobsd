@@ -1,7 +1,6 @@
 /**************************************************************************************************
  * hoobsd                                                                                         *
  * Copyright (C) 2020 HOOBS                                                                       *
- * Copyright (C) 2019 Oznu                                                                        *
  *                                                                                                *
  * This program is free software: you can redistribute it and/or modify                           *
  * it under the terms of the GNU General Public License as published by                           *
@@ -16,6 +15,12 @@
  * You should have received a copy of the GNU General Public License                              *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
+
+export const ExcludeServices = [
+    "3E",
+    "A2",
+    "49FB9D4D-0FEA-4BF1-8FA6-E7B18AB86DCE",
+];
 
 export const Services: { [key: string]: string } = {
     "3E": "accessory_information",
@@ -122,6 +127,7 @@ export const Precedence: { [key: string]: number } = {
     "audio_stream": 39,
     "data_stream": 40,
     "data_tunnel": 41,
+    "smoke_detected": 100,
     "leak_detected": 101,
     "current_temperature": 102,
     "current_relative_humidity": 103,
@@ -139,6 +145,9 @@ export const Characteristics: { [key: string]: string } = {
     "220": "product_data",
     "B0": "active",
     "1": "administrator_only_access",
+    "2": "bridge_id",
+    "3": "device_id",
+    "4": "plugin_id",
     "64": "air_particulate_density",
     "65": "air_particulate_size",
     "95": "air_quality",

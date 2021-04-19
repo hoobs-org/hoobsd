@@ -20,28 +20,24 @@ import { existsSync } from "fs-extra";
 import { join, resolve } from "path";
 import { Request, Response, NextFunction } from "express-serve-static-core";
 import State from "../../state";
+import Paths from "../../services/paths";
 import Plugins from "../../services/plugins";
 
 export default async function Plugin(request: Request, response: Response, next: NextFunction): Promise<void> {
+    const identifier: string = decodeURIComponent(request.params.identifier);
+
     let found = false;
-    let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
-    let scope: string | undefined = "";
-
-    if ((name || "").startsWith("@")) {
-        name = (name || "").substring(1);
-        scope = name.split("/").shift();
-        name = name.split("/").pop();
-    }
-
-    const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
     for (let i = 0; i < State.bridges.length; i += 1) {
         if (State.bridges[i].type !== "hub") {
             const plugin: { [key: string]: any } | undefined = Plugins.load(State.bridges[i].id).find((item) => item.identifier === identifier);
 
             if (plugin) {
+                const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.bridges[i].id), "sidecars.json"), {});
+
                 response.locals.bridge = State.bridges[i].id;
                 response.locals.identifier = plugin.identifier;
+                response.locals.sidecar = sidecars[plugin.identifier] ? join(Paths.data(State.bridges[i].id), "node_modules", sidecars[plugin.identifier]) : null;
                 response.locals.directory = plugin.directory;
                 response.locals.library = plugin.library;
 

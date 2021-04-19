@@ -46,6 +46,7 @@ export default class SystemController {
         State.app?.post("/api/system/restore", Security, (request, response) => this.upload(request, response));
         State.app?.post("/api/system/upgrade", Security, (request, response) => this.upgrade(request, response));
         State.app?.put("/api/system/reboot", Security, (request, response) => this.reboot(request, response));
+        State.app?.put("/api/system/shutdown", Security, (request, response) => this.shutdown(request, response));
         State.app?.put("/api/system/reset", Security, (request, response) => this.reset(request, response));
     }
 
@@ -176,7 +177,7 @@ export default class SystemController {
     }
 
     backup(request: Request, response: Response): void {
-        if (!request.user?.permissions.controller) {
+        if (!request.user?.permissions?.controller) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -194,7 +195,7 @@ export default class SystemController {
     }
 
     async restore(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.reboot) {
+        if (!request.user?.permissions?.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -220,7 +221,7 @@ export default class SystemController {
     }
 
     async upload(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.reboot) {
+        if (!request.user?.permissions?.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -248,7 +249,7 @@ export default class SystemController {
     }
 
     async upgrade(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.reboot) {
+        if (!request.user?.permissions?.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -301,7 +302,7 @@ export default class SystemController {
     }
 
     reboot(request: Request, response: Response): void {
-        if (!request.user?.permissions.reboot) {
+        if (!request.user?.permissions?.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -317,8 +318,25 @@ export default class SystemController {
         System.reboot();
     }
 
+    shutdown(request: Request, response: Response): void {
+        if (!request.user?.permissions?.reboot) {
+            response.send({
+                token: false,
+                error: "Unauthorized.",
+            });
+
+            return;
+        }
+
+        response.send({
+            success: true,
+        });
+
+        System.shutdown();
+    }
+
     async reset(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.reboot) {
+        if (!request.user?.permissions?.reboot) {
             response.send({
                 token: false,
                 error: "Unauthorized.",

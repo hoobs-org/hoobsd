@@ -22,18 +22,12 @@ import { existsSync } from "fs-extra";
 import { join } from "path";
 import State from "../state";
 import Paths from "../services/paths";
-import Socket from "./services/socket";
 import Homebridge from "./server";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
-
-import {
-    Console,
-    Prefixed,
-    Events,
-} from "../services/logger";
-
+import Socket from "../services/socket";
+import { Console, Prefixed, Events } from "../services/logger";
 import StatusController from "./controllers/status";
 import AccessoriesController from "./controllers/accessories";
 
@@ -67,10 +61,13 @@ export default class Bridge extends EventEmitter {
         new AccessoriesController();
 
         const plugins = Plugins.load(State.id, this.development);
+        const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.id), "sidecars.json"), {});
 
         for (let i = 0; i < plugins.length; i += 1) {
-            if (existsSync(join(plugins[i].directory, plugins[i].library, "routes.js"))) {
-                const plugin = require(join(plugins[i].directory, plugins[i].library, "routes.js"));
+            const directory = sidecars[plugins[i].identifier] ? join(Paths.data(State.id), "node_modules", sidecars[plugins[i].identifier]) : join(plugins[i].directory, "hoobs");
+
+            if (existsSync(join(directory, "routes.js"))) {
+                const plugin = require(join(directory, "routes.js"));
 
                 let initializer;
 
@@ -96,10 +93,12 @@ export default class Bridge extends EventEmitter {
     }
 
     restart() {
-        Socket.emit(Events.RESTART, State.id);
+        State.socket?.emit("api", Events.RESTART, State.id);
     }
 
     start(): void {
+        State.socket?.start();
+
         const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
@@ -123,8 +122,6 @@ export default class Bridge extends EventEmitter {
                 State.homebridge?.start();
             }, (bridge?.autostart || BRIDGE_START_DELAY) * 1000);
         }
-
-        State.socket?.start();
     }
 
     async stop(): Promise<void> {

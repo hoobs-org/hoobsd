@@ -21,8 +21,6 @@ import State from "../../state";
 import Config from "../../services/config";
 import Users, { UserRecord } from "../../services/users";
 
-import Ring from "../../partner/ring";
-
 export default class AuthController {
     constructor() {
         State.app?.get("/api/auth", (request, response) => this.state(request, response));
@@ -30,7 +28,6 @@ export default class AuthController {
         State.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
         State.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
         State.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
-        State.app?.post("/api/auth/vendor/:vendor", (request, response) => this.vendor(request, response));
     }
 
     state(_request: Request, response: Response): Response {
@@ -120,17 +117,5 @@ export default class AuthController {
         return response.send({
             success: true,
         });
-    }
-
-    async vendor(request: Request, response: Response): Promise<void> {
-        switch (request.params.vendor) {
-            case "ring":
-                response.send(await Ring.login(request.body.username, request.body.password, request.body.verification));
-                break;
-
-            default:
-                response.send({ error: "invalid vendor" });
-                break;
-        }
     }
 }

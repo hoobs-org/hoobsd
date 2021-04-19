@@ -115,8 +115,7 @@ export default class Weather {
         let wind = 0;
 
         for (let i = 0; i < list.length; i += 1) {
-            const { ...item } = list[i];
-            const time = new Date(item.dt * 1000);
+            const time = new Date(list[i].dt * 1000);
 
             if (`${time.getMonth() + 1}/${time.getDate()}/${time.getFullYear()}` !== day) {
                 if (count > 0) {
@@ -134,28 +133,28 @@ export default class Weather {
                 results.push({
                     units,
                     date: (new Date(day)).getTime(),
-                    weather: item.weather[0].main,
-                    description: item.weather[0].description.toLowerCase().replace(/ /gi, "_"),
-                    icon: item.weather[0].id,
-                    windchill: item.main.feels_like,
-                    pressure: item.main.pressure,
-                    humidity: item.main.humidity / 100,
-                    visibility: item.visibility,
+                    weather: list[i].weather[0].main,
+                    description: list[i].weather[0].description.toLowerCase().replace(/ /gi, "_"),
+                    icon: list[i].weather[0].id,
+                    windchill: list[i].main.feels_like,
+                    pressure: list[i].main.pressure,
+                    humidity: list[i].main.humidity / 100,
+                    visibility: list[i].visibility,
                     wind: {
-                        speed: item.wind.speed,
-                        direction: item.wind.deg,
+                        speed: list[i].wind.speed,
+                        direction: list[i].wind.deg,
                     },
                 });
             }
 
-            if (!results[index].min || item.main.temp_min < results[index].min) results[index].min = item.main.temp_min;
-            if (!results[index].max || item.main.temp_max > results[index].max) results[index].max = item.main.temp_max;
+            if (!results[index].min || list[i].main.temp_min < results[index].min) results[index].min = list[i].main.temp_min;
+            if (!results[index].max || list[i].main.temp_max > results[index].max) results[index].max = list[i].main.temp_max;
 
-            windchill += item.main.feels_like;
-            pressure += item.main.pressure;
-            humidity += item.main.humidity;
-            visibility += item.visibility;
-            wind += item.wind.speed;
+            windchill += list[i].main.feels_like;
+            pressure += list[i].main.pressure;
+            humidity += list[i].main.humidity;
+            visibility += list[i].visibility;
+            wind += list[i].wind.speed;
 
             count += 1;
         }

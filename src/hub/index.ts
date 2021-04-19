@@ -41,7 +41,7 @@ import Config from "../services/config";
 import System from "../services/system";
 import State from "../state";
 import Users from "../services/users";
-import Socket from "./services/socket";
+import Socket from "../services/socket";
 import Monitor from "./services/monitor";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Events, NotificationType } from "../services/logger";
@@ -66,6 +66,20 @@ import WeatherController from "./controllers/weather";
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
 const BRIDGE_TEARDOWN_DELAY = 5 * 1000;
 
+interface BridgeProcess {
+    bridge: BridgeRecord;
+    port: number;
+    process: Process.ChildProcess;
+}
+
+function running(pid: number): boolean {
+    try {
+        return process.kill(pid, 0) || false;
+    } catch (_error) {
+        return false;
+    }
+}
+
 export default class API extends EventEmitter {
     declare time: number;
 
@@ -79,9 +93,7 @@ export default class API extends EventEmitter {
 
     declare private enviornment: { [key: string]: string };
 
-    declare private processes: { [key: string]: Process.ChildProcess };
-
-    declare private socket: Socket;
+    declare private bridges: { [key: string]: BridgeProcess };
 
     declare private listner: HTTP.Server;
 
@@ -94,7 +106,32 @@ export default class API extends EventEmitter {
         this.config = Config.configuration();
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
-        this.processes = {};
+        this.bridges = {};
+
+        State.socket = new Socket("api");
+
+        State.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
+        State.socket.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
+
+        State.socket.on(Events.ACCESSORY_CHANGE, (data: any) => {
+            const working = AccessoriesController.layout;
+            const { accessory } = data.data;
+
+            if (accessory && working.accessories[accessory.accessory_identifier]) {
+                _.extend(accessory, working.accessories[accessory.accessory_identifier]);
+            }
+
+            data.data.accessory = accessory;
+            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
+        });
+
+        State.socket.on(Events.RESTART, async (data: string) => {
+            await this.teardown(data);
+
+            const bridge = State.bridges.find((item) => item.id === data);
+
+            if (bridge) this.launch(bridge);
+        });
 
         State.app = Express();
         State.app.use(Compression());
@@ -166,8 +203,8 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        State.app?.use("/", Express.static(this.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
-        State.app?.use("/touch", Express.static(this.settings.touch_path || existsSync("/usr/lib/hoobs-touch") ? "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
+        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
+        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
         State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
@@ -178,7 +215,7 @@ export default class API extends EventEmitter {
         }));
 
         State.app?.get("*", (_request, response) => {
-            response.sendFile(Path.resolve(Path.join(this.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : Path.join(__dirname, "../static"), "index.html")));
+            response.sendFile(Path.resolve(Path.join(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static"), "index.html")));
         });
     }
 
@@ -198,6 +235,8 @@ export default class API extends EventEmitter {
     }
 
     launch(bridge: BridgeRecord): void {
+        const hoobsd = Path.join(__dirname, "../../../bin/hoobsd");
+
         const flags: string[] = [
             "bridge",
             "--mode", State.mode,
@@ -210,26 +249,65 @@ export default class API extends EventEmitter {
         if (State.container) flags.push("--container");
         if (!State.orphans) flags.push("--orphans");
 
-        Console.info(`${bridge.display || bridge.id} starting`);
+        let waits: Promise<void>[] = [];
+        const keys = Object.keys(this.bridges).filter((item) => item !== bridge.id && this.bridges[item].port === bridge.port && running(this.bridges[item].process.pid));
 
-        this.processes[bridge.id] = Process.spawn(Path.join(__dirname, "../../../bin/hoobsd"), flags);
+        for (let i = 0; i < keys.length; i += 1) {
+            waits.push(this.teardown(keys[i]));
+        }
 
-        this.processes[bridge.id].on("exit", () => {
-            Console.notify(
-                bridge.id,
-                "Bridge Stopped",
-                `${bridge.display || bridge.id} has stopped.`,
-                NotificationType.ERROR,
-            );
-        });
+        waits.push(this.teardown(bridge.id));
 
-        if (State.debug) {
-            this.processes[bridge.id].stdout?.on("data", (data) => {
+        Promise.all(waits).then(() => {
+            waits = [];
+
+            Console.info(`${bridge.display || bridge.id} starting`);
+
+            this.bridges[bridge.id] = {
+                bridge,
+                port: bridge.port,
+                process: Process.fork(hoobsd, flags, { env: { ...process.env } }),
+            };
+
+            const handler = () => {
+                Console.notify(
+                    bridge.id,
+                    "Bridge Stopped",
+                    `${bridge.display || bridge.id} has stopped.`,
+                    NotificationType.ERROR,
+                );
+
+                this.bridges[bridge.id].process.on("exit", () => {
+                    setTimeout(() => {
+                        this.launch(bridge);
+                    }, BRIDGE_TEARDOWN_DELAY);
+                });
+            };
+
+            this.bridges[bridge.id].process.once("exit", handler);
+
+            if (State.debug) {
+                this.bridges[bridge.id].process.stdout?.on("data", (data) => {
+                    const messages: string[] = data.toString().split("\n");
+
+                    for (let i = 0; i < messages.length; i += 1) {
+                        Console.log(LogLevel.DEBUG, {
+                            level: LogLevel.DEBUG,
+                            bridge: bridge.id,
+                            display: bridge.display || bridge.id,
+                            timestamp: new Date().getTime(),
+                            message: messages[i].trim(),
+                        });
+                    }
+                });
+            }
+
+            this.bridges[bridge.id].process.stderr?.on("data", (data) => {
                 const messages: string[] = data.toString().split("\n");
 
                 for (let i = 0; i < messages.length; i += 1) {
-                    Console.log(LogLevel.DEBUG, {
-                        level: LogLevel.DEBUG,
+                    Console.log(LogLevel.ERROR, {
+                        level: LogLevel.ERROR,
                         bridge: bridge.id,
                         display: bridge.display || bridge.id,
                         timestamp: new Date().getTime(),
@@ -237,41 +315,25 @@ export default class API extends EventEmitter {
                     });
                 }
             });
-        }
 
-        this.processes[bridge.id].stderr?.on("data", (data) => {
-            const messages: string[] = data.toString().split("\n");
-
-            for (let i = 0; i < messages.length; i += 1) {
-                Console.log(LogLevel.ERROR, {
-                    level: LogLevel.ERROR,
-                    bridge: bridge.id,
-                    display: bridge.display || bridge.id,
-                    timestamp: new Date().getTime(),
-                    message: messages[i].trim(),
-                });
-            }
+            Console.notify(
+                typeof bridge === "string" ? bridge : bridge.id,
+                "Bridge Started",
+                `${typeof bridge === "string" ? bridge : bridge.display} has started.`,
+                NotificationType.SUCCESS,
+                "layers",
+            );
         });
-
-        Console.notify(
-            typeof bridge === "string" ? bridge : bridge.id,
-            "Bridge Started",
-            `${typeof bridge === "string" ? bridge : bridge.display} has started.`,
-            NotificationType.SUCCESS,
-            "layers",
-        );
     }
 
     teardown(bridge: BridgeRecord | string): Promise<void> {
         const id = typeof bridge === "string" ? bridge : bridge.id;
 
         return new Promise((resolve) => {
-            if (this.processes[id] && !this.processes[id].killed) {
+            if (this.bridges[id] && running(this.bridges[id].process.pid)) {
                 Console.info(`${typeof bridge === "string" ? bridge : bridge.display} stopping`);
 
-                this.processes[id].removeAllListeners("exit");
-
-                this.processes[id].once("exit", () => {
+                const handler = () => {
                     setTimeout(() => {
                         Console.notify(
                             typeof bridge === "string" ? bridge : bridge.id,
@@ -282,11 +344,12 @@ export default class API extends EventEmitter {
 
                         resolve();
                     }, BRIDGE_TEARDOWN_DELAY);
-                });
+                };
 
-                this.processes[id].kill();
+                this.bridges[id].process.removeAllListeners("exit");
+                this.bridges[id].process.once("exit", handler);
 
-                delete this.processes[id];
+                this.bridges[id].process.kill();
             } else {
                 resolve();
             }
@@ -301,63 +364,60 @@ export default class API extends EventEmitter {
                 return;
             }
 
-            const waiters: Promise<void>[] = [];
-            const current = Object.keys(this.processes);
+            let waits: Promise<void>[] = [];
+            const current = Object.keys(this.bridges);
 
             for (let i = 0; i < current.length; i += 1) {
                 if (!State.bridges.find((item) => item.id === current[i])) {
-                    waiters.push(this.teardown(current[i]));
+                    waits.push(this.teardown(current[i]));
                 }
             }
 
-            const directories = readdirSync(Paths.data()).filter((item) => item !== "hub" && item !== "backups" && lstatSync(Path.join(Paths.data(), item)).isDirectory());
-            const remove = directories.filter((item) => State.bridges.filter((bridge) => bridge.type !== "hub").findIndex((bridge) => bridge.id === item) === -1);
+            const directories = readdirSync(Paths.data()).filter((item) => {
+                if (item === "hub") return false;
+                if (item === "backups") return false;
+                if (item === "access") return false;
+
+                if (item === "bridges.conf") return false;
+                if (item === "layout.conf") return false;
+                if (item === "hoobs.log") return false;
+                if (item === "hub.log") return false;
+
+                if (item.indexOf(".accessories") >= 0) return false;
+                if (item.indexOf(".persist") >= 0) return false;
+                if (item.indexOf(".conf") >= 0) return false;
+                if (item.indexOf(".sock") >= 0) return false;
+
+                return lstatSync(Path.join(Paths.data(), item)).isDirectory();
+            });
+
+            const bridges = State.bridges.filter((item) => item.type !== "hub");
+            const remove = directories.filter((item) => bridges.findIndex((bridge) => bridge.id === item) === -1);
 
             for (let i = 0; i < remove.length; i += 1) {
                 removeSync(Path.join(Paths.data(), remove[i]));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.accessories`));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.persist`));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.conf`));
+                removeSync(Path.join(Paths.data(), `${remove[i]}.sock`));
             }
 
-            const bridges = State.bridges.filter((item) => item.type !== "hub");
-
             for (let i = 0; i < bridges.length; i += 1) {
-                if (!this.processes[bridges[i].id] || this.processes[bridges[i].id].killed) {
+                if (!this.bridges[bridges[i].id] || !running(this.bridges[bridges[i].id].process.pid)) {
                     this.launch(bridges[i]);
                 }
             }
 
-            Promise.all(waiters).then(() => {
+            Promise.all(waits).then(() => {
+                waits = [];
+
                 resolve();
             });
         });
     }
 
     async start(): Promise<void> {
-        this.socket = new Socket();
-
-        this.socket.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
-        this.socket.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
-
-        this.socket.on(Events.ACCESSORY_CHANGE, (data: any) => {
-            const working = AccessoriesController.layout;
-            const { accessory } = data.data;
-
-            if (accessory && working.accessories[accessory.accessory_identifier]) {
-                _.extend(accessory, working.accessories[accessory.accessory_identifier]);
-            }
-
-            data.data.accessory = accessory;
-            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
-        });
-
-        this.socket.on(Events.RESTART, async (data: string) => {
-            await this.teardown(data);
-
-            const bridge = State.bridges.find((item) => item.id === data);
-
-            if (bridge) this.launch(bridge);
-        });
-
-        this.socket.start();
+        State.socket?.start();
 
         if (State.mode === "development") {
             Console.warn("running in development mode");
@@ -399,14 +459,23 @@ export default class API extends EventEmitter {
                 this.running = false;
 
                 const bridges = State.bridges.filter((item) => item.type !== "hub");
-                const waiters: Promise<void>[] = [];
+                let waits: Promise<void>[] = [];
 
                 for (let i = 0; i < bridges.length; i += 1) {
-                    waiters.push(this.teardown(bridges[i]));
+                    waits.push(this.teardown(bridges[i]));
                 }
 
-                Promise.all(waiters).then(() => {
-                    this.socket.stop();
+                Promise.all(waits).then(() => {
+                    waits = [];
+
+                    State.socket?.stop();
+
+                    const keys = Object.keys(this.bridges);
+
+                    for (let i = 0; i < keys.length; i += 1) {
+                        this.bridges[keys[i]].process.removeAllListeners("exit");
+                        this.bridges[keys[i]].process.kill();
+                    }
 
                     this.terminator.terminate().then(() => {
                         Console.debug("Stopped");

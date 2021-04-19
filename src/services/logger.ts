@@ -21,7 +21,6 @@ import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
-import Socket from "../bridge/services/socket";
 import { formatJson } from "./json";
 import { colorize } from "./formatters";
 
@@ -103,21 +102,14 @@ class Logger {
     cache(tail?: number, bridge?: string): Message[] {
         const results = [...(CACHE.filter((m) => (bridge ? m.bridge === bridge : true)))];
 
-        if (tail && tail > 0 && tail < results.length) {
-            results.splice(0, results.length - tail);
-        }
-
-        if (State.id !== "hub") {
-            CACHE = [];
-        }
+        if (tail && tail > 0 && tail < results.length) results.splice(0, results.length - tail);
+        if (State.id !== "hub") CACHE = [];
 
         return results;
     }
 
     save() {
-        if (State.id === "hub") {
-            Paths.saveJson(Paths.log, CACHE, false, undefined, true);
-        }
+        if (State.id === "hub") Paths.saveJson(Paths.log, CACHE, false, undefined, true);
     }
 
     load() {
@@ -130,8 +122,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 7000) {
-                CACHE.splice(0, CACHE.length - 7000);
+            if (CACHE.length > 4000) {
+                CACHE.splice(0, CACHE.length - 4000);
             }
         }
     }
@@ -149,6 +141,9 @@ class Logger {
             if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bgit.io\b).*$/gmi)) return;
 
             data = {
                 level,
@@ -165,7 +160,7 @@ class Logger {
 
         data.message = data.message || "";
 
-        if (data.message === "" && (data.bridge !== State.id || (data.prefix && data.prefix !== ""))) return;
+        if (!data.message || data.message === "") return;
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("version") >= 0) return;
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("recommended") >= 0) return;
         if ((data.message || "").match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
@@ -176,8 +171,8 @@ class Logger {
             case LogLevel.WARN:
                 colored = data.message;
 
-                if (State.bridge) Socket.emit(Events.LOG, data);
-                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.id === "hub") CACHE.push(data);
+                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -187,7 +182,7 @@ class Logger {
 
                     colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
 
-                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -195,8 +190,8 @@ class Logger {
             case LogLevel.ERROR:
                 colored = data.message;
 
-                if (State.bridge) Socket.emit(Events.LOG, data);
-                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.id === "hub") CACHE.push(data);
+                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -206,7 +201,7 @@ class Logger {
 
                     colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
 
-                    CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.id === "hub") CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -215,8 +210,8 @@ class Logger {
                 if (State.id === "hub" || State.debug) {
                     colored = data.message;
 
-                    if (State.bridge) Socket.emit(Events.LOG, data);
-                    if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                    if (State.id === "hub") CACHE.push(data);
+                    if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                     if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -225,7 +220,7 @@ class Logger {
 
                     colored = Chalk.gray(data.message);
 
-                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -233,8 +228,8 @@ class Logger {
             default:
                 colored = data.message;
 
-                if (State.bridge) Socket.emit(Events.LOG, data);
-                if ((State.hub || State.bridge) && (State.id === "hub" || !Socket.up())) CACHE.push(data);
+                if (State.id === "hub") CACHE.push(data);
+                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -242,13 +237,13 @@ class Logger {
                     if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
                     if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
-                    CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
         }
 
-        if (CACHE.length > 7000) CACHE.splice(0, CACHE.length - 7000);
+        if (State.id === "hub" && CACHE.length > 4000) CACHE.splice(0, CACHE.length - 4000);
     }
 
     debug(message: string, ...parameters: any[]): void {
@@ -301,7 +296,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.emit(Events.NOTIFICATION, {
+            State.socket?.emit("api", Events.NOTIFICATION, {
                 bridge,
                 data: {
                     title,
@@ -322,7 +317,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            Socket.emit(event, {
+            State.socket?.emit("api", event, {
                 bridge,
                 data,
             });

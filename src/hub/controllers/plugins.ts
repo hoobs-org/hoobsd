@@ -16,26 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Axios from "axios";
-import { join } from "path";
-import { existsSync } from "fs-extra";
 import { Request, Response } from "express-serve-static-core";
 import { PluginManager } from "homebridge/lib/pluginManager";
 import State from "../../state";
-import Paths from "../../services/paths";
 import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
-import Client from "../../bridge/services/client";
-import { BridgeRecord } from "../../services/bridges";
-import { Console } from "../../services/logger";
 
 export default class PluginsController {
-    private readonly client: Client;
-
     constructor() {
-        this.client = new Client();
-
         State.app?.get("/api/plugins", Security, (request, response) => this.all(request, response));
         State.app?.get("/api/plugins/:bridge", Security, (request, response) => this.installed(request, response));
         State.app?.put("/api/plugins/:bridge/:name", Security, (request, response) => this.install(request, response));
@@ -55,11 +44,9 @@ export default class PluginsController {
 
                 if (plugins) {
                     for (let j = 0; j < plugins.length; j += 1) {
-                        const { ...plugin } = plugins[j];
+                        plugins[j].bridge = State.bridges[i].id;
 
-                        plugin.bridge = State.bridges[i].id;
-
-                        results.push(plugin);
+                        results.push(plugins[j]);
                     }
                 }
             }
@@ -73,7 +60,7 @@ export default class PluginsController {
     }
 
     install(request: Request, response: Response): void {
-        if (!request.user?.permissions.plugins) {
+        if (!request.user?.permissions?.plugins) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -98,10 +85,12 @@ export default class PluginsController {
             name = (name || "").split("@").shift();
         }
 
-        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
-        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
-        Plugins.install(request.params.bridge, (scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
+        State.cache?.remove(`plugin/definition:${identifier}`);
+        State.cache?.remove(`plugin/schema:${identifier}`);
+
+        Plugins.install(request.params.bridge, identifier, (tag || "")).then(async () => {
             response.send({
                 success: true,
             });
@@ -111,7 +100,7 @@ export default class PluginsController {
     }
 
     upgrade(request: Request, response: Response): void {
-        if (!request.user?.permissions.plugins) {
+        if (!request.user?.permissions?.plugins) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -136,10 +125,12 @@ export default class PluginsController {
             name = (name || "").split("@").shift();
         }
 
-        State.cache?.remove(`plugin/definition:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
-        State.cache?.remove(`plugin/schema:${(scope || "") !== "" ? `@${scope}/${name}` : (name || "")}`);
+        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
 
-        Plugins.upgrade(request.params.bridge, (scope || "") !== "" ? `@${scope}/${name}` : (name || ""), (tag || "")).then(async () => {
+        State.cache?.remove(`plugin/definition:${identifier}`);
+        State.cache?.remove(`plugin/schema:${identifier}`);
+
+        Plugins.upgrade(request.params.bridge, identifier, (tag || "")).then(async () => {
             response.send({
                 success: true,
             });
@@ -149,7 +140,7 @@ export default class PluginsController {
     }
 
     async uninstall(request: Request, response: Response): Promise<void> {
-        if (!request.user?.permissions.plugins) {
+        if (!request.user?.permissions?.plugins) {
             response.send({
                 token: false,
                 error: "Unauthorized.",
@@ -169,14 +160,13 @@ export default class PluginsController {
 
         if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
 
-        const plugin = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+        const accessories = await this.accessories(request.params.bridge, identifier);
 
-        const accessories = await this.accessories(request.params.bridge, plugin);
+        State.cache?.remove(`plugin/definition:${identifier}`);
+        State.cache?.remove(`plugin/schema:${identifier}`);
 
-        State.cache?.remove(`plugin/definition:${plugin}`);
-        State.cache?.remove(`plugin/schema:${plugin}`);
-
-        Plugins.uninstall(request.params.bridge, plugin).then(() => {
+        Plugins.uninstall(request.params.bridge, identifier).then(() => {
             if (State.hub?.config.dashboard && State.hub?.config.dashboard.items) {
                 const { ...config } = State.hub?.config;
 
@@ -226,7 +216,7 @@ export default class PluginsController {
             let details: any[];
 
             if (bridge?.type === "dev") {
-                schema = await this.pluginSchema(bridge, identifier, {});
+                schema = await Plugins.pluginSchema(bridge, identifier, {});
 
                 details = [{
                     name: identifier,
@@ -234,8 +224,8 @@ export default class PluginsController {
                     type: schema.accessory ? "accessory" : "platform",
                 }];
             } else {
-                definition = await this.pluginDefinition(identifier);
-                schema = await this.pluginSchema(bridge, identifier, definition || {});
+                definition = await Plugins.pluginDefinition(identifier);
+                schema = await Plugins.pluginSchema(bridge, identifier, definition || {});
                 details = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
             }
 
@@ -271,92 +261,7 @@ export default class PluginsController {
         return results;
     }
 
-    private async pluginDefinition(identifier: string): Promise<{ [key: string]: any } | undefined> {
-        const key = `plugin/definition:${identifier}`;
-        const cached = State.cache?.get<{ [key: string]: any }>(key);
-
-        if (cached) return cached;
-
-        try {
-            const definition = ((await Axios.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
-
-            State.cache?.set(key, definition, 60);
-
-            return definition;
-        } catch (_error) {
-            Console.warn("plugin site unavailable");
-        }
-
-        return undefined;
-    }
-
-    private async pluginSchema(bridge: BridgeRecord | undefined, identifier: string, definition: { [key: string]: any }): Promise<{ [key: string]: any }> {
-        const key = `plugin/schema:${identifier}`;
-        const cached = State.cache?.get<{ [key: string]: any }>(key);
-
-        if (cached) return cached;
-
-        if (bridge?.type === "dev") {
-            const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
-
-            return {
-                name: identifier,
-                alias: raw.alias || raw.pluginAlias || identifier,
-                accessory: raw.pluginType === "accessory",
-                config: {
-                    type: "object",
-                    properties: (raw.schema || raw.config).properties || {},
-                },
-            };
-        }
-
-        if (bridge && !definition.override_schema && existsSync(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"))) {
-            const raw: { [key: string]: any } = Paths.loadJson(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"), {});
-
-            const schema = {
-                name: identifier,
-                alias: raw.alias || raw.pluginAlias || identifier,
-                accessory: raw.pluginType === "accessory",
-                config: {
-                    type: "object",
-                    properties: (raw.schema || raw.config).properties || {},
-                },
-            };
-
-            State.cache?.set(key, schema, 60);
-
-            return schema;
-        }
-
-        try {
-            const schema = ((await Axios.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {};
-
-            State.cache?.set(key, schema, 60);
-
-            return schema;
-        } catch (_error) {
-            Console.warn("plugin site unavailable");
-        }
-
-        return {};
-    }
-
-    private accessories(bridge: string, plugin: string): Promise<string[]> {
-        return new Promise((resolve) => {
-            this.client.accessories(bridge).then((services: { [key: string]: any }[]) => {
-                if (!services) {
-                    resolve([]);
-
-                    return;
-                }
-
-                if (!Array.isArray(services)) services = [services];
-
-                services = [...services];
-                services = services.filter((item) => item.plugin === plugin);
-
-                resolve(services.map((item) => item.accessory_identifier));
-            });
-        });
+    private async accessories(bridge: string, plugin: string): Promise<string[]> {
+        return (await State.socket?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
     }
 }
