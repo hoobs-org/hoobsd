@@ -93,12 +93,24 @@ export default class Accessories {
     private seralizeAccessory(cached: PlatformAccessory | Accessory): { [key: string]: any } {
         const accessory = cached instanceof PlatformAccessory ? PlatformAccessory.serialize(cached) : Accessory.serialize(cached);
 
+        // @ts-ignore
+        const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
+
+        let streamable = false;
+
+        if (context && context.controller && context.controller.delegate.videoConfig) {
+            const matches = (` ${context.controller.delegate.videoConfig.source} `).match(/(rtsp)+[:.].*?(?=\s)/i);
+
+            if (matches && matches[0]) streamable = true;
+        }
+
         return {
             uuid: accessory.UUID,
             bridge_identifier: Accessories.identifier(State.id),
             bridge: State.id,
             category: accessory.category,
             name: accessory.displayName,
+            supports_streaming: streamable || undefined,
             services: accessory.services.map((service) => this.seralizeService(service)),
         };
     }
@@ -168,6 +180,7 @@ export default class Accessories {
                             sequence: 0,
                             hidden: false,
                             type: Services[accessories[i].services[j].type],
+                            supports_streaming: accessories[i].supports_streaming,
                             linked: accessories[i].services[j].linked,
                             characteristics: [],
                         };

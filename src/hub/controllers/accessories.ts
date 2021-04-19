@@ -19,6 +19,7 @@
 import _ from "lodash";
 import { Request, Response } from "express-serve-static-core";
 import { join } from "path";
+import { existsSync } from "fs-extra";
 import State from "../../state";
 import Security from "../../services/security";
 import Paths from "../../services/paths";
@@ -166,12 +167,12 @@ export default class AccessoriesController {
         response.send(accessory);
     }
 
-    async stream(request: Request, response: Response): Promise<void> {
+    async stream(request: Request, response: Response): Promise<Response> {
         const source = await State.socket?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
 
         if (source) {
             if (Paths.tryCommand("ffmpeg")) {
-                State.hub?.stream(request.params.bridge, request.params.id, "ffmpeg", [
+                const process = State.hub?.stream(request.params.bridge, request.params.id, "ffmpeg", [
                     "-i",
                     source,
                     "-y",
@@ -182,7 +183,7 @@ export default class AccessoriesController {
                     "-ac",
                     "2",
                     "-s",
-                    "854x480",
+                    "640x360",
                     "-c:v",
                     "libx264",
                     "-b:v",
@@ -196,13 +197,25 @@ export default class AccessoriesController {
                     join(Paths.streams, `${request.params.id}.m3u8`),
                 ]);
 
-                response.send(`${request.params.id}.m3u8`);
-            } else {
-                response.send(undefined);
+                let wait = true;
+
+                process?.on("exit", () => {
+                    wait = false;
+
+                    State.hub?.terminate(request.params.bridge, request.params.id);
+                });
+
+                while (wait) {
+                    if (existsSync(join(Paths.streams, `${request.params.id}.m3u8`))) {
+                        wait = false;
+
+                        return response.send(`${request.params.id}.m3u8`);
+                    }
+                }
             }
-        } else {
-            response.send(undefined);
         }
+
+        return response.send(undefined);
     }
 
     terminate(request: Request, response: Response) {
@@ -666,9 +679,7 @@ export default class AccessoriesController {
         }
 
         for (let i = 0; i < results.length; i += 1) {
-            if (working.accessories[results[i].accessory_identifier]) {
-                _.extend(results[i], working.accessories[results[i].accessory_identifier]);
-            }
+            if (working.accessories[results[i].accessory_identifier]) _.extend(results[i], working.accessories[results[i].accessory_identifier]);
         }
 
         return results;

@@ -431,7 +431,7 @@ export default class API extends EventEmitter {
     stream(bridge: string, id: string, command: string, flags: string[]): Process.ChildProcess {
         this.terminate(bridge, id);
 
-        const process = Process.spawn(command, flags, { stdio: "ignore", detached: true });
+        const process = Process.spawn(command, flags, { detached: true });
 
         this.streams.push({
             id,
