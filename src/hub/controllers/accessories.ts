@@ -17,9 +17,8 @@
  **************************************************************************************************/
 
 import _ from "lodash";
+import ffmpeg from "fluent-ffmpeg";
 import { Request, Response } from "express-serve-static-core";
-import { join } from "path";
-import { existsSync } from "fs-extra";
 import State from "../../state";
 import Security from "../../services/security";
 import Paths from "../../services/paths";
@@ -33,8 +32,7 @@ export default class AccessoriesController {
         State.app?.get("/api/accessories/hidden", Security, (request, response) => this.hidden(request, response));
         State.app?.get("/api/accessories/:bridge", Security, (request, response) => this.list(request, response));
         State.app?.get("/api/accessory/:bridge/:id", Security, (request, response) => this.get(request, response));
-        State.app?.post("/api/accessory/:bridge/:id/stream/start", Security, (request, response) => this.stream(request, response));
-        State.app?.post("/api/accessory/:bridge/:id/stream/stop", Security, (request, response) => this.terminate(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/stream", (request, response) => this.stream(request, response));
         State.app?.get("/api/accessory/:bridge/:id/snapshot", Security, (request, response) => this.snapshot(request, response));
         State.app?.get("/api/accessory/:bridge/:id/characteristics", Security, (request, response) => this.characteristics(request, response));
         State.app?.put("/api/accessory/:bridge/:id/:service", Security, (request, response) => this.set(request, response));
@@ -167,61 +165,38 @@ export default class AccessoriesController {
         response.send(accessory);
     }
 
-    async stream(request: Request, response: Response): Promise<Response> {
+    async stream(request: Request, response: Response): Promise<void> {
         const source = await State.socket?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
 
         if (source) {
-            if (Paths.tryCommand("ffmpeg")) {
-                const process = State.hub?.stream(request.params.bridge, request.params.id, "ffmpeg", [
-                    "-i",
-                    source,
-                    "-y",
-                    "-c:a",
-                    "aac",
-                    "-b:a",
-                    "160000",
-                    "-ac",
-                    "2",
-                    "-s",
-                    "640x360",
-                    "-c:v",
-                    "libx264",
-                    "-b:v",
-                    "800000",
-                    "-hls_time",
-                    "10",
-                    "-hls_list_size",
-                    "10",
-                    "-start_number",
-                    "1",
-                    join(Paths.streams, `${request.params.id}.m3u8`),
-                ]);
+            const stream = ffmpeg(source, { timeout: 432000 });
 
-                let wait = true;
+            stream.format("hls");
 
-                process?.on("exit", () => {
-                    wait = false;
+            stream.audioCodec("aac");
+            stream.audioBitrate("160000");
+            stream.audioChannels(2);
 
-                    State.hub?.terminate(request.params.bridge, request.params.id);
-                });
+            stream.size("640x360");
+            stream.videoCodec("libx264");
+            stream.videoBitrate(800000);
 
-                while (wait) {
-                    if (existsSync(join(Paths.streams, `${request.params.id}.m3u8`))) {
-                        wait = false;
+            stream.addOption("-hls_time", "10");
+            stream.addOption("-hls_list_size", "0");
 
-                        return response.send(`${request.params.id}.m3u8`);
-                    }
-                }
-            }
+            stream.on("end", () => {
+                stream.kill("SIGTERM");
+            });
+
+            stream.on("error", (error) => {
+                stream.kill("SIGTERM");
+                Console.info(error.message);
+            });
+
+            stream.pipe(response, { end: true });
+        } else {
+            response.send(undefined);
         }
-
-        return response.send(undefined);
-    }
-
-    terminate(request: Request, response: Response) {
-        State.hub?.terminate(request.params.bridge, request.params.id);
-
-        response.send(true);
     }
 
     async snapshot(request: Request, response: Response): Promise<void> {

@@ -72,12 +72,6 @@ interface BridgeProcess {
     process: Process.ChildProcess;
 }
 
-interface StreamProcess {
-    id: string;
-    bridge: string;
-    process: Process.ChildProcess;
-}
-
 function running(pid: number): boolean {
     try {
         return process.kill(pid, 0) || false;
@@ -101,8 +95,6 @@ export default class API extends EventEmitter {
 
     declare private bridges: { [key: string]: BridgeProcess };
 
-    declare private streams: StreamProcess[];
-
     declare private listner: HTTP.Server;
 
     declare private terminator: HttpTerminator;
@@ -115,7 +107,6 @@ export default class API extends EventEmitter {
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
         this.bridges = {};
-        this.streams = [];
 
         State.socket = new Socket("api");
 
@@ -214,7 +205,6 @@ export default class API extends EventEmitter {
 
         State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
         State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
-        State.app?.use("/streams", Express.static(Paths.streams));
         State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
@@ -356,8 +346,6 @@ export default class API extends EventEmitter {
                     }, BRIDGE_TEARDOWN_DELAY);
                 };
 
-                this.streams.filter((item) => item.bridge === id).forEach((stream) => this.terminate(stream.bridge, stream.id));
-
                 this.bridges[id].process.removeAllListeners("exit");
                 this.bridges[id].process.once("exit", handler);
 
@@ -426,32 +414,6 @@ export default class API extends EventEmitter {
                 resolve();
             });
         });
-    }
-
-    stream(bridge: string, id: string, command: string, flags: string[]): Process.ChildProcess {
-        this.terminate(bridge, id);
-
-        const process = Process.spawn(command, flags, { detached: true });
-
-        this.streams.push({
-            id,
-            bridge,
-            process,
-        });
-
-        return process;
-    }
-
-    terminate(bridge: string, id: string) {
-        const index = this.streams.findIndex((item) => item.bridge === bridge && item.id === id);
-
-        if (index >= 0) {
-            if (running(this.streams[index].process.pid)) this.streams[index].process.kill();
-
-            this.streams.splice(index, 1);
-        }
-
-        Process.execSync(`rm -f ${Path.join(Paths.streams, `${id}*`)}`);
     }
 
     async start(): Promise<void> {

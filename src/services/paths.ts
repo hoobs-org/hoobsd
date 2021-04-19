@@ -137,12 +137,6 @@ export default class Paths {
         return join(Paths.data(State.id), "themes");
     }
 
-    static get streams(): string {
-        File.ensureDirSync(join(Paths.data(), "streams"));
-
-        return join(Paths.data(), "streams");
-    }
-
     static get bridges(): string {
         return join(Paths.data(), "bridges.conf");
     }
