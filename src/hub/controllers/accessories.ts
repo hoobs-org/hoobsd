@@ -188,11 +188,11 @@ export default class AccessoriesController {
             });
 
             stream.on("error", (error) => {
-                Console.info(error.message);
+                Console.debug(error.message);
                 stream.kill("SIGTERM");
             });
 
-            Console.info("Output stream opened");
+            Console.debug("Output stream opened");
 
             stream.pipe(response, { end: true });
         } else {
