@@ -171,7 +171,9 @@ export default class AccessoriesController {
         if (source) {
             const stream = ffmpeg(source, { timeout: 432000 });
 
-            stream.format("hls");
+            stream.addOutputOptions("-movflags +frag_keyframe+separate_moof+omit_tfhd_offset+empty_moov");
+            stream.addOptions("-preset veryfast");
+            stream.format("mp4");
 
             stream.audioCodec("aac");
             stream.audioBitrate("160000");
@@ -179,13 +181,18 @@ export default class AccessoriesController {
 
             stream.size("640x360");
             stream.videoCodec("libx264");
-            stream.videoBitrate(800000);
+            stream.videoBitrate(1024);
 
-            stream.addOption("-hls_time", "10");
-            stream.addOption("-hls_list_size", "0");
+            stream.on("end", () => {
+                stream.kill("SIGTERM");
+            });
 
-            stream.on("end", () => stream.kill("SIGTERM"));
-            stream.on("error", () => stream.kill("SIGTERM"));
+            stream.on("error", (error) => {
+                Console.info(error.message);
+                stream.kill("SIGTERM");
+            });
+
+            Console.info("Output stream opened");
 
             stream.pipe(response, { end: true });
         } else {
