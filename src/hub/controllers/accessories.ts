@@ -184,14 +184,8 @@ export default class AccessoriesController {
             stream.addOption("-hls_time", "10");
             stream.addOption("-hls_list_size", "0");
 
-            stream.on("end", () => {
-                stream.kill("SIGTERM");
-            });
-
-            stream.on("error", (error) => {
-                stream.kill("SIGTERM");
-                Console.info(error.message);
-            });
+            stream.on("end", () => stream.kill("SIGTERM"));
+            stream.on("error", () => stream.kill("SIGTERM"));
 
             stream.pipe(response, { end: true });
         } else {
