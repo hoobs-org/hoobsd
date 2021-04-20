@@ -273,7 +273,7 @@ export default class Accessories {
                     const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
 
                     if (context && context.controller) {
-                        context.controller.delegate.handleSnapshotRequest({ width: 640, height: 360 }, (_error: any, buffer: Buffer) => {
+                        context.controller.delegate.handleSnapshotRequest({ width: 480, height: 270 }, (_error: any, buffer: Buffer) => {
                             if (!buffer && context.controller.cachedSnapshot) {
                                 resolve(context.controller.cachedSnapshot.toString("base64"));
                             } else if (buffer) {
