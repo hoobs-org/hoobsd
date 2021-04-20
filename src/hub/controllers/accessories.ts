@@ -179,7 +179,7 @@ export default class AccessoriesController {
             stream.audioBitrate("160000");
             stream.audioChannels(2);
 
-            stream.size("640x360");
+            stream.size("480x270");
             stream.videoCodec("libx264");
             stream.videoBitrate(1024);
 

@@ -135,6 +135,7 @@ export default class API extends EventEmitter {
 
         State.app = Express();
         State.app.use(Compression());
+        State.app.disable("x-powered-by");
 
         State.app?.use(CORS({
             origin: this.settings.origin || "*",
