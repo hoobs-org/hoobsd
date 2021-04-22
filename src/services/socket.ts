@@ -39,7 +39,7 @@ export default class Socket {
         this.server = new IPCServer({
             id,
             root: `${Paths.data()}/`,
-            maxConnections: 200,
+            maxConnections: 1000,
         });
     }
 
@@ -68,6 +68,8 @@ export default class Socket {
             } else {
                 socket.emit(event, data).then(() => {
                     resolve();
+                }).catch(() => {
+                    resolve();
                 });
             }
         });
@@ -82,6 +84,8 @@ export default class Socket {
             } else {
                 socket.fetch(path, params, body).then((response) => {
                     resolve(response);
+                }).catch(() => {
+                    resolve(undefined);
                 });
             }
         });
