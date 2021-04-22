@@ -64,10 +64,10 @@
     source-map-support "^0.5.19"
     tslib "^2.0.3"
 
-"@hoobs/ipc@^1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@hoobs/ipc/-/ipc-1.0.6.tgz#769beaba65237ce5ca61775077ab13f292040330"
-  integrity sha512-uGkM7v4aQyH50LuOWPqCl8UmSizzVYPA0J0+8b9XvvdU3RtgS8uwcVVYN5s5mkar7xaXCbLgqI+FNJIa4NjiiA==
+"@hoobs/ipc@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@hoobs/ipc/-/ipc-1.0.9.tgz#0d48b7962d9547b75a5b834039bd4d47c7330128"
+  integrity sha512-rCr8amlY24jkWsMjL5zh6ajGS/3t8GibE0DTVKumVCZpyyjyTd625/IaNvPW1ZmE9RP6tif5svLJ60Uj3y3JGA==
 
 "@nodelib/fs.scandir@2.1.4":
   version "2.1.4"
