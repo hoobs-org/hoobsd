@@ -458,6 +458,7 @@ export default class Server extends EventEmitter {
                     const accessory = this.createHAPAccessory(plugin, accessoryInstance, accessoryName, platformType, uuidBase);
 
                     if (accessory) {
+                        this.hapAccessories.push(accessory);
                         this.bridge.addBridgedAccessory(accessory);
                     } else {
                         logger(`Platform %${platformType} returned an accessory at index ${index} with an empty set of services. Won't adding it to the bridge.`);
