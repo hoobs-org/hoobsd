@@ -63,9 +63,7 @@ export default class Accessories {
         const accessories = this.load();
         const index = accessories.findIndex((item) => item.accessory_identifier === accessory.accessory_identifier);
 
-        if (index >= 0) {
-            accessories[index] = accessory;
-        }
+        if (index >= 0) accessories[index] = accessory;
 
         State.cache?.set(key, accessories, 30);
     }
@@ -79,7 +77,23 @@ export default class Accessories {
             if (cached && Array.isArray(cached) && cached.length > 0) return cached;
         }
 
-        const accessories = this.transform(State.homebridge?.getAccessories.map((cached) => this.seralizeAccessory(cached)) || []);
+        const accessories: { [key: string]: any }[] = [];
+        const hap = State.homebridge?.getAccessories || [];
+
+        for (let i = 0; i < hap.length; i += 1) {
+            const item = this.seralizeAccessory(hap[i]);
+            const index = accessories.findIndex((existing) => existing.uuid === item.uuid);
+
+            if (index >= 0) {
+                accessories[index].characteristics = [...accessories[index].characteristics, ...item.characteristics];
+                accessories[index].optional_characteristics = [...accessories[index].optional_characteristics, ...item.optional_characteristics];
+
+                if (!accessories[index].main_sensor && item.main_sensor) accessories[index].main_sensor = item.main_sensor;
+                if (accessories[index].main_sensor && item.main_sensor && Precedence[item.main_sensor] < Precedence[accessories[index].main_sensor]) accessories[index].main_sensor = item.main_sensor;
+            } else {
+                accessories.push(item);
+            }
+        }
 
         State.cache?.set(key, accessories, 30);
 
@@ -87,7 +101,28 @@ export default class Accessories {
     }
 
     private loadOne(accessory: string): { [key: string]: any } {
-        return this.transform(State.homebridge?.getAccessories.filter((item) => item.UUID === accessory).map((cached) => this.seralizeAccessory(cached)) || [])[0];
+        const accessories: { [key: string]: any }[] = [];
+        const hap = (State.homebridge?.getAccessories || []).filter((item) => item.UUID === accessory);
+
+        for (let i = 0; i < hap.length; i += 1) {
+            const item = this.seralizeAccessory(hap[i]);
+            const index = accessories.findIndex((existing) => existing.uuid === item.uuid);
+
+            if (index >= 0) {
+                accessories[index].characteristics = [...accessories[index].characteristics, ...item.characteristics];
+
+                if ((Precedence[item.type] || Number.MAX_SAFE_INTEGER) < Precedence[accessories[index].type]) accessories[index].type = item.type;
+                if (!accessories[index].main_sensor && item.main_sensor) accessories[index].main_sensor = item.main_sensor;
+
+                if (accessories[index].main_sensor && item.main_sensor && (Precedence[item.main_sensor] || Number.MAX_SAFE_INTEGER) < Precedence[accessories[index].main_sensor]) {
+                    accessories[index].main_sensor = item.main_sensor;
+                }
+            } else {
+                accessories.push(item);
+            }
+        }
+
+        return accessories[0];
     }
 
     private seralizeAccessory(cached: PlatformAccessory | Accessory): { [key: string]: any } {
@@ -96,44 +131,100 @@ export default class Accessories {
         // @ts-ignore
         const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
 
-        let streamable = false;
+        let source: string | undefined;
 
         if (context && context.controller && context.controller.delegate.videoConfig) {
             const matches = (` ${context.controller.delegate.videoConfig.source} `).match(/(rtsp)+[:.].*?(?=\s)/i);
 
-            if (matches && matches[0]) streamable = true;
+            if (matches && matches[0]) [source] = matches;
         }
 
-        return {
+        const searilized: { [key: string]: any } = {
             uuid: accessory.UUID,
+            accessory_identifier: undefined,
             bridge_identifier: Accessories.identifier(State.id),
             bridge: State.id,
+            plugin: "",
+            room: "default",
             category: accessory.category,
             name: accessory.displayName,
-            supports_streaming: streamable || undefined,
-            services: accessory.services.map((service) => this.seralizeService(service)),
+            sequence: 0,
+            hidden: false,
+            type: undefined,
+            supports_streaming: source ? true : undefined,
+            streaming_source: source,
         };
+
+        const characteristics: { [key: string]: any }[] = [];
+
+        for (let i = 0; i < accessory.services.length; i += 1) {
+            this.seralizeService(accessory.services[i], searilized, characteristics);
+        }
+
+        if (searilized.accessory_identifier === searilized.bridge_identifier) {
+            delete searilized.bridge_identifier;
+            delete searilized.sequence;
+            delete searilized.room;
+
+            searilized.type = "bridge";
+            searilized.hidden = true;
+        }
+
+        searilized.characteristics = characteristics;
+
+        return searilized;
     }
 
-    private seralizeService(service: SerializedService): { [key: string]: any } {
-        return {
-            uuid: service.UUID,
-            type: toShortForm(service.UUID),
-            hidden: service.hiddenService,
-            primary: service.primaryService,
-            characteristics: service.characteristics.map((characteristic) => this.seralizeCharacteristic(service, characteristic)),
-            optional: service.optionalCharacteristics?.map((characteristic) => this.seralizeCharacteristic(service, characteristic)),
-        };
+    private seralizeService(service: SerializedService, accessory: { [key: string]: any }, characteristics: { [key: string]: any }[]): void {
+        const type = Services[toShortForm(service.UUID)] || toShortForm(service.UUID);
+
+        for (let i = 0; i < service.characteristics.length; i += 1) {
+            const item = this.seralizeCharacteristic(accessory, service, service.characteristics[i]);
+
+            if (item) {
+                if (type === "accessory_information") {
+                    const key = Accessories.decamel(item.description);
+
+                    switch (key) {
+                        case "plugin_id":
+                            if (!accessory.plugin) accessory.plugin = item.value;
+                            break;
+
+                        case "device_id":
+                            if (!accessory.accessory_identifier) accessory.accessory_identifier = Accessories.identifier(State.id, item.value);
+                            break;
+
+                        default:
+                            if (!accessory[key]) accessory[key] = item.value;
+                            break;
+                    }
+                } else if (ExcludeServices.indexOf(type) === -1) {
+                    if (!accessory.type) accessory.type = type;
+                    if (accessory.type && (Precedence[type] || Number.MAX_SAFE_INTEGER) < Precedence[accessory.type]) accessory.type = type;
+
+                    characteristics.push(<{ [key: string]: any }>item);
+                }
+            }
+        }
+
+        if (Precedence[Services[type]] && Precedence[Services[type]] < Precedence[accessory.type]) accessory.type = Services[type];
     }
 
-    private seralizeCharacteristic(service: SerializedService, characteristic: SerializedCharacteristic): { [key: string]: any } {
+    private seralizeCharacteristic(accessory: { [key: string]: any }, service: SerializedService, characteristic: SerializedCharacteristic): { [key: string]: any } | undefined {
+        const cuid = toShortForm(characteristic.UUID);
+        const suid = toShortForm(service.UUID);
+
+        const ctype = Characteristics[cuid] || cuid;
+        const stype = Services[suid] || suid;
+
+        if (cuid === "23") return undefined;
+        if (stype === "sensor" && !accessory.main_sensor) accessory.main_sensor = ctype;
+        if (stype === "sensor" && accessory.main_sensor && (Precedence[ctype] || Number.MAX_SAFE_INTEGER) < Precedence[accessory.main_sensor]) accessory.main_sensor = ctype;
+
         return {
             uuid: characteristic.UUID,
-            type: Characteristics[toShortForm(characteristic.UUID)] || toShortForm(characteristic.UUID),
-            service: {
-                uuid: service.UUID,
-                type: Services[toShortForm(service.UUID)] || toShortForm(service.UUID),
-            },
+            type: ctype,
+            service: { uuid: service.UUID, type: stype },
             description: characteristic.displayName,
             value: characteristic.value,
             format: characteristic.props.format,
@@ -146,85 +237,6 @@ export default class Accessories {
             read: characteristic.props.perms.includes(Perms.PAIRED_READ),
             write: characteristic.props.perms.includes(Perms.PAIRED_WRITE),
         };
-    }
-
-    private transform(accessories: { [key: string]: any }[]): { [key: string]: any }[] {
-        const services: { [key: string]: any }[] = [];
-
-        for (let i = 0; i < accessories.length; i += 1) {
-            const information: { [key: string]: any } = accessories[i].services.find((x: { [key: string]: any }) => x.type === "3E");
-            const details: { [key: string]: any } = {};
-
-            if (information && Array.isArray(information.characteristics)) {
-                for (let j = 0; j < information.characteristics.length; j += 1) {
-                    if (information.characteristics[j].value) {
-                        details[Accessories.decamel(information.characteristics[j].description)] = information.characteristics[j].value;
-                    }
-                }
-            }
-
-            for (let j = 0; j < accessories[i].services.length; j += 1) {
-                if (ExcludeServices.indexOf(accessories[i].services[j].type) === -1) {
-                    let service: { [key: string]: any } = services.find((item) => item.uuid === accessories[i].uuid) || {};
-
-                    if (!service.uuid) {
-                        service = {
-                            uuid: accessories[i].uuid,
-                            accessory_identifier: "",
-                            bridge_identifier: accessories[i].bridge_identifier,
-                            bridge: accessories[i].bridge,
-                            plugin: "",
-                            room: "default",
-                            category: accessories[i].category,
-                            name: accessories[i].displayName,
-                            sequence: 0,
-                            hidden: false,
-                            type: Services[accessories[i].services[j].type],
-                            supports_streaming: accessories[i].supports_streaming,
-                            linked: accessories[i].services[j].linked,
-                            characteristics: [],
-                        };
-
-                        const keys: string[] = _.keys(details);
-
-                        for (let k = 0; k < keys.length; k += 1) {
-                            service[keys[k]] = details[keys[k]];
-                        }
-
-                        service.accessory_identifier = Accessories.identifier(State.id, service.device_id);
-                        service.plugin = service.plugin_id;
-
-                        if (service.accessory_identifier === service.bridge_identifier) {
-                            delete service.bridge_identifier;
-                            delete service.sequence;
-                            delete service.room;
-
-                            service.type = "bridge";
-                            service.hidden = true;
-                        }
-
-                        delete service.device_id;
-                        delete service.plugin_id;
-
-                        services.push(service);
-                    }
-
-                    if (Precedence[Services[accessories[i].services[j].type]] && Precedence[Services[accessories[i].services[j].type]] < Precedence[service.type]) service.type = Services[accessories[i].services[j].type];
-
-                    for (let k = 0; k < accessories[i].services[j].characteristics.length; k += 1) {
-                        if (accessories[i].services[j].characteristics[k].type !== "23") {
-                            const characteristic: { [key: string]: any } = accessories[i].services[j].characteristics[k];
-
-                            if (characteristic.service.type === "sensor" && (!service.main_sensor || Precedence[characteristic.type] < Precedence[service.main_sensor])) service.main_sensor = characteristic.type;
-
-                            service.characteristics.push(characteristic);
-                        }
-                    }
-                }
-            }
-        }
-
-        return services;
     }
 
     private updateAll(accessories: { [key: string]: any }[]): void {
@@ -251,11 +263,11 @@ export default class Accessories {
                 if (typeof value === "boolean") value = value ? 1 : 0;
 
                 if (characteristic) {
-                    State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid).forEach((a) => {
-                        a.services.filter((s) => s.UUID === characteristic.service.uuid).forEach((s) => {
-                            const char = s.characteristics.find((c) => c.UUID === characteristic.uuid);
+                    State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid).forEach((hap) => {
+                        hap.services.filter((s) => s.UUID === characteristic.service.uuid).forEach((service) => {
+                            const char = service.characteristics.find((key) => key.UUID === characteristic.uuid);
 
-                            if (char) s.setCharacteristic(char.displayName, value);
+                            if (char) service.setCharacteristic(char.displayName, value);
                         });
                     });
                 }
@@ -283,6 +295,8 @@ export default class Accessories {
                                 if (!buffer && context.controller.cachedSnapshot) {
                                     const screenshot = context.controller.cachedSnapshot.toString("base64");
 
+                                    State.cache?.set(key, screenshot, 0.0166);
+
                                     resolve(screenshot);
                                 } else if (buffer) {
                                     const screenshot = buffer.toString("base64");
@@ -298,31 +312,7 @@ export default class Accessories {
                     }
                 });
 
-                accessory.stream = (): string | undefined => {
-                    const key = `bridge/${accessory.accessory_identifier}/stream`;
-                    const cached = State.cache?.get<any>(key);
-
-                    if (cached) {
-                        return cached;
-                    }
-
-                    const hap = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
-
-                    // @ts-ignore
-                    const context: any = hap instanceof PlatformAccessory ? hap._associatedHAPAccessory.controllers.camera : hap?.controllers.camera;
-
-                    if (context && context.controller && context.controller.delegate.videoConfig) {
-                        const matches = (` ${context.controller.delegate.videoConfig.source} `).match(/(rtsp)+[:.].*?(?=\s)/i);
-
-                        if (matches && matches[0]) {
-                            State.cache?.set(key, matches[0], 30);
-
-                            return matches[0];
-                        }
-                    }
-
-                    return undefined;
-                };
+                accessory.stream = (): string | undefined => accessory.streaming_source;
             }
         }
     }

@@ -142,7 +142,6 @@ class Logger {
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
             if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
-            if (message.match(/^(?=.*\bgit.io\b).*$/gmi)) return;
 
             data = {
                 level,
@@ -163,6 +162,7 @@ class Logger {
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("version") >= 0) return;
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("recommended") >= 0) return;
         if ((data.message || "").match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
+        if ((data.message || "").match(/^(?=.*\bgit.io\b).*$/gmi)) data.level = LogLevel.DEBUG;
 
         let colored: string;
 
@@ -181,7 +181,7 @@ class Logger {
 
                     colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
 
-                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -200,7 +200,7 @@ class Logger {
 
                     colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
 
-                    if (State.id === "hub") CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -219,7 +219,7 @@ class Logger {
 
                     colored = Chalk.gray(data.message);
 
-                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -236,7 +236,7 @@ class Logger {
                     if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
                     if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
-                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
