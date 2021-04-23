@@ -43,6 +43,7 @@ import State from "../state";
 import Users from "../services/users";
 import Socket from "../services/socket";
 import Monitor from "./services/monitor";
+import Pipe from "../services/pipe";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Events, NotificationType } from "../services/logger";
 
@@ -132,6 +133,8 @@ export default class API extends EventEmitter {
 
             if (bridge) this.launch(bridge);
         });
+
+        State.socket.route(Events.LOG, (_request, response) => response.send(Console.cache()));
 
         State.app = Express();
         State.app.use(Compression());
@@ -267,7 +270,7 @@ export default class API extends EventEmitter {
             this.bridges[bridge.id] = {
                 bridge,
                 port: bridge.port,
-                process: Process.fork(hoobsd, flags, { env: { ...process.env } }),
+                process: Process.spawn(hoobsd, flags, { env: { ...process.env } }),
             };
 
             const handler = () => {
@@ -285,25 +288,21 @@ export default class API extends EventEmitter {
                 });
             };
 
-            this.bridges[bridge.id].process.once("exit", handler);
+            const stdout = new Pipe((data) => {
+                const messages: string[] = data.toString().split("\n");
 
-            if (State.debug) {
-                this.bridges[bridge.id].process.stdout?.on("data", (data) => {
-                    const messages: string[] = data.toString().split("\n");
+                for (let i = 0; i < messages.length; i += 1) {
+                    Console.log(LogLevel.DEBUG, {
+                        level: LogLevel.DEBUG,
+                        bridge: bridge.id,
+                        display: bridge.display || bridge.id,
+                        timestamp: new Date().getTime(),
+                        message: messages[i].trim(),
+                    });
+                }
+            });
 
-                    for (let i = 0; i < messages.length; i += 1) {
-                        Console.log(LogLevel.DEBUG, {
-                            level: LogLevel.DEBUG,
-                            bridge: bridge.id,
-                            display: bridge.display || bridge.id,
-                            timestamp: new Date().getTime(),
-                            message: messages[i].trim(),
-                        });
-                    }
-                });
-            }
-
-            this.bridges[bridge.id].process.stderr?.on("data", (data) => {
+            const stderr = new Pipe((data) => {
                 const messages: string[] = data.toString().split("\n");
 
                 for (let i = 0; i < messages.length; i += 1) {
@@ -316,6 +315,10 @@ export default class API extends EventEmitter {
                     });
                 }
             });
+
+            this.bridges[bridge.id].process.once("exit", handler);
+            this.bridges[bridge.id].process.stdout?.pipe(stdout);
+            this.bridges[bridge.id].process.stderr?.pipe(stderr);
 
             Console.notify(
                 typeof bridge === "string" ? bridge : bridge.id,

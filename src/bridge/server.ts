@@ -310,6 +310,8 @@ export default class Server extends EventEmitter {
         const cached = Paths.loadJson<SerializedPlatformAccessory[]>(join(Paths.accessories, "cachedAccessories"), backup, undefined, true);
 
         if (cached && cached.length > 0) {
+            this.resetAccessoryMemCache();
+
             this.platformAccessories = cached.map((serialized) => {
                 const accessory = PlatformAccessory.deserialize(serialized);
 
@@ -333,6 +335,8 @@ export default class Server extends EventEmitter {
     }
 
     private restoreCachedPlatformAccessories(): void {
+        this.resetAccessoryMemCache();
+
         this.platformAccessories = this.platformAccessories.filter((accessory) => {
             let plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
 
@@ -377,6 +381,10 @@ export default class Server extends EventEmitter {
         });
     }
 
+    private resetAccessoryMemCache() {
+        State.cache?.remove(`bridge/${State.id}/accessories`);
+    }
+
     private loadAccessories(): void {
         Console.info(`Loading ${this.config.accessories.length} accessories...`);
 
@@ -404,6 +412,7 @@ export default class Server extends EventEmitter {
             const accessory = this.createHAPAccessory(plugin, accessoryInstance, displayName, accessoryIdentifier, accessoryConfig.uuid_base);
 
             if (accessory) {
+                this.resetAccessoryMemCache();
                 this.hapAccessories.push(accessory);
                 this.bridge.addBridgedAccessory(accessory);
             } else {
@@ -458,6 +467,7 @@ export default class Server extends EventEmitter {
                     const accessory = this.createHAPAccessory(plugin, accessoryInstance, accessoryName, platformType, uuidBase);
 
                     if (accessory) {
+                        this.resetAccessoryMemCache();
                         this.hapAccessories.push(accessory);
                         this.bridge.addBridgedAccessory(accessory);
                     } else {
@@ -531,6 +541,7 @@ export default class Server extends EventEmitter {
 
     private handleRegisterPlatformAccessories(accessories: PlatformAccessory[]): void {
         const hapAccessories = accessories.map((accessory) => {
+            this.resetAccessoryMemCache();
             this.platformAccessories.push(accessory);
 
             const plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
@@ -576,6 +587,8 @@ export default class Server extends EventEmitter {
         const hapAccessories = accessories.map((accessory) => {
             const index = this.platformAccessories.indexOf(accessory);
 
+            this.resetAccessoryMemCache();
+
             if (index >= 0) this.platformAccessories.splice(index, 1);
 
             return accessory._associatedHAPAccessory;
@@ -606,7 +619,6 @@ export default class Server extends EventEmitter {
                     if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
 
                     informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
-
                     informationService.updateCharacteristic(DeviceID, accessories[i].UUID);
 
                     accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
@@ -619,6 +631,7 @@ export default class Server extends EventEmitter {
 
                     accessory.on(AccessoryEventTypes.LISTENING, (port: number) => Console.info(`${accessory.displayName} is running on port ${port}.`));
 
+                    this.resetAccessoryMemCache();
                     this.hapAccessories.push(accessory);
 
                     accessory.publish({

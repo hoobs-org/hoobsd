@@ -174,14 +174,7 @@ export default class AccessoriesController {
             stream.addOutputOptions("-movflags +frag_keyframe+separate_moof+omit_tfhd_offset+empty_moov");
             stream.addOptions("-preset veryfast");
             stream.format("mp4");
-
-            stream.audioCodec("aac");
-            stream.audioBitrate("160000");
-            stream.audioChannels(2);
-
-            stream.size("480x270");
-            stream.videoCodec("libx264");
-            stream.videoBitrate(1024);
+            stream.videoCodec("copy");
 
             stream.on("end", () => {
                 stream.kill("SIGTERM");

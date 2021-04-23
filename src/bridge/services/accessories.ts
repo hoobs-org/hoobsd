@@ -60,7 +60,7 @@ export default class Accessories {
 
     private cache(accessory: { [key: string]: any }): void {
         const key = `bridge/${accessory.bridge}/accessories`;
-        const accessories = this.load(accessory.bridge);
+        const accessories = this.load();
         const index = accessories.findIndex((item) => item.accessory_identifier === accessory.accessory_identifier);
 
         if (index >= 0) {
@@ -267,34 +267,58 @@ export default class Accessories {
 
             if (accessory.type === "camera") {
                 accessory.snapshot = (): Promise<string | undefined> => new Promise((resolve) => {
-                    const cached = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
+                    const key = `bridge/${accessory.accessory_identifier}/snapshot`;
+                    const cached = State.cache?.get<any>(key);
 
-                    // @ts-ignore
-                    const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
+                    if (cached) {
+                        resolve(cached);
+                    } else {
+                        const hap = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
 
-                    if (context && context.controller) {
-                        context.controller.delegate.handleSnapshotRequest({ width: 480, height: 270 }, (_error: any, buffer: Buffer) => {
-                            if (!buffer && context.controller.cachedSnapshot) {
-                                resolve(context.controller.cachedSnapshot.toString("base64"));
-                            } else if (buffer) {
-                                resolve(buffer.toString("base64"));
-                            } else {
-                                resolve(undefined);
-                            }
-                        });
+                        // @ts-ignore
+                        const context: any = hap instanceof PlatformAccessory ? hap._associatedHAPAccessory.controllers.camera : hap?.controllers.camera;
+
+                        if (context && context.controller) {
+                            context.controller.delegate.handleSnapshotRequest({ width: 480, height: 270 }, (_error: any, buffer: Buffer) => {
+                                if (!buffer && context.controller.cachedSnapshot) {
+                                    const screenshot = context.controller.cachedSnapshot.toString("base64");
+
+                                    resolve(screenshot);
+                                } else if (buffer) {
+                                    const screenshot = buffer.toString("base64");
+
+                                    State.cache?.set(key, screenshot, 0.0166);
+
+                                    resolve(screenshot);
+                                } else {
+                                    resolve(undefined);
+                                }
+                            });
+                        }
                     }
                 });
 
                 accessory.stream = (): string | undefined => {
-                    const cached = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
+                    const key = `bridge/${accessory.accessory_identifier}/stream`;
+                    const cached = State.cache?.get<any>(key);
+
+                    if (cached) {
+                        return cached;
+                    }
+
+                    const hap = State.homebridge?.getAccessories.filter((item) => item.UUID === accessory.uuid)[0];
 
                     // @ts-ignore
-                    const context: any = cached instanceof PlatformAccessory ? cached._associatedHAPAccessory.controllers.camera : cached?.controllers.camera;
+                    const context: any = hap instanceof PlatformAccessory ? hap._associatedHAPAccessory.controllers.camera : hap?.controllers.camera;
 
                     if (context && context.controller && context.controller.delegate.videoConfig) {
                         const matches = (` ${context.controller.delegate.videoConfig.source} `).match(/(rtsp)+[:.].*?(?=\s)/i);
 
-                        if (matches) return matches[0];
+                        if (matches && matches[0]) {
+                            State.cache?.set(key, matches[0], 30);
+
+                            return matches[0];
+                        }
                     }
 
                     return undefined;

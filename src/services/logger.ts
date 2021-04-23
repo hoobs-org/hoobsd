@@ -21,7 +21,6 @@ import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
-import { formatJson } from "./json";
 import { colorize } from "./formatters";
 
 export interface Message {
@@ -326,38 +325,6 @@ class Logger {
 }
 
 const system: Logger = new Logger();
-
-console.debug = function debug(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.debug(message, ...parameters);
-    } else {
-        system.debug(formatJson(message));
-    }
-};
-
-console.log = function log(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.info(message, ...parameters);
-    } else {
-        system.info(formatJson(message));
-    }
-};
-
-console.warn = function warn(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.warn(message, ...parameters);
-    } else {
-        system.warn(formatJson(message));
-    }
-};
-
-console.error = function error(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.error(message, ...parameters);
-    } else {
-        system.error(formatJson(message));
-    }
-};
 
 export function Print(...parameters: any[]) {
     if (State.verbose) CONSOLE_LOG(...parameters);
