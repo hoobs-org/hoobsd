@@ -31,27 +31,15 @@ export default class ExtentionsController {
     }
 
     list(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.controller) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.controller) return response.send({ token: false, error: "Unauthorized." });
 
         return response.send(Bridges.extentions());
     }
 
     async enable(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.controller) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.controller) return response.send({ token: false, error: "Unauthorized." });
 
-        let results: { success: boolean, error?: string | undefined } = {
-            success: false,
-        };
+        let results: { success: boolean, error?: string | undefined } = { success: false };
 
         switch ((request.params.name || "").toLowerCase()) {
             case "ffmpeg":
@@ -68,28 +56,15 @@ export default class ExtentionsController {
 
         if (results.success) return this.list(request, response);
 
-        if (results.error) {
-            return response.send({
-                error: results.error,
-            });
-        }
+        if (results.error) return response.send({ error: results.error });
 
-        return response.send({
-            error: "feature not supported",
-        });
+        return response.send({ error: "feature not supported" });
     }
 
     disable(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.controller) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.controller) return response.send({ token: false, error: "Unauthorized." });
 
-        let results: { success: boolean, error?: string | undefined } = {
-            success: false,
-        };
+        let results: { success: boolean, error?: string | undefined } = { success: false };
 
         switch ((request.params.name || "").toLowerCase()) {
             case "ffmpeg":
@@ -106,14 +81,8 @@ export default class ExtentionsController {
 
         if (results.success) return this.list(request, response);
 
-        if (results.error) {
-            return response.send({
-                error: results.error,
-            });
-        }
+        if (results.error) return response.send({ error: results.error });
 
-        return response.send({
-            error: "feature not supported",
-        });
+        return response.send({ error: "feature not supported" });
     }
 }

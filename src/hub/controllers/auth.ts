@@ -31,33 +31,18 @@ export default class AuthController {
     }
 
     state(_request: Request, response: Response): Response {
-        if (State.hub?.settings.disable_auth) {
-            return response.send({
-                state: "disabled",
-            });
-        }
+        if (State.hub?.settings.disable_auth) return response.send({ state: "disabled" });
+        if (Users.count() === 0) return response.send({ state: "uninitialized" });
 
-        if (Users.count() === 0) {
-            return response.send({
-                state: "uninitialized",
-            });
-        }
-
-        return response.send({
-            state: "enabled",
-        });
+        return response.send({ state: "enabled" });
     }
 
     async validate(request: Request, response: Response): Promise<Response> {
-        if (State.hub?.settings.disable_auth) {
-            return response.send({
-                valid: true,
-            });
-        }
+        if (State.hub?.settings.disable_auth) return response.send({ valid: true });
 
-        return response.send({
-            valid: await Users.validateToken(request.headers.authorization),
-        });
+        const valid = await Users.validateToken(request.headers.authorization);
+
+        return response.send({ valid });
     }
 
     disable(request: Request, response: Response): Response {
@@ -76,46 +61,24 @@ export default class AuthController {
     async logon(request: Request, response: Response): Promise<Response> {
         const user: UserRecord | undefined = Users.get(request.body.username);
 
-        if (!user) {
-            return response.send({
-                token: false,
-                error: "Invalid username or password.",
-            });
-        }
+        if (!user) return response.send({ token: false, error: "Invalid username or password." });
 
         const challenge: string = await Users.hashValue(request.body.password, user.salt);
 
-        if (challenge !== user.password) {
-            return response.send({
-                token: false,
-                error: "Invalid username or password.",
-            });
-        }
+        if (challenge !== user.password) return response.send({ token: false, error: "Invalid username or password." });
 
         const remember: boolean = request.body.remember || false;
+        const token = await Users.generateToken(user.id, remember);
 
-        return response.send({
-            token: await Users.generateToken(user.id, remember),
-        });
+        return response.send({ token });
     }
 
     logout(request: Request, response: Response): Response {
-        if (State.hub?.settings.disable_auth) {
-            return response.send({
-                success: true,
-            });
-        }
-
-        if (!request.headers.authorization || request.headers.authorization === "") {
-            return response.send({
-                success: true,
-            });
-        }
+        if (State.hub?.settings.disable_auth) return response.send({ success: true });
+        if (!request.headers.authorization || request.headers.authorization === "") return response.send({ success: true });
 
         State.cache?.remove(request.headers.authorization);
 
-        return response.send({
-            success: true,
-        });
+        return response.send({ success: true });
     }
 }

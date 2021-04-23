@@ -56,15 +56,14 @@ export default class PluginsController {
     }
 
     async installed(request: Request, response: Response): Promise<Response> {
-        return response.send(await this.bridge(request.params.bridge));
+        const installed = await this.bridge(request.params.bridge);
+
+        return response.send(installed);
     }
 
     install(request: Request, response: Response): void {
         if (!request.user?.permissions?.plugins) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -90,21 +89,16 @@ export default class PluginsController {
         State.cache?.remove(`plugin/definition:${identifier}`);
         State.cache?.remove(`plugin/schema:${identifier}`);
 
-        Plugins.install(request.params.bridge, identifier, (tag || "")).then(async () => {
-            response.send({
-                success: true,
-            });
-        }).catch(() => response.send({
-            error: "plugin can not be installed",
-        }));
+        Plugins.install(request.params.bridge, identifier, (tag || "")).then(() => {
+            response.send({ success: true });
+        }).catch(() => {
+            response.send({ error: "plugin can not be installed" });
+        });
     }
 
     upgrade(request: Request, response: Response): void {
         if (!request.user?.permissions?.plugins) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -131,20 +125,15 @@ export default class PluginsController {
         State.cache?.remove(`plugin/schema:${identifier}`);
 
         Plugins.upgrade(request.params.bridge, identifier, (tag || "")).then(async () => {
-            response.send({
-                success: true,
-            });
-        }).catch(() => response.send({
-            error: "plugin can not be upgraded",
-        }));
+            response.send({ success: true });
+        }).catch(() => {
+            response.send({ error: "plugin can not be upgraded" });
+        });
     }
 
     async uninstall(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.plugins) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -183,13 +172,10 @@ export default class PluginsController {
                 Config.saveConfig(config);
             }
 
-            response.send({
-                success: true,
-                accessories,
-            });
-        }).catch(() => response.send({
-            error: "plugin can not be removed",
-        }));
+            response.send({ success: true, accessories });
+        }).catch(() => {
+            response.send({ error: "plugin can not be removed" });
+        });
     }
 
     private async bridge(id: string, development?: boolean): Promise<{ [key:string]: any }[]> {
@@ -262,6 +248,8 @@ export default class PluginsController {
     }
 
     private async accessories(bridge: string, plugin: string): Promise<string[]> {
-        return (await State.socket?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
+        const results = (await State.socket?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
+
+        return results;
     }
 }

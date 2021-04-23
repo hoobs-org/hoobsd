@@ -194,13 +194,16 @@ export default class AccessoriesController {
     }
 
     async snapshot(request: Request, response: Response): Promise<void> {
-        response.send({ image: await State.socket?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id }) });
+        const image = await State.socket?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id });
+
+        response.send({ image });
     }
 
     async set(request: Request, response: Response): Promise<void> {
         const working = AccessoriesController.layout;
 
         let room;
+        let accessory;
 
         switch (request.params.service) {
             case "room":
@@ -316,13 +319,17 @@ export default class AccessoriesController {
                 break;
 
             default:
-                response.send(await State.socket?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
+                accessory = await State.socket?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body);
+
+                response.send(accessory);
                 break;
         }
     }
 
     async characteristics(request: Request, response: Response): Promise<void> {
-        response.send(await State.socket?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
+        const accessory = await State.socket?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id });
+
+        response.send(accessory);
     }
 
     async rooms(_request: Request, response: Response): Promise<Response> {
@@ -353,11 +360,13 @@ export default class AccessoriesController {
         if (id !== "default") room = working.rooms.find((item: { [key: string]: any }) => item.id === id);
         if (!room) return response.send({ error: "room not found" });
 
-        return response.send(this.properties(room, (await this.accessories()).filter((item: { [key: string]: any }) => item.type !== "bridge"), true, true));
+        const accessories = (await this.accessories()).filter((item) => item.type !== "bridge");
+
+        return response.send(this.properties(room, accessories, true, true));
     }
 
     private properties(room: { [key: string]: any }, accessories: { [key: string]: any }[], devices?: boolean, capabilities?: boolean): { [key: string]: any } {
-        const assigned = accessories.filter((item: { [key: string]: any }) => {
+        let assigned = accessories.filter((item: { [key: string]: any }) => {
             if (room.id === "default" && (!item.room || item.room === "" || item.room === "default")) return true;
             if (item.room === room.id) return true;
 
@@ -393,11 +402,9 @@ export default class AccessoriesController {
                 return 0;
             });
 
-            for (let i = 0; i < assigned.length; i += 1) {
-                characteristics.push(...assigned[i].characteristics.map((item: { [key: string]: any }) => item.type));
-            }
+            const intermediate = assigned.map((item: { [key: string]: any }) => item.characteristics);
 
-            characteristics = [...new Set(characteristics)];
+            characteristics = [...new Set(intermediate.map((item: { [key: string]: any }) => item.type))];
 
             if (characteristics.indexOf("on") >= 0 && characteristics.indexOf("off") === -1) characteristics.push("off");
 
@@ -409,9 +416,10 @@ export default class AccessoriesController {
             });
         }
 
-        room.devices = assigned.filter((item) => !item.hidden).length;
+        assigned = assigned.filter((item) => !item.hidden);
+        room.devices = assigned.length;
 
-        if (devices) room.accessories = assigned.filter((item) => !item.hidden);
+        if (devices) room.accessories = assigned;
         if (capabilities) room.types = types;
         if (capabilities) room.characteristics = characteristics;
 

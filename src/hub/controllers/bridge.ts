@@ -49,16 +49,13 @@ export default class BridgeController {
     }
 
     async status(request: Request, response: Response): Promise<Response> {
-        return response.send(await State.socket?.fetch(request.params.bridge, "status:get"));
+        const status = await State.socket?.fetch(request.params.bridge, "status:get");
+
+        return response.send(status);
     }
 
     async start(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         const bridge = State.bridges.find((item) => item.id === request.params.bridge);
 
@@ -68,12 +65,7 @@ export default class BridgeController {
     }
 
     async stop(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         const bridge = State.bridges.find((item) => item.id === request.params.bridge);
 
@@ -83,12 +75,7 @@ export default class BridgeController {
     }
 
     async restart(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         await State.hub?.teardown(request.params.bridge);
 

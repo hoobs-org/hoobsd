@@ -33,12 +33,7 @@ export default class CacheController {
     }
 
     all(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         const results = [];
 
@@ -61,68 +56,40 @@ export default class CacheController {
     }
 
     list(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         const parings = Bridges.parings(request.params.bridge);
         const accessories = Bridges.accessories(request.params.bridge);
 
-        return response.send({
-            parings,
-            accessories,
-        });
+        return response.send({ parings, accessories });
     }
 
     listParings(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         return response.send(Bridges.parings(request.params.bridge));
     }
 
     listAccessories(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         return response.send(Bridges.accessories(request.params.bridge));
     }
 
     clear(request: Request, response: Response): void {
         if (!request.user?.permissions?.config) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
         State.cache?.clear();
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
     }
 
     async purge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         await State.hub?.teardown(request.params.bridge);
 
@@ -132,13 +99,9 @@ export default class CacheController {
             Bridges.purge(bridge.id, request.params?.uuid);
             State.hub?.launch(bridge);
 
-            return response.send({
-                success: true,
-            });
+            return response.send({ success: true });
         }
 
-        return response.send({
-            error: "bridge not found",
-        });
+        return response.send({ error: "bridge not found" });
     }
 }
