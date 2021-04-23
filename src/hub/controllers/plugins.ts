@@ -50,9 +50,7 @@ export default class PluginsController {
                                 results.push(plugins[j]);
                             }
                         }
-                    }).finally(() => {
-                        resolve();
-                    });
+                    }).finally(() => resolve());
                 }));
             }
         }
@@ -206,21 +204,24 @@ export default class PluginsController {
 
             let definition: { [key: string]: any } | undefined;
             let schema: { [key: string]: any } | undefined;
-            let details: any[];
+            let details: any[] = [];
+
+            const waits: Promise<void>[] = [];
 
             if (bridge?.type === "dev") {
-                schema = await Plugins.pluginSchema(bridge, identifier, {});
-
-                details = [{
-                    name: identifier,
-                    alias: schema.alias,
-                    type: schema.accessory ? "accessory" : "platform",
-                }];
+                waits.push(new Promise((resolve) => {
+                    Plugins.pluginSchema(bridge, identifier, {}).then((response) => {
+                        schema = response;
+                        details = [{ name: identifier, alias: schema.alias, type: schema.accessory ? "accessory" : "platform" }];
+                    }).finally(() => resolve());
+                }));
             } else {
-                definition = await Plugins.pluginDefinition(identifier);
-                schema = await Plugins.pluginSchema(bridge, identifier, definition || {});
-                details = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
+                waits.push(new Promise((resolve) => Plugins.pluginDefinition(identifier).then((response) => { definition = response; }).finally(() => resolve())));
+                waits.push(new Promise((resolve) => Plugins.pluginSchema(bridge, identifier, definition || {}).then((response) => { schema = response; }).finally(() => resolve())));
+                waits.push(new Promise((resolve) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => resolve())));
             }
+
+            await Promise.all(waits);
 
             if (definition) {
                 if ((definition.tags || {}).latest) {
