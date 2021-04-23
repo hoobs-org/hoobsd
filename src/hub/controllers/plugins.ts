@@ -35,30 +35,37 @@ export default class PluginsController {
         State.app?.delete("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.uninstall(request, response));
     }
 
-    async all(_request: Request, response: Response): Promise<Response> {
-        const results = [];
+    all(_request: Request, response: Response): void {
+        const results:{ [key: string]: any }[] = [];
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
+                waits.push(new Promise((resolve) => {
+                    this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")).then((plugins) => {
+                        if (plugins) {
+                            for (let j = 0; j < plugins.length; j += 1) {
+                                plugins[j].bridge = State.bridges[i].id;
 
-                if (plugins) {
-                    for (let j = 0; j < plugins.length; j += 1) {
-                        plugins[j].bridge = State.bridges[i].id;
-
-                        results.push(plugins[j]);
-                    }
-                }
+                                results.push(plugins[j]);
+                            }
+                        }
+                    }).finally(() => {
+                        resolve();
+                    });
+                }));
             }
         }
 
-        return response.send(results);
+        Promise.all(waits).then(() => {
+            response.send(results);
+        });
     }
 
-    async installed(request: Request, response: Response): Promise<Response> {
-        const installed = await this.bridge(request.params.bridge);
-
-        return response.send(installed);
+    installed(request: Request, response: Response): void {
+        this.bridge(request.params.bridge).then((installed) => {
+            response.send(installed);
+        });
     }
 
     install(request: Request, response: Response): void {
