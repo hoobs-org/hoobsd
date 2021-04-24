@@ -16,42 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import State from "../state";
-import Config from "./config";
-import { Prefixed, PluginLogger } from "./logger";
-import { IPCRequest, IPCResponse } from "./ipc";
+import { EventEmitter } from "events";
 
-export default class Plugin {
-    declare readonly identifier: string;
+export interface IPCRequest {
+    params?: { [key: string]: any };
+    body?: any;
+}
 
-    declare readonly name: string;
+export interface IPCResponse {
+    send: (body: any) => void;
+}
 
-    declare readonly display: string;
-
-    declare readonly logger: PluginLogger;
-
-    constructor(identifier: string, name: string) {
-        const config = Config.configuration();
-        const platform = config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
-        const accessory = config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
-
-        this.identifier = identifier;
-        this.name = name;
-        this.display = platform?.name || accessory?.name || name;
-        this.logger = Prefixed(identifier, this.display);
-    }
-
-    registerRoute(action: string, controller: (request: IPCRequest, response: IPCResponse) => any) {
-        if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            State.ipc?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
-                try {
-                    controller(request, response);
-                } catch (error) {
-                    this.logger.error(error?.message || "Error running route");
-                }
-            });
-        } else {
-            this.logger.error(`Unable to register route '${action}', action is not formatted correctly.`);
-        }
-    }
+export interface IPC extends EventEmitter {
+    route: (path: string, next: (request: IPCRequest, response: IPCResponse) => any) => void;
+    fetch: (id: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }) => Promise<any>;
 }

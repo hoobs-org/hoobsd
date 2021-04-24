@@ -148,11 +148,7 @@ export default class Config {
     static touchConfig(bridge?: string): void {
         const id = bridge || State.id;
 
-        let config: any = {};
-
-        if (existsSync(join(Paths.data(), `${id}.conf`))) config = Paths.loadJson<any>(join(Paths.data(), `${id}.conf`), {}, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
-
-        Paths.saveJson(join(Paths.data(), `${id}.conf`), config, false, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
+        Paths.touch(join(Paths.data(), `${id}.conf`));
     }
 
     static filterConfig(value: any): void {

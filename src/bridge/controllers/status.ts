@@ -16,10 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { IPCRequest, IPCResponse } from "@hoobs/ipc";
 import State from "../../state";
 import Paths from "../../services/paths";
 import { Console } from "../../services/logger";
+import { IPCRequest, IPCResponse } from "../../services/ipc";
 
 export default class StatusController {
     declare id: string | undefined;
@@ -27,8 +27,8 @@ export default class StatusController {
     declare path: string | undefined;
 
     constructor() {
-        State.socket?.route("status:get", (request, response) => this.status(request, response));
-        State.socket?.route("status:log", (request, response) => this.log(request, response));
+        State.ipc?.route("status:get", (request, response) => this.status(request, response));
+        State.ipc?.route("status:log", (request, response) => this.log(request, response));
     }
 
     status(_request: IPCRequest, response: IPCResponse): void {

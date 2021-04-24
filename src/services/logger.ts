@@ -108,7 +108,13 @@ class Logger {
     }
 
     save() {
-        if (State.id === "hub") Paths.saveJson(Paths.log, CACHE, false, undefined, true);
+        if (State.id === "hub" && !State.saving) {
+            State.saving = true;
+
+            Paths.saveJson(Paths.log, CACHE, false, undefined, true);
+
+            State.saving = false;
+        }
     }
 
     load() {
@@ -171,7 +177,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                if (State.bridge) State.ipc?.emit(Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -190,7 +196,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                if (State.bridge) State.ipc?.emit(Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -210,7 +216,7 @@ class Logger {
                     colored = data.message;
 
                     if (State.id === "hub") CACHE.push(data);
-                    if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                    if (State.bridge) State.ipc?.emit(Events.LOG, data);
                     if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -228,7 +234,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                if (State.bridge) State.ipc?.emit(Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -295,7 +301,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            State.socket?.emit("api", Events.NOTIFICATION, {
+            State.ipc?.emit(Events.NOTIFICATION, {
                 bridge,
                 data: {
                     title,
@@ -316,7 +322,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            State.socket?.emit("api", event, {
+            State.ipc?.emit(event, {
                 bridge,
                 data,
             });

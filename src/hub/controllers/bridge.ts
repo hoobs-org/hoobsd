@@ -34,7 +34,7 @@ export default class BridgeController {
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await State.socket?.fetch(State.bridges[i].id, "status:get");
+                const status = await State.ipc?.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
                     results.push({
@@ -49,7 +49,7 @@ export default class BridgeController {
     }
 
     async status(request: Request, response: Response): Promise<Response> {
-        const status = await State.socket?.fetch(request.params.bridge, "status:get");
+        const status = await State.ipc?.fetch(request.params.bridge, "status:get");
 
         return response.send(status);
     }

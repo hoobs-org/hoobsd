@@ -33,7 +33,7 @@ export default class StatusController {
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await State.socket?.fetch(State.bridges[i].id, "status:get");
+                const status = await State.ipc?.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
                     results[State.bridges[i].id] = {

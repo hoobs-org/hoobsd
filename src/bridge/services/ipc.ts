@@ -16,42 +16,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import State from "../state";
-import Config from "./config";
-import { Prefixed, PluginLogger } from "./logger";
-import { IPCRequest, IPCResponse } from "./ipc";
+import { EventEmitter } from "events";
+import { IPC, IPCRequest, IPCResponse } from "../../services/ipc";
 
-export default class Plugin {
-    declare readonly identifier: string;
+export default class BridgeIPC extends EventEmitter implements IPC {
+    private routes: { [key: string]: (request: IPCRequest, response: IPCResponse) => any } = {};
 
-    declare readonly name: string;
+    constructor() {
+        super();
 
-    declare readonly display: string;
-
-    declare readonly logger: PluginLogger;
-
-    constructor(identifier: string, name: string) {
-        const config = Config.configuration();
-        const platform = config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
-        const accessory = config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
-
-        this.identifier = identifier;
-        this.name = name;
-        this.display = platform?.name || accessory?.name || name;
-        this.logger = Prefixed(identifier, this.display);
+        process.removeAllListeners("message");
+        process.on("message", (data) => this.payload(data));
     }
 
-    registerRoute(action: string, controller: (request: IPCRequest, response: IPCResponse) => any) {
-        if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            State.ipc?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
-                try {
-                    controller(request, response);
-                } catch (error) {
-                    this.logger.error(error?.message || "Error running route");
-                }
-            });
-        } else {
-            this.logger.error(`Unable to register route '${action}', action is not formatted correctly.`);
+    public route(path: string, next: (request: IPCRequest, response: IPCResponse) => any): void {
+        this.routes[path] = next;
+    }
+
+    public fetch(): Promise<any> {
+        return new Promise((resolve) => resolve(undefined));
+    }
+
+    public emit(event: string, data?: any): boolean {
+        return process.send ? process.send(this.format(event, data)) : false;
+    }
+
+    private payload(data: any): void {
+        let message: { [key: string]: any } | undefined;
+
+        try {
+            message = JSON.parse(data.toString());
+        } catch (error) {
+            message = undefined;
+        }
+
+        if (message && message.event === "fetch") {
+            if (this.routes[message.data.path]) {
+                this.routes[message.data.path]({ params: message.data.params, body: message.data.body }, {
+                    send: (body: any) => {
+                        if (process.send) process.send(this.format(message?.data.session, body));
+                    },
+                });
+            }
+        }
+    }
+
+    private format(event: string | symbol, data?: any): string {
+        try {
+            return JSON.stringify({ event, data: (data || data === false || data === 0) ? data : undefined });
+        } catch (_error) {
+            return JSON.stringify({ event });
         }
     }
 }

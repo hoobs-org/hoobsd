@@ -26,7 +26,7 @@ import Homebridge from "./server";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
-import Socket from "../services/socket";
+import IPC from "./services/ipc";
 import { Console, Prefixed, Events } from "../services/logger";
 import StatusController from "./controllers/status";
 import AccessoriesController from "./controllers/accessories";
@@ -55,7 +55,7 @@ export default class Bridge extends EventEmitter {
         this.development = development || false;
         this.settings = (this.config || {}).server || {};
 
-        State.socket = new Socket(State.id);
+        State.ipc = new IPC();
 
         new StatusController();
         new AccessoriesController();
@@ -93,12 +93,10 @@ export default class Bridge extends EventEmitter {
     }
 
     restart() {
-        State.socket?.emit("api", Events.RESTART, State.id);
+        State.ipc?.emit(Events.RESTART, State.id);
     }
 
     start(): void {
-        State.socket?.start();
-
         const bridge = State.bridges.find((n: any) => n.id === State.id);
 
         this.config = Config.configuration();
@@ -128,7 +126,6 @@ export default class Bridge extends EventEmitter {
         Console.debug("Shutting down");
 
         if (State.homebridge) await State.homebridge.stop();
-        if (State.socket) State.socket.stop();
 
         Console.debug("Stopped");
 

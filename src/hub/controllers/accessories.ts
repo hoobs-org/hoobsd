@@ -155,7 +155,7 @@ export default class AccessoriesController {
 
     async get(request: Request, response: Response, push?: boolean, value?: any): Promise<void> {
         const working = AccessoriesController.layout;
-        const accessory = await State.socket?.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
+        const accessory = await State.ipc?.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
 
         if (accessory) {
             if (working.accessories[accessory.accessory_identifier]) _.extend(accessory, working.accessories[accessory.accessory_identifier]);
@@ -166,7 +166,7 @@ export default class AccessoriesController {
     }
 
     async stream(request: Request, response: Response): Promise<void> {
-        const source = await State.socket?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
+        const source = await State.ipc?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
 
         if (source) {
             const stream = ffmpeg(source, { timeout: 432000 });
@@ -194,7 +194,7 @@ export default class AccessoriesController {
     }
 
     async snapshot(request: Request, response: Response): Promise<void> {
-        const image = await State.socket?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id });
+        const image = await State.ipc?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id });
 
         response.send({ image });
     }
@@ -319,7 +319,7 @@ export default class AccessoriesController {
                 break;
 
             default:
-                accessory = await State.socket?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body);
+                accessory = await State.ipc?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body);
 
                 response.send(accessory);
                 break;
@@ -327,7 +327,7 @@ export default class AccessoriesController {
     }
 
     async characteristics(request: Request, response: Response): Promise<void> {
-        const accessory = await State.socket?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id });
+        const accessory = await State.ipc?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id });
 
         response.send(accessory);
     }
@@ -583,7 +583,7 @@ export default class AccessoriesController {
                             value: 0,
                         });
 
-                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
+                        await State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
                     }
                 }
 
@@ -603,7 +603,7 @@ export default class AccessoriesController {
                             value,
                         });
 
-                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
+                        await State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
                     }
                 }
 
@@ -646,11 +646,15 @@ export default class AccessoriesController {
         let results: any[] = [];
 
         if (bridge) {
-            results = results.concat((await State.socket?.fetch(bridge, "accessories:list")) || []);
+            const accessories = (await State.ipc?.fetch(bridge, "accessories:list")) || [];
+
+            results = results.concat(accessories);
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    results = results.concat((await State.socket?.fetch(State.bridges[i].id, "accessories:list")) || []);
+                    const accessories = (await State.ipc?.fetch(State.bridges[i].id, "accessories:list")) || [];
+
+                    results = results.concat(accessories);
                 }
             }
         }

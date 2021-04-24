@@ -256,7 +256,7 @@ export default class PluginsController {
     }
 
     private async accessories(bridge: string, plugin: string): Promise<string[]> {
-        const results = (await State.socket?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
+        const results = (await State.ipc?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
 
         return results;
     }
