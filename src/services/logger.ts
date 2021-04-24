@@ -21,7 +21,6 @@ import Chalk from "chalk";
 import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
-import { formatJson } from "./json";
 import { colorize } from "./formatters";
 
 export interface Message {
@@ -109,7 +108,13 @@ class Logger {
     }
 
     save() {
-        if (State.id === "hub") Paths.saveJson(Paths.log, CACHE, false, undefined, true);
+        if (State.id === "hub" && !State.saving) {
+            State.saving = true;
+
+            Paths.saveJson(Paths.log, CACHE, false, undefined, true);
+
+            State.saving = false;
+        }
     }
 
     load() {
@@ -143,7 +148,6 @@ class Logger {
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
             if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
-            if (message.match(/^(?=.*\bgit.io\b).*$/gmi)) return;
 
             data = {
                 level,
@@ -164,6 +168,7 @@ class Logger {
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("version") >= 0) return;
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("recommended") >= 0) return;
         if ((data.message || "").match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
+        if ((data.message || "").match(/^(?=.*\bgit.io\b).*$/gmi)) data.level = LogLevel.DEBUG;
 
         let colored: string;
 
@@ -172,7 +177,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                if (State.bridge) State.ipc?.emit(Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -182,7 +187,7 @@ class Logger {
 
                     colored = `${Chalk.bgYellow.black(" WARNING ")} ${Chalk.yellow(data.message)}`;
 
-                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -191,7 +196,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                if (State.bridge) State.ipc?.emit(Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -201,7 +206,7 @@ class Logger {
 
                     colored = `${Chalk.bgRed.black(" ERROR ")} ${Chalk.red(data.message)}`;
 
-                    if (State.id === "hub") CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_ERROR(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -211,7 +216,7 @@ class Logger {
                     colored = data.message;
 
                     if (State.id === "hub") CACHE.push(data);
-                    if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                    if (State.bridge) State.ipc?.emit(Events.LOG, data);
                     if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -220,7 +225,7 @@ class Logger {
 
                     colored = Chalk.gray(data.message);
 
-                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -229,7 +234,7 @@ class Logger {
                 colored = data.message;
 
                 if (State.id === "hub") CACHE.push(data);
-                if (State.bridge) State.socket?.emit("api", Events.LOG, data);
+                if (State.bridge) State.ipc?.emit(Events.LOG, data);
                 if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
 
                 if (State.id === "hub" || State.debug) {
@@ -237,7 +242,7 @@ class Logger {
                     if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
                     if (data.prefix && data.prefix !== "") prefixes.push(colorize(data.prefix)(data.prefix));
 
-                    if (State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
+                    if (State.mode === "development" && State.id === "hub") CONSOLE_LOG(prefixes.length > 0 ? `${prefixes.join(" ")} ${colored}` : colored);
                 }
 
                 break;
@@ -296,7 +301,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            State.socket?.emit("api", Events.NOTIFICATION, {
+            State.ipc?.emit(Events.NOTIFICATION, {
                 bridge,
                 data: {
                     title,
@@ -317,7 +322,7 @@ class Logger {
         }
 
         if (State.bridge) {
-            State.socket?.emit("api", event, {
+            State.ipc?.emit(event, {
                 bridge,
                 data,
             });
@@ -326,38 +331,6 @@ class Logger {
 }
 
 const system: Logger = new Logger();
-
-console.debug = function debug(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.debug(message, ...parameters);
-    } else {
-        system.debug(formatJson(message));
-    }
-};
-
-console.log = function log(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.info(message, ...parameters);
-    } else {
-        system.info(formatJson(message));
-    }
-};
-
-console.warn = function warn(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.warn(message, ...parameters);
-    } else {
-        system.warn(formatJson(message));
-    }
-};
-
-console.error = function error(message: string, ...parameters: any[]) {
-    if (typeof message === "string") {
-        system.error(message, ...parameters);
-    } else {
-        system.error(formatJson(message));
-    }
-};
 
 export function Print(...parameters: any[]) {
     if (State.verbose) CONSOLE_LOG(...parameters);

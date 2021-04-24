@@ -95,26 +95,15 @@ export default class SystemController {
                 if (((request.body || {}).hostname || "") !== "") {
                     await System.hostname((request.body || {}).hostname || "");
 
-                    return response.send({
-                        success: true,
-                    });
+                    return response.send({ success: true });
                 }
 
-                return response.send({
-                    error: "invalid hostname",
-                    success: false,
-                });
+                return response.send({ error: "invalid hostname", success: false });
 
             default:
-                if (distro.mdns) {
-                    return response.send({
-                        hostname: distro.mdns_broadcast || operating.hostname,
-                    });
-                }
+                if (distro.mdns) return response.send({ hostname: distro.mdns_broadcast || operating.hostname });
 
-                return response.send({
-                    hostname: operating.hostname,
-                });
+                return response.send({ hostname: operating.hostname });
         }
     }
 
@@ -131,23 +120,30 @@ export default class SystemController {
     }
 
     async temp(_request: Request, response: Response): Promise<Response> {
-        return response.send(await SystemInfo.cpuTemperature());
+        const temperature = await SystemInfo.cpuTemperature();
+
+        return response.send(temperature);
     }
 
     async cpu(_request: Request, response: Response): Promise<Response> {
+        const information = await SystemInfo.cpu();
+        const speed = await SystemInfo.cpuCurrentSpeed();
+        const load = await SystemInfo.currentLoad();
+        const cache = await SystemInfo.cpuCache();
+
         return response.send({
-            information: await SystemInfo.cpu(),
-            speed: await SystemInfo.cpuCurrentSpeed(),
-            load: await SystemInfo.currentLoad(),
-            cache: await SystemInfo.cpuCache(),
+            information,
+            speed,
+            load,
+            cache,
         });
     }
 
     async memory(_request: Request, response: Response): Promise<Response> {
-        return response.send({
-            information: await SystemInfo.memLayout(),
-            load: await SystemInfo.mem(),
-        });
+        const information = await SystemInfo.memLayout();
+        const load = await SystemInfo.mem();
+
+        return response.send({ information, load });
     }
 
     network(_request: Request, response: Response): Response {
@@ -155,11 +151,15 @@ export default class SystemController {
     }
 
     async activity(_request: Request, response: Response): Promise<Response> {
-        return response.send(await SystemInfo.currentLoad());
+        const load = await SystemInfo.currentLoad();
+
+        return response.send(load);
     }
 
     async filesystem(_request: Request, response: Response): Promise<Response> {
-        return response.send(await SystemInfo.fsSize());
+        const fs = await SystemInfo.fsSize();
+
+        return response.send(fs);
     }
 
     catalog(_request: Request, response: Response): void {
@@ -167,10 +167,7 @@ export default class SystemController {
         const entries = readdirSync(Paths.backups).filter((item) => item.endsWith(".backup"));
 
         for (let i = 0; i < entries.length; i += 1) {
-            results.push({
-                date: parseInt(entries[i].replace(".backup", ""), 10),
-                filename: entries[i],
-            });
+            results.push({ date: parseInt(entries[i].replace(".backup", ""), 10), filename: entries[i] });
         }
 
         response.send(results);
@@ -178,28 +175,21 @@ export default class SystemController {
 
     backup(request: Request, response: Response): void {
         if (!request.user?.permissions?.controller) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
-        Bridges.backup().then((filename) => response.send({
-            success: true,
-            filename,
-        })).catch((error) => response.send({
-            error: error.message || "Unable to create backup",
-        }));
+        Bridges.backup().then((filename) => {
+            response.send({ success: true, filename });
+        }).catch((error) => {
+            response.send({ error: error.message || "Unable to create backup" });
+        });
     }
 
     async restore(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -207,25 +197,17 @@ export default class SystemController {
         if (existsSync(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)))) {
             await Bridges.restore(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)));
 
-            response.send({
-                success: true,
-            });
+            response.send({ success: true });
 
             System.restart();
         } else {
-            response.send({
-                success: false,
-                error: "Backup file doesent exist",
-            });
+            response.send({ success: false, error: "Backup file doesent exist" });
         }
     }
 
     async upload(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -240,9 +222,7 @@ export default class SystemController {
 
             await Bridges.restore(file.path, true);
 
-            response.send({
-                success: true,
-            });
+            response.send({ success: true });
 
             System.restart();
         });
@@ -250,10 +230,7 @@ export default class SystemController {
 
     async upgrade(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -294,60 +271,43 @@ export default class SystemController {
             await System.hoobsd.upgrade();
         }
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
 
         System.restart();
     }
 
     reboot(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
 
         System.reboot();
     }
 
     shutdown(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
 
         System.shutdown();
     }
 
     async reset(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
 
         await Bridges.reset();
 

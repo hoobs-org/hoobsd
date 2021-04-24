@@ -96,19 +96,15 @@ export = function Daemon(): void {
                 });
 
                 Watcher.watch(join(Paths.data(), "access")).on("change", () => {
-                    if (!State.restoring) {
-                        Console.info("User change");
-
-                        State.users = Users.list();
-                    }
+                    if (!State.restoring) State.users = Users.list();
                 });
 
                 Watcher.watch(Paths.config).on("change", () => {
-                    if (!State.restoring) {
-                        Console.info("Configuration change");
+                    if (!State.restoring) State.hub?.reload();
+                });
 
-                        State.hub?.reload();
-                    }
+                Watcher.watch(Paths.log).on("change", () => {
+                    if (!State.terminating) Console.save();
                 });
 
                 State.hub.start();

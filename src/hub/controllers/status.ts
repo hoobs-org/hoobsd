@@ -33,7 +33,7 @@ export default class StatusController {
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await State.socket?.fetch(State.bridges[i].id, "status:get");
+                const status = await State.ipc?.fetch(State.bridges[i].id, "status:get");
 
                 if (status) {
                     results[State.bridges[i].id] = {
@@ -76,6 +76,10 @@ export default class StatusController {
         if (system.product === "box" || system.product === "card" || system.product === "headless") product = system.product;
         if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
 
+        const cpu = await SystemInfo.currentLoad();
+        const memory = await SystemInfo.mem();
+        const temp = await SystemInfo.cpuTemperature();
+
         if (applications.gui?.gui_version) {
             return response.send({
                 product,
@@ -94,9 +98,9 @@ export default class StatusController {
                 node_current: applications.runtime?.node_current,
                 node_upgraded: upgraded,
                 bridges: results,
-                cpu: await SystemInfo.currentLoad(),
-                memory: await SystemInfo.mem(),
-                temp: await SystemInfo.cpuTemperature(),
+                cpu,
+                memory,
+                temp,
             });
         }
 
@@ -114,9 +118,9 @@ export default class StatusController {
             node_current: applications.runtime?.node_current,
             node_upgraded: upgraded,
             bridges: results,
-            cpu: await SystemInfo.currentLoad(),
-            memory: await SystemInfo.mem(),
-            temp: await SystemInfo.cpuTemperature(),
+            cpu,
+            memory,
+            temp,
         });
     }
 }

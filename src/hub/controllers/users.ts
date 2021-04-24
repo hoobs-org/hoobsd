@@ -31,20 +31,19 @@ export default class UsersController {
     }
 
     async list(_request: Request, response: Response): Promise<void> {
-        response.send(Users.list().map((item) => ({
+        const users = Users.list().map((item) => ({
             id: item.id,
             username: item.username,
             name: item.name,
             permissions: item.permissions,
-        })));
+        }));
+
+        response.send(users);
     }
 
     get(request: Request, response: Response): void {
         if (!request.user?.permissions?.users) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -52,9 +51,7 @@ export default class UsersController {
         const user = Users.list().filter((u) => u.id === parseInt(request.params.id, 10))[0];
 
         if (!user) {
-            response.send({
-                error: "user not found",
-            });
+            response.send({ error: "user not found" });
 
             return;
         }
@@ -69,28 +66,19 @@ export default class UsersController {
 
     async create(request: Request, response: Response): Promise<void> {
         if (Users.count() > 0 && (!(await Users.validateToken(request.headers.authorization)) || !request.user?.permissions?.users)) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
         if (!request.body.username || request.body.username === "" || request.body.username.length < 3) {
-            response.send({
-                token: false,
-                error: "Invalid username.",
-            });
+            response.send({ token: false, error: "Invalid username." });
 
             return;
         }
 
         if (request.body.password && request.body.password.length < 5) {
-            response.send({
-                token: false,
-                error: "Password too weak.",
-            });
+            response.send({ token: false, error: "Password too weak." });
 
             return;
         }
@@ -124,37 +112,25 @@ export default class UsersController {
 
     async update(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.users && request.user?.id !== parseInt(request.params.id, 10)) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
 
         if (!request.body.username || request.body.username === "" || request.body.username.length < 3) {
-            response.send({
-                token: false,
-                error: "Invalid username.",
-            });
+            response.send({ token: false, error: "Invalid username." });
 
             return;
         }
 
         if (request.body.password && request.body.password.length < 5) {
-            response.send({
-                token: false,
-                error: "Password too weak.",
-            });
+            response.send({ token: false, error: "Password too weak." });
 
             return;
         }
 
         if (Users.count() === 0) {
-            response.send({
-                token: false,
-                error: "No users exist.",
-            });
+            response.send({ token: false, error: "No users exist." });
 
             return;
         }
@@ -162,9 +138,7 @@ export default class UsersController {
         const user = await Users.update(parseInt(request.params.id, 10), request.body.name, request.body.username, request.body.password, request.body.permissions);
 
         if (!user) {
-            response.send({
-                error: "unable to update user",
-            });
+            response.send({ error: "unable to update user" });
 
             return;
         }
@@ -174,10 +148,7 @@ export default class UsersController {
 
     delete(request: Request, response: Response): void {
         if (!request.user?.permissions?.users) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }

@@ -155,7 +155,7 @@ export default class AccessoriesController {
 
     async get(request: Request, response: Response, push?: boolean, value?: any): Promise<void> {
         const working = AccessoriesController.layout;
-        const accessory = await State.socket?.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
+        const accessory = await State.ipc?.fetch(request.params.bridge, "accessory:get", { id: request.params.id });
 
         if (accessory) {
             if (working.accessories[accessory.accessory_identifier]) _.extend(accessory, working.accessories[accessory.accessory_identifier]);
@@ -166,7 +166,7 @@ export default class AccessoriesController {
     }
 
     async stream(request: Request, response: Response): Promise<void> {
-        const source = await State.socket?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
+        const source = await State.ipc?.fetch(request.params.bridge, "accessory:stream", { id: request.params.id });
 
         if (source) {
             const stream = ffmpeg(source, { timeout: 432000 });
@@ -174,14 +174,7 @@ export default class AccessoriesController {
             stream.addOutputOptions("-movflags +frag_keyframe+separate_moof+omit_tfhd_offset+empty_moov");
             stream.addOptions("-preset veryfast");
             stream.format("mp4");
-
-            stream.audioCodec("aac");
-            stream.audioBitrate("160000");
-            stream.audioChannels(2);
-
-            stream.size("480x270");
-            stream.videoCodec("libx264");
-            stream.videoBitrate(1024);
+            stream.videoCodec("copy");
 
             stream.on("end", () => {
                 stream.kill("SIGTERM");
@@ -201,13 +194,16 @@ export default class AccessoriesController {
     }
 
     async snapshot(request: Request, response: Response): Promise<void> {
-        response.send({ image: await State.socket?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id }) });
+        const image = await State.ipc?.fetch(request.params.bridge, "accessory:snapshot", { id: request.params.id });
+
+        response.send({ image });
     }
 
     async set(request: Request, response: Response): Promise<void> {
         const working = AccessoriesController.layout;
 
         let room;
+        let accessory;
 
         switch (request.params.service) {
             case "room":
@@ -323,13 +319,17 @@ export default class AccessoriesController {
                 break;
 
             default:
-                response.send(await State.socket?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body));
+                accessory = await State.ipc?.fetch(request.params.bridge, "accessory:set", { id: request.params.id, service: request.params.service }, request.body);
+
+                response.send(accessory);
                 break;
         }
     }
 
     async characteristics(request: Request, response: Response): Promise<void> {
-        response.send(await State.socket?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id }));
+        const accessory = await State.ipc?.fetch(request.params.bridge, "accessory:characteristics", { id: request.params.id });
+
+        response.send(accessory);
     }
 
     async rooms(_request: Request, response: Response): Promise<Response> {
@@ -360,11 +360,13 @@ export default class AccessoriesController {
         if (id !== "default") room = working.rooms.find((item: { [key: string]: any }) => item.id === id);
         if (!room) return response.send({ error: "room not found" });
 
-        return response.send(this.properties(room, (await this.accessories()).filter((item: { [key: string]: any }) => item.type !== "bridge"), true, true));
+        const accessories = (await this.accessories()).filter((item) => item.type !== "bridge");
+
+        return response.send(this.properties(room, accessories, true, true));
     }
 
     private properties(room: { [key: string]: any }, accessories: { [key: string]: any }[], devices?: boolean, capabilities?: boolean): { [key: string]: any } {
-        const assigned = accessories.filter((item: { [key: string]: any }) => {
+        let assigned = accessories.filter((item: { [key: string]: any }) => {
             if (room.id === "default" && (!item.room || item.room === "" || item.room === "default")) return true;
             if (item.room === room.id) return true;
 
@@ -400,11 +402,9 @@ export default class AccessoriesController {
                 return 0;
             });
 
-            for (let i = 0; i < assigned.length; i += 1) {
-                characteristics.push(...assigned[i].characteristics.map((item: { [key: string]: any }) => item.type));
-            }
+            const intermediate = assigned.map((item: { [key: string]: any }) => item.characteristics);
 
-            characteristics = [...new Set(characteristics)];
+            characteristics = [...new Set(intermediate.map((item: { [key: string]: any }) => item.type))];
 
             if (characteristics.indexOf("on") >= 0 && characteristics.indexOf("off") === -1) characteristics.push("off");
 
@@ -416,9 +416,10 @@ export default class AccessoriesController {
             });
         }
 
-        room.devices = assigned.filter((item) => !item.hidden).length;
+        assigned = assigned.filter((item) => !item.hidden);
+        room.devices = assigned.length;
 
-        if (devices) room.accessories = assigned.filter((item) => !item.hidden);
+        if (devices) room.accessories = assigned;
         if (capabilities) room.types = types;
         if (capabilities) room.characteristics = characteristics;
 
@@ -582,7 +583,7 @@ export default class AccessoriesController {
                             value: 0,
                         });
 
-                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
+                        await State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
                     }
                 }
 
@@ -602,7 +603,7 @@ export default class AccessoriesController {
                             value,
                         });
 
-                        await State.socket?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
+                        await State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
                     }
                 }
 
@@ -645,11 +646,15 @@ export default class AccessoriesController {
         let results: any[] = [];
 
         if (bridge) {
-            results = results.concat((await State.socket?.fetch(bridge, "accessories:list")) || []);
+            const accessories = (await State.ipc?.fetch(bridge, "accessories:list")) || [];
+
+            results = results.concat(accessories);
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    results = results.concat((await State.socket?.fetch(State.bridges[i].id, "accessories:list")) || []);
+                    const accessories = (await State.ipc?.fetch(State.bridges[i].id, "accessories:list")) || [];
+
+                    results = results.concat(accessories);
                 }
             }
         }

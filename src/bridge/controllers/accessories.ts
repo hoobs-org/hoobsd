@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { IPCRequest, IPCResponse } from "@hoobs/ipc";
 import State from "../../state";
 import { Console } from "../../services/logger";
+import { IPCRequest, IPCResponse } from "../../services/ipc";
 
 export default class AccessoriesController {
     declare rooms: any[];
@@ -26,12 +26,12 @@ export default class AccessoriesController {
     constructor() {
         this.rooms = [];
 
-        State.socket?.route("accessories:list", (request, response) => this.list(request, response));
-        State.socket?.route("accessory:get", (request, response) => this.get(request, response));
-        State.socket?.route("accessory:set", (request, response) => this.set(request, response));
-        State.socket?.route("accessory:stream", (request, response) => this.stream(request, response));
-        State.socket?.route("accessory:snapshot", (request, response) => this.snapshot(request, response));
-        State.socket?.route("accessory:characteristics", (request, response) => this.characteristics(request, response));
+        State.ipc?.route("accessories:list", (request, response) => this.list(request, response));
+        State.ipc?.route("accessory:get", (request, response) => this.get(request, response));
+        State.ipc?.route("accessory:set", (request, response) => this.set(request, response));
+        State.ipc?.route("accessory:stream", (request, response) => this.stream(request, response));
+        State.ipc?.route("accessory:snapshot", (request, response) => this.snapshot(request, response));
+        State.ipc?.route("accessory:characteristics", (request, response) => this.characteristics(request, response));
     }
 
     list(_request: IPCRequest, response: IPCResponse): void {

@@ -16,81 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import {
-    IPCServer,
-    IPCClient,
-    IPCRequest,
-    IPCResponse,
-} from "@hoobs/ipc";
+import { EventEmitter } from "events";
+import { BridgeProcess } from "../../services/bridges";
+import { IPC } from "../../services/ipc";
 
-import { existsSync } from "fs-extra";
-import { join } from "path";
-import Paths from "./paths";
-import { Events } from "./logger";
+export default class HubIPC extends EventEmitter implements IPC {
+    declare private bridges: { [key: string]: BridgeProcess };
 
-export default class Socket {
-    declare private server: IPCServer;
+    constructor(bridges: { [key: string]: BridgeProcess }) {
+        super();
 
-    declare private clients: { [key: string]: IPCClient };
-
-    constructor(id: string) {
-        this.clients = {};
-
-        this.server = new IPCServer({
-            id,
-            root: `${Paths.data()}/`,
-            maxConnections: 200,
-        });
+        this.bridges = bridges;
     }
 
-    public on(event: Events, listener: (...args: any[]) => void): void {
-        this.server.on(event, listener);
-    }
-
-    public start() {
-        this.server.start();
-    }
-
-    public stop() {
-        this.server.stop();
-    }
-
-    public route(path: string, next: (request: IPCRequest, response: IPCResponse) => any): void {
-        this.server.route(path, next);
-    }
-
-    public emit(id: string, event: string, data?: any): Promise<void> {
-        return new Promise((resolve) => {
-            const socket = this.connect(id);
-
-            if (!socket) {
-                resolve();
-            } else {
-                socket.emit(event, data).then(() => {
-                    resolve();
-                });
-            }
-        });
-    }
+    public route(): void { }
 
     public fetch(id: string, path: string, params?: { [key: string]: any }, body?: { [key: string]: any }): Promise<any> {
         return new Promise((resolve) => {
-            const socket = this.connect(id);
-
-            if (!socket) {
+            if (!this.bridges || !this.bridges[id]) {
                 resolve(undefined);
             } else {
-                socket.fetch(path, params, body).then((response) => {
-                    resolve(response);
-                });
+                this.bridges[id].socket.fetch(path, params, body).then((response) => resolve(response));
             }
         });
-    }
-
-    private connect(id: string): IPCClient | undefined {
-        if (!existsSync(join(Paths.data(), `${id}.sock`))) return undefined;
-        if (!this.clients[id]) this.clients[id] = new IPCClient({ id, root: `${Paths.data()}/` });
-
-        return this.clients[id];
     }
 }

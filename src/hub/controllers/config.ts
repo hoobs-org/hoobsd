@@ -49,29 +49,17 @@ export default class ConfigController {
 
         Console.emit(Events.CONFIG_CHANGE, "hub", Config.configuration());
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
     }
 
     async getBridge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         return response.send(Config.configuration(request.params.bridge));
     }
 
     async saveBridge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
 
         const bridge: BridgeRecord | undefined = State.bridges.find((item) => item.id === request.params.bridge);
 
@@ -85,8 +73,6 @@ export default class ConfigController {
 
         Config.saveConfig(request.body, request.params.bridge);
 
-        return response.send({
-            success: true,
-        });
+        return response.send({ success: true });
     }
 }

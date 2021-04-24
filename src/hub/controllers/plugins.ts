@@ -35,36 +35,40 @@ export default class PluginsController {
         State.app?.delete("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.uninstall(request, response));
     }
 
-    async all(_request: Request, response: Response): Promise<Response> {
-        const results = [];
+    all(_request: Request, response: Response): void {
+        const results:{ [key: string]: any }[] = [];
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
+                waits.push(new Promise((resolve) => {
+                    this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")).then((plugins) => {
+                        if (plugins) {
+                            for (let j = 0; j < plugins.length; j += 1) {
+                                plugins[j].bridge = State.bridges[i].id;
 
-                if (plugins) {
-                    for (let j = 0; j < plugins.length; j += 1) {
-                        plugins[j].bridge = State.bridges[i].id;
-
-                        results.push(plugins[j]);
-                    }
-                }
+                                results.push(plugins[j]);
+                            }
+                        }
+                    }).finally(() => resolve());
+                }));
             }
         }
 
-        return response.send(results);
+        Promise.all(waits).then(() => {
+            response.send(results);
+        });
     }
 
-    async installed(request: Request, response: Response): Promise<Response> {
-        return response.send(await this.bridge(request.params.bridge));
+    installed(request: Request, response: Response): void {
+        this.bridge(request.params.bridge).then((installed) => {
+            response.send(installed);
+        });
     }
 
     install(request: Request, response: Response): void {
         if (!request.user?.permissions?.plugins) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -90,21 +94,16 @@ export default class PluginsController {
         State.cache?.remove(`plugin/definition:${identifier}`);
         State.cache?.remove(`plugin/schema:${identifier}`);
 
-        Plugins.install(request.params.bridge, identifier, (tag || "")).then(async () => {
-            response.send({
-                success: true,
-            });
-        }).catch(() => response.send({
-            error: "plugin can not be installed",
-        }));
+        Plugins.install(request.params.bridge, identifier, (tag || "")).then(() => {
+            response.send({ success: true });
+        }).catch(() => {
+            response.send({ error: "plugin can not be installed" });
+        });
     }
 
     upgrade(request: Request, response: Response): void {
         if (!request.user?.permissions?.plugins) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -131,20 +130,15 @@ export default class PluginsController {
         State.cache?.remove(`plugin/schema:${identifier}`);
 
         Plugins.upgrade(request.params.bridge, identifier, (tag || "")).then(async () => {
-            response.send({
-                success: true,
-            });
-        }).catch(() => response.send({
-            error: "plugin can not be upgraded",
-        }));
+            response.send({ success: true });
+        }).catch(() => {
+            response.send({ error: "plugin can not be upgraded" });
+        });
     }
 
     async uninstall(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.plugins) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -183,13 +177,10 @@ export default class PluginsController {
                 Config.saveConfig(config);
             }
 
-            response.send({
-                success: true,
-                accessories,
-            });
-        }).catch(() => response.send({
-            error: "plugin can not be removed",
-        }));
+            response.send({ success: true, accessories });
+        }).catch(() => {
+            response.send({ error: "plugin can not be removed" });
+        });
     }
 
     private async bridge(id: string, development?: boolean): Promise<{ [key:string]: any }[]> {
@@ -213,21 +204,24 @@ export default class PluginsController {
 
             let definition: { [key: string]: any } | undefined;
             let schema: { [key: string]: any } | undefined;
-            let details: any[];
+            let details: any[] = [];
+
+            const waits: Promise<void>[] = [];
 
             if (bridge?.type === "dev") {
-                schema = await Plugins.pluginSchema(bridge, identifier, {});
-
-                details = [{
-                    name: identifier,
-                    alias: schema.alias,
-                    type: schema.accessory ? "accessory" : "platform",
-                }];
+                waits.push(new Promise((resolve) => {
+                    Plugins.pluginSchema(bridge, identifier, {}).then((response) => {
+                        schema = response;
+                        details = [{ name: identifier, alias: schema.alias, type: schema.accessory ? "accessory" : "platform" }];
+                    }).finally(() => resolve());
+                }));
             } else {
-                definition = await Plugins.pluginDefinition(identifier);
-                schema = await Plugins.pluginSchema(bridge, identifier, definition || {});
-                details = (await Plugins.getPluginType(id, identifier, directory, pjson)) || [];
+                waits.push(new Promise((resolve) => Plugins.pluginDefinition(identifier).then((response) => { definition = response; }).finally(() => resolve())));
+                waits.push(new Promise((resolve) => Plugins.pluginSchema(bridge, identifier, definition || {}).then((response) => { schema = response; }).finally(() => resolve())));
+                waits.push(new Promise((resolve) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => resolve())));
             }
+
+            await Promise.all(waits);
 
             if (definition) {
                 if ((definition.tags || {}).latest) {
@@ -262,6 +256,8 @@ export default class PluginsController {
     }
 
     private async accessories(bridge: string, plugin: string): Promise<string[]> {
-        return (await State.socket?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
+        const results = (await State.ipc?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
+
+        return results;
     }
 }

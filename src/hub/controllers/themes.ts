@@ -36,9 +36,7 @@ export default class ThemesController {
     save(request: Request, response: Response): void {
         Themes.save(request.params.name, request.body);
 
-        response.send({
-            success: true,
-        });
+        response.send({ success: true });
     }
 
     backdrop(request: Request, response: Response): void {
@@ -50,9 +48,7 @@ export default class ThemesController {
             const file = <Forms.File>files.file;
             const filename = Themes.backdrop(file.path, file.type);
 
-            response.send({
-                filename,
-            });
+            response.send({ filename });
         });
     }
 }

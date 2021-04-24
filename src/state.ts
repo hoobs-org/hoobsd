@@ -21,7 +21,7 @@ import { join } from "path";
 import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
-import Socket from "./services/socket";
+import { IPC } from "./services/ipc";
 import { Loggers } from "./services/logger";
 import Cache from "./services/cache";
 import Bridge from "./bridge";
@@ -38,7 +38,7 @@ export interface Application {
 
     app: Express | undefined;
     io: IO.Server | undefined;
-    socket: Socket | undefined;
+    ipc: IPC | undefined;
     cache: Cache | undefined;
     hub: Hub | undefined;
     bridge: Bridge | undefined;
@@ -54,13 +54,14 @@ export interface Application {
     orphans: boolean;
     container: boolean;
     terminating: boolean;
+    restoring: boolean;
+    saving: boolean;
 
     bridges: BridgeRecord[];
     users: UserRecord[];
     loggers: Loggers;
 
     plugins: { [key: string]: any };
-    restoring: boolean;
     project: string | undefined;
 }
 
@@ -71,7 +72,7 @@ const state: Application = {
 
     app: undefined,
     io: undefined,
-    socket: undefined,
+    ipc: undefined,
     cache: undefined,
     hub: undefined,
     bridge: undefined,
@@ -87,13 +88,14 @@ const state: Application = {
     orphans: true,
     container: false,
     terminating: false,
+    restoring: false,
+    saving: false,
 
     bridges: [],
     users: [],
     loggers: {},
 
     plugins: {},
-    restoring: false,
     project: undefined,
 };
 

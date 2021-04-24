@@ -36,10 +36,14 @@ export default class ThemesController {
     }
 
     async current(_request: Request, response: Response): Promise<void> {
-        response.send((await Weather.current()));
+        const results = await Weather.current();
+
+        response.send(results);
     }
 
     async forecast(_request: Request, response: Response): Promise<void> {
-        response.send((await Weather.forecast()));
+        const results = await Weather.forecast();
+
+        response.send(results);
     }
 }

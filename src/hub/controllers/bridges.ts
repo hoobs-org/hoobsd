@@ -40,18 +40,11 @@ export default class BridgesController {
     }
 
     count(_request: Request, response: Response): Response {
-        return response.send({
-            bridges: (State.bridges.filter((item) => item.type !== "hub")).length,
-        });
+        return response.send({ bridges: (State.bridges.filter((item) => item.type !== "hub")).length });
     }
 
     create(request: Request, response: Response): Response {
-        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions?.bridges) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
 
         Bridges.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.advertiser || "bonjour");
 
@@ -59,12 +52,7 @@ export default class BridgesController {
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.bridges) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
 
         await Bridges.update(request.params.id).info(
             request.body.display,
@@ -78,12 +66,7 @@ export default class BridgesController {
     }
 
     async ports(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.bridges) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
 
         await Bridges.update(request.params.id).ports(request.body.start, request.body.end);
 
@@ -92,10 +75,7 @@ export default class BridgesController {
 
     import(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -123,10 +103,7 @@ export default class BridgesController {
 
     export(request: Request, response: Response): void {
         if (!request.user?.permissions?.bridges) {
-            response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
+            response.send({ token: false, error: "Unauthorized." });
 
             return;
         }
@@ -140,12 +117,7 @@ export default class BridgesController {
     }
 
     remove(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.bridges) {
-            return response.send({
-                token: false,
-                error: "Unauthorized.",
-            });
-        }
+        if (!request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
 
         Bridges.uninstall(request.params.id);
 

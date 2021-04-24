@@ -34,8 +34,9 @@ import {
     copySync,
 } from "fs-extra";
 
-import { execSync } from "child_process";
+import { execSync, ChildProcess } from "child_process";
 import { join, basename } from "path";
+import Socket from "../hub/services/socket";
 import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
@@ -58,6 +59,13 @@ export interface BridgeRecord {
     plugins?: string;
     advertiser?: string;
     project?: string,
+}
+
+export interface BridgeProcess {
+    bridge: BridgeRecord;
+    port: number;
+    process: ChildProcess;
+    socket: Socket;
 }
 
 export default class Bridges {
