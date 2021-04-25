@@ -216,7 +216,8 @@ export default class PluginsController {
                     }).finally(() => resolve());
                 }));
             } else {
-                waits.push(new Promise((resolve) => Plugins.pluginDefinition(identifier).then((response) => { definition = response; }).finally(() => resolve())));
+                definition = await Plugins.pluginDefinition(identifier);
+
                 waits.push(new Promise((resolve) => Plugins.pluginSchema(bridge, identifier, definition || {}).then((response) => { schema = response; }).finally(() => resolve())));
                 waits.push(new Promise((resolve) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => resolve())));
             }
