@@ -52,6 +52,7 @@ import {
     StaticPlatformPlugin,
 } from "homebridge/lib/api";
 
+import { toShortForm } from "hap-nodejs/dist/lib/util/uuid";
 import { HomebridgeConfig, BridgeConfiguration } from "homebridge/lib/bridgeService";
 import { PlatformAccessory, SerializedPlatformAccessory } from "homebridge/lib/platformAccessory";
 import { ExternalPortService } from "homebridge/lib/externalPortService";
@@ -60,7 +61,7 @@ import { User } from "homebridge/lib/user";
 import * as mac from "homebridge/lib/util/mac";
 import { PluginManager, PluginManagerOptions } from "homebridge/lib/pluginManager";
 import { Plugin } from "homebridge/lib/plugin";
-import { DeviceID, PluginID } from "./services/extentions";
+import { HOOBSService, DeviceID, PluginID } from "./services/extentions";
 import Paths from "../services/paths";
 import State from "../state";
 import Plugins from "../services/plugins";
@@ -68,6 +69,7 @@ import Config from "../services/config";
 import Accessories from "./services/accessories";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
+import { Services, Characteristics } from "./services/types";
 
 const INSTANCE_KILL_DELAY = 5 * 1000;
 
@@ -315,13 +317,7 @@ export default class Server extends EventEmitter {
             this.platformAccessories = cached.map((serialized) => {
                 const accessory = PlatformAccessory.deserialize(serialized);
 
-                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                    if (data && data.newValue !== data.oldValue) {
-                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
-
-                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
-                    }
-                });
+                this.addHoobsEvents(accessory._associatedHAPAccessory);
 
                 return accessory;
             });
@@ -352,21 +348,13 @@ export default class Server extends EventEmitter {
 
             const platformPlugins = plugin && plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
-            if (plugin) {
-                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                    if (data && data.newValue !== data.oldValue) {
-                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
-
-                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
-                    }
-                });
-            }
-
             if (!platformPlugins) {
                 Console.info(`Failed to find plugin to handle accessory ${accessory._associatedHAPAccessory.displayName}`);
 
                 return false;
             }
+
+            this.addHoobsEvents(accessory._associatedHAPAccessory);
 
             accessory.getService(Service.AccessoryInformation)!.setCharacteristic(Characteristic.FirmwareRevision, plugin!.version);
             platformPlugins.configureAccessory(accessory);
@@ -496,6 +484,9 @@ export default class Server extends EventEmitter {
         const accessoryUUID = uuid.generate(`${accessoryType}:${uuidBase || displayName}`);
         const accessory = new Accessory(displayName, accessoryUUID);
 
+        this.addHoobsInformation(accessory, plugin);
+        this.addHoobsEvents(accessory);
+
         if (accessoryInstance.identify) {
             accessory.on(AccessoryEventTypes.IDENTIFY, (_paired, callback) => {
                 // @ts-ignore
@@ -506,9 +497,6 @@ export default class Server extends EventEmitter {
         }
 
         const informationService = accessory.getService(Service.AccessoryInformation)!;
-
-        informationService.addOptionalCharacteristic(PluginID);
-        informationService.addOptionalCharacteristic(DeviceID);
 
         services.forEach((service) => {
             if (service instanceof Service.AccessoryInformation) {
@@ -523,17 +511,6 @@ export default class Server extends EventEmitter {
 
         if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
 
-        informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
-        informationService.updateCharacteristic(DeviceID, accessory.UUID);
-
-        accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-            if (data && data.newValue !== data.oldValue) {
-                const service = this.accessories.get(Accessories.identifier(State.id, accessory.UUID));
-
-                if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
-            }
-        });
-
         controllers.forEach((controller) => accessory.configureController(controller));
 
         return accessory;
@@ -541,33 +518,21 @@ export default class Server extends EventEmitter {
 
     private handleRegisterPlatformAccessories(accessories: PlatformAccessory[]): void {
         const hapAccessories = accessories.map((accessory) => {
-            this.resetAccessoryMemCache();
-            this.platformAccessories.push(accessory);
-
             const plugin = this.pluginManager.getPlugin(accessory._associatedPlugin!);
+
+            this.resetAccessoryMemCache();
+            this.addHoobsInformation(accessory._associatedHAPAccessory, plugin);
+            this.addHoobsEvents(accessory._associatedHAPAccessory);
+            this.platformAccessories.push(accessory);
 
             if (plugin) {
                 const informationService = accessory.getService(Service.AccessoryInformation)!;
 
-                informationService.addOptionalCharacteristic(PluginID);
-                informationService.addOptionalCharacteristic(DeviceID);
-
                 if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
-
-                informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
-                informationService.updateCharacteristic(DeviceID, accessory._associatedHAPAccessory.UUID);
 
                 const platforms = plugin.getActiveDynamicPlatform(accessory._associatedPlatform!);
 
                 if (!platforms) Console.warn(`The plugin "${accessory._associatedPlugin!}" registered a new accessory for the platform "${accessory._associatedPlatform!}". The platform couldn't be found though.`);
-
-                accessory._associatedHAPAccessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                    if (data && data.newValue !== data.oldValue) {
-                        const service = this.accessories.get(Accessories.identifier(State.id, accessory._associatedHAPAccessory.UUID));
-
-                        if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
-                    }
-                });
             } else {
                 Console.warn(`A platform configured a new accessory under the plugin name "${accessory._associatedPlugin}". However no loaded plugin could be found for the name.`);
             }
@@ -606,28 +571,16 @@ export default class Server extends EventEmitter {
             if (this.unbridgedAccessories.has(username)) {
                 Console.error(`Accessory ${accessory.displayName} experienced an address collision.`);
             } else {
-                this.unbridgedAccessories.set(username, accessories[i]);
-
                 const plugin = this.pluginManager.getPlugin(accessories[i]._associatedPlugin!);
+
+                this.unbridgedAccessories.set(username, accessories[i]);
+                this.addHoobsInformation(accessory, plugin);
+                this.addHoobsEvents(accessory);
 
                 if (plugin) {
                     const informationService = accessory.getService(Service.AccessoryInformation)!;
 
-                    informationService.addOptionalCharacteristic(PluginID);
-                    informationService.addOptionalCharacteristic(DeviceID);
-
                     if (informationService.getCharacteristic(Characteristic.FirmwareRevision).value === "0.0.0") informationService.setCharacteristic(Characteristic.FirmwareRevision, plugin.version);
-
-                    informationService.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
-                    informationService.updateCharacteristic(DeviceID, accessories[i].UUID);
-
-                    accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
-                        if (data && data.newValue !== data.oldValue) {
-                            const service = this.accessories.get(Accessories.identifier(State.id, accessories[i].UUID));
-
-                            if (service) this.emit(Events.ACCESSORY_CHANGE, service.refresh(), data.newValue);
-                        }
-                    });
 
                     accessory.on(AccessoryEventTypes.LISTENING, (port: number) => Console.info(`${accessory.displayName} is running on port ${port}.`));
 
@@ -647,6 +600,101 @@ export default class Server extends EventEmitter {
                     Console.warn(`A platform configured a external accessory under the plugin name "${accessories[i]._associatedPlugin}". However no loaded plugin could be found for the name.`);
                 }
             }
+        }
+    }
+
+    private addHoobsInformation(accessory: Accessory, plugin: Plugin | undefined): void {
+        const hoobs = new HOOBSService();
+
+        if (plugin) hoobs.updateCharacteristic(PluginID, plugin.getPluginIdentifier());
+
+        hoobs.updateCharacteristic(DeviceID, accessory.UUID);
+        accessory.addService(hoobs);
+    }
+
+    private addHoobsEvents(accessory: Accessory): void {
+        let service: string | undefined;
+
+        for (let i = 0; i < accessory.services.length; i += 1) {
+            const type = Services[toShortForm(accessory.services[i].UUID)];
+
+            if (type === "camera") {
+                service = "camera";
+
+                break;
+            }
+
+            if (type === "television") {
+                service = "television";
+
+                break;
+            }
+        }
+
+        switch (service) {
+            case "camera":
+                for (let i = 0; i < accessory.services.length; i += 1) {
+                    switch (Services[toShortForm(accessory.services[i].UUID)]) {
+                        case "sensor":
+                            accessory.services[i].on("characteristic-change", (data: any) => {
+                                if (data && data.newValue !== data.oldValue) {
+                                    switch (Characteristics[toShortForm(data.characteristic.UUID)]) {
+                                        case "motion_detected":
+                                            this.emit(Events.ACCESSORY_CHANGE, this.accessories.get(Accessories.identifier(State.id, accessory.UUID))?.refresh(), data.newValue);
+                                            break;
+                                    }
+                                }
+                            });
+
+                            break;
+                    }
+                }
+
+                break;
+
+            case "television":
+                for (let i = 0; i < accessory.services.length; i += 1) {
+                    switch (Services[toShortForm(accessory.services[i].UUID)]) {
+                        case "input_source":
+                            accessory.services[i].on("characteristic-change", (data: any) => {
+                                if (data && data.newValue !== data.oldValue) {
+                                    switch (Characteristics[toShortForm(data.characteristic.UUID)]) {
+                                        case "volume":
+                                            this.emit(Events.ACCESSORY_CHANGE, this.accessories.get(Accessories.identifier(State.id, accessory.UUID))?.refresh(), data.newValue);
+                                            break;
+                                    }
+                                }
+                            });
+
+                            break;
+
+                        case "speaker":
+                            accessory.services[i].on("characteristic-change", (data: any) => {
+                                if (data && data.newValue !== data.oldValue) {
+                                    switch (Characteristics[toShortForm(data.characteristic.UUID)]) {
+                                        case "active":
+                                            this.emit(Events.ACCESSORY_CHANGE, this.accessories.get(Accessories.identifier(State.id, accessory.UUID))?.refresh(), data.newValue);
+                                            break;
+                                    }
+                                }
+                            });
+
+                            break;
+                    }
+                }
+
+                break;
+
+            default:
+                accessory.removeAllListeners(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE);
+
+                accessory.on(AccessoryEventTypes.SERVICE_CHARACTERISTIC_CHANGE, (data: any) => {
+                    if (data && data.newValue !== data.oldValue) {
+                        this.emit(Events.ACCESSORY_CHANGE, this.accessories.get(Accessories.identifier(State.id, accessory.UUID))?.refresh(), data.newValue);
+                    }
+                });
+
+                break;
         }
     }
 }
