@@ -18,7 +18,12 @@
 
 /* eslint-disable max-classes-per-file */
 
-import { Characteristic, Formats, Perms } from "hap-nodejs";
+import {
+    Service,
+    Characteristic,
+    Formats,
+    Perms,
+} from "hap-nodejs";
 
 export class PluginID extends Characteristic {
     static readonly UUID: string = "00000004-0000-1000-8000-0026BB765291";
@@ -43,5 +48,14 @@ export class DeviceID extends Characteristic {
         });
 
         this.value = this.getDefaultValue();
+    }
+}
+
+export class HOOBSService extends Service {
+    constructor() {
+        super("HOOBS", "00000002-0000-1000-8000-0026BB765291");
+
+        this.addCharacteristic(PluginID);
+        this.addCharacteristic(DeviceID);
     }
 }

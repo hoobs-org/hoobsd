@@ -84,11 +84,14 @@ export default class Accessories {
             const index = accessories.findIndex((existing) => existing.uuid === item.uuid);
 
             if (index >= 0) {
-                accessories[index].characteristics = [...accessories[index].characteristics, ...item.characteristics];
-                accessories[index].optional_characteristics = [...accessories[index].optional_characteristics, ...item.optional_characteristics];
+                accessories[index].characteristics = this.combineCharacteristics(...accessories[index].characteristics, ...item.characteristics);
 
+                if ((Precedence[item.type] || Number.MAX_SAFE_INTEGER) < Precedence[accessories[index].type]) accessories[index].type = item.type;
                 if (!accessories[index].main_sensor && item.main_sensor) accessories[index].main_sensor = item.main_sensor;
-                if (accessories[index].main_sensor && item.main_sensor && Precedence[item.main_sensor] < Precedence[accessories[index].main_sensor]) accessories[index].main_sensor = item.main_sensor;
+
+                if (accessories[index].main_sensor && item.main_sensor && (Precedence[item.main_sensor] || Number.MAX_SAFE_INTEGER) < Precedence[accessories[index].main_sensor]) {
+                    accessories[index].main_sensor = item.main_sensor;
+                }
             } else {
                 accessories.push(item);
             }
@@ -108,7 +111,7 @@ export default class Accessories {
             const index = accessories.findIndex((existing) => existing.uuid === item.uuid);
 
             if (index >= 0) {
-                accessories[index].characteristics = [...accessories[index].characteristics, ...item.characteristics];
+                accessories[index].characteristics = this.combineCharacteristics(...accessories[index].characteristics, ...item.characteristics);
 
                 if ((Precedence[item.type] || Number.MAX_SAFE_INTEGER) < Precedence[accessories[index].type]) accessories[index].type = item.type;
                 if (!accessories[index].main_sensor && item.main_sensor) accessories[index].main_sensor = item.main_sensor;
@@ -122,6 +125,16 @@ export default class Accessories {
         }
 
         return accessories[0];
+    }
+
+    private combineCharacteristics(...characteristics: { [key: string]: any }[]) {
+        const results: { [key: string]: any }[] = [];
+
+        for (let i = 0; i < characteristics.length; i += 1) {
+            if (results.findIndex((item) => item.type === characteristics[i].type && item.service.type === characteristics[i].service.type) === -1) results.push(characteristics[i]);
+        }
+
+        return results;
     }
 
     private seralizeAccessory(cached: PlatformAccessory | Accessory): { [key: string]: any } {
@@ -143,7 +156,7 @@ export default class Accessories {
             accessory_identifier: undefined,
             bridge_identifier: Accessories.identifier(State.id),
             bridge: State.id,
-            plugin: "",
+            plugin: undefined,
             room: "default",
             category: accessory.category,
             name: accessory.displayName,
@@ -169,7 +182,9 @@ export default class Accessories {
             searilized.hidden = true;
         }
 
-        searilized.characteristics = characteristics;
+        if (searilized.type !== "bridge" && !searilized.accessory_identifier) searilized.accessory_identifier = Accessories.identifier(State.id, searilized.uuid);
+
+        searilized.characteristics = this.combineCharacteristics(...characteristics);
 
         return searilized;
     }
@@ -181,7 +196,7 @@ export default class Accessories {
             const item = this.seralizeCharacteristic(accessory, service, service.characteristics[i]);
 
             if (item) {
-                if (type === "accessory_information") {
+                if (type === "hoobs_information" || type === "accessory_information") {
                     const key = Accessories.decamel(item.description);
 
                     switch (key) {
@@ -217,6 +232,7 @@ export default class Accessories {
         const stype = Services[suid] || suid;
 
         if (cuid === "23") return undefined;
+        if (stype === "camera" && characteristic.props.format === "tlv8") return undefined;
         if (stype === "sensor" && !accessory.main_sensor) accessory.main_sensor = ctype;
         if (stype === "sensor" && accessory.main_sensor && (Precedence[ctype] || Number.MAX_SAFE_INTEGER) < Precedence[accessory.main_sensor]) accessory.main_sensor = ctype;
 
