@@ -655,11 +655,12 @@ export default class Server extends EventEmitter {
             case "television":
                 for (let i = 0; i < accessory.services.length; i += 1) {
                     switch (Services[toShortForm(accessory.services[i].UUID)]) {
-                        case "input_source":
+                        case "switch":
                             accessory.services[i].on("characteristic-change", (data: any) => {
                                 if (data && data.newValue !== data.oldValue) {
                                     switch (Characteristics[toShortForm(data.characteristic.UUID)]) {
-                                        case "volume":
+                                        case "brightness":
+                                        case "on":
                                             this.emit(Events.ACCESSORY_CHANGE, this.accessories.get(Accessories.identifier(State.id, accessory.UUID))?.refresh(), data.newValue);
                                             break;
                                     }
@@ -673,6 +674,7 @@ export default class Server extends EventEmitter {
                                 if (data && data.newValue !== data.oldValue) {
                                     switch (Characteristics[toShortForm(data.characteristic.UUID)]) {
                                         case "active":
+                                        case "volume":
                                             this.emit(Events.ACCESSORY_CHANGE, this.accessories.get(Accessories.identifier(State.id, accessory.UUID))?.refresh(), data.newValue);
                                             break;
                                     }
