@@ -169,6 +169,7 @@ class Logger {
         if ((data.message || "").toLowerCase().indexOf("node") >= 0 && (data.message || "").toLowerCase().indexOf("recommended") >= 0) return;
         if ((data.message || "").match(/\b(coolingsetpoint|heatingsetpoint|set homekit)\b/gmi)) data.level = LogLevel.DEBUG;
         if ((data.message || "").match(/^(?=.*\bgit.io\b).*$/gmi)) data.level = LogLevel.DEBUG;
+        if ((data.message || "").match(/^(?=.*\bloading\b)(?=.*\bsnapshot\b).*$/gmi)) data.level = LogLevel.DEBUG;
 
         let colored: string;
 

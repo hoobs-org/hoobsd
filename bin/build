@@ -57,7 +57,7 @@ Program.command("server", { isDefault: true })
 
         copySync(join(root, "var"), join(root, "lib/hoobsd/static"));
 
-        if (command.pack) {
+        if (process.platform === "linux" && command.pack) {
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
 
             mkdirSync(join(root, "dist"));

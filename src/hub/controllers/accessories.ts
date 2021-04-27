@@ -402,7 +402,9 @@ export default class AccessoriesController {
                 return 0;
             });
 
-            const intermediate = assigned.map((item: { [key: string]: any }) => item.characteristics);
+            const intermediate: { [key: string]: any }[] = [];
+
+            assigned.filter((item) => item.type !== "camera" && item.type !== "television").map((item: { [key: string]: any }) => intermediate.push(...item.characteristics));
 
             characteristics = [...new Set(intermediate.map((item: { [key: string]: any }) => item.type))];
 
@@ -631,7 +633,7 @@ export default class AccessoriesController {
                 case "off":
                     index = accessory.characteristics.findIndex((item: { [key: string]: any }) => item.type === "on");
 
-                    if (index >= 0 && accessory.characteristics[index].write && (accessory.type === "light" || accessory.type === "switch" || accessory.type === "television" || accessory.type === "fan")) return true;
+                    if (index >= 0 && accessory.characteristics[index].write && (accessory.type === "light" || accessory.type === "switch" || accessory.type === "fan")) return true;
 
                     break;
             }
