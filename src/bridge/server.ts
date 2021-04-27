@@ -299,7 +299,7 @@ export default class Server extends EventEmitter {
 
         if (this.settings.setupID && this.settings.setupID.length === 4) publishInfo.setupID = this.settings.setupID;
 
-        this.bridge.publish(publishInfo, false);
+        this.bridge.publish(publishInfo, true);
         this.emit(Events.PUBLISH_SETUP_URI, this.setupURI());
     }
 
@@ -595,7 +595,7 @@ export default class Server extends EventEmitter {
                         bind: this.settings.bind,
                         addIdentifyingMaterial: true,
                         advertiser: this.settings.advertiser,
-                    }, false);
+                    }, true);
                 } else {
                     Console.warn(`A platform configured a external accessory under the plugin name "${accessories[i]._associatedPlugin}". However no loaded plugin could be found for the name.`);
                 }
