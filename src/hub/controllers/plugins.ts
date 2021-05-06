@@ -35,29 +35,24 @@ export default class PluginsController {
         State.app?.delete("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.uninstall(request, response));
     }
 
-    all(_request: Request, response: Response): void {
+    async all(_request: Request, response: Response): Promise<void> {
         const results:{ [key: string]: any }[] = [];
-        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                waits.push(new Promise((resolve) => {
-                    this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")).then((plugins) => {
-                        if (plugins) {
-                            for (let j = 0; j < plugins.length; j += 1) {
-                                plugins[j].bridge = State.bridges[i].id;
+                const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
 
-                                results.push(plugins[j]);
-                            }
-                        }
-                    }).finally(() => resolve());
-                }));
+                if (plugins) {
+                    for (let j = 0; j < plugins.length; j += 1) {
+                        plugins[j].bridge = State.bridges[i].id;
+
+                        results.push(plugins[j]);
+                    }
+                }
             }
         }
 
-        Promise.all(waits).then(() => {
-            response.send(results);
-        });
+        response.send(results);
     }
 
     installed(request: Request, response: Response): void {
@@ -241,7 +236,7 @@ export default class PluginsController {
                 scope,
                 name,
                 icon,
-                alias: schema?.alias || schema?.plugin_alias || schema?.pluginAlias || details[0].alias || name,
+                alias: schema?.alias || schema?.plugin_alias || schema?.pluginAlias || (details[0] || {}).alias || name,
                 version: (plugin.version || "").replace(/v/gi, ""),
                 latest,
                 certified,

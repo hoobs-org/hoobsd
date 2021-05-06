@@ -139,6 +139,16 @@ class Logger {
         const prefixes = [];
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
 
+        const format = (value: any) => ({
+            level,
+            bridge: State.id,
+            display: State.display,
+            timestamp: new Date().getTime(),
+            plugin: this.plugin,
+            prefix: this.prefix,
+            message: Utility.format(`${value || ""}`.replace(/Homebridge/g, "Bridge").replace(ascii, ""), ...parameters),
+        });
+
         if (typeof message === "string") {
             if (!message || message === "") return;
 
@@ -149,17 +159,11 @@ class Logger {
             if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
             if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
 
-            data = {
-                level,
-                bridge: State.id,
-                display: State.display,
-                timestamp: new Date().getTime(),
-                plugin: this.plugin,
-                prefix: this.prefix,
-                message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge").replace(ascii, ""), ...parameters),
-            };
-        } else {
+            data = format(message);
+        } else if (message.timestamp) {
             data = message;
+        } else {
+            data = format(message);
         }
 
         data.message = data.message || "";
