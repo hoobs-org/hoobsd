@@ -158,18 +158,8 @@ class Logger {
                 prefix: this.prefix,
                 message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge").replace(ascii, ""), ...parameters),
             };
-        } else if (message.timestamp) {
-            data = message;
         } else {
-            data = {
-                level,
-                bridge: State.id,
-                display: State.display,
-                timestamp: new Date().getTime(),
-                plugin: this.plugin,
-                prefix: this.prefix,
-                message: Utility.format(`${message || ""}`.replace(/Homebridge/g, "Bridge").replace(ascii, ""), ...parameters),
-            };
+            data = message;
         }
 
         data.message = data.message || "";
