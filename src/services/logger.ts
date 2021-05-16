@@ -136,6 +136,8 @@ class Logger {
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
         let data: Message;
 
+        if (!message) return;
+
         const prefixes = [];
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
 
@@ -160,7 +162,7 @@ class Logger {
             if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
 
             data = format(message);
-        } else if (message.timestamp) {
+        } else if ((message || {}).timestamp) {
             data = message;
         } else {
             data = format(message);

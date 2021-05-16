@@ -34,6 +34,12 @@ export default class StatusController {
     status(_request: IPCRequest, response: IPCResponse): void {
         this.path = this.path || Paths.data(State.id);
 
+        let ports: { [key: string]: any } | undefined;
+
+        if (State.homebridge?.instance?.ports) {
+            ports = { start: State.homebridge.instance.ports.start, end: State.homebridge.instance.ports.end };
+        }
+
         response.send({
             id: State.id,
             bridge: State.display || State.id,
@@ -45,6 +51,7 @@ export default class StatusController {
             bridge_name: State.homebridge?.settings.name || "",
             bridge_username: State.homebridge?.settings.username || "",
             bridge_port: State.homebridge?.port,
+            ports,
             setup_pin: State.homebridge?.settings.pin || "",
             setup_id: State.setup || "",
             bridge_path: this.path || "",
