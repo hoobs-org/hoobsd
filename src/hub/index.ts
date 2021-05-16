@@ -343,9 +343,13 @@ export default class API extends EventEmitter {
                 };
 
                 this.bridges[id].process.removeAllListeners("exit");
-                this.bridges[id].process.once("exit", handler);
+                this.bridges[id].process.on("exit", handler);
+                this.bridges[id].process.on("SIGINT", handler);
+                this.bridges[id].process.on("SIGTERM", handler);
+                this.bridges[id].process.on("SIGUSR1", handler);
+                this.bridges[id].process.on("SIGUSR2", handler);
 
-                this.bridges[id].process.kill();
+                this.bridges[id].process.kill("SIGINT");
             } else {
                 resolve();
             }
@@ -464,7 +468,7 @@ export default class API extends EventEmitter {
 
                     for (let i = 0; i < keys.length; i += 1) {
                         this.bridges[keys[i]].process.removeAllListeners("exit");
-                        this.bridges[keys[i]].process.kill();
+                        this.bridges[keys[i]].process.kill("SIGINT");
                     }
 
                     this.terminator.terminate().then(() => {
