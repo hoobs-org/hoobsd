@@ -136,7 +136,7 @@ class Logger {
     log(level: LogLevel, message: string | Message, ...parameters: any[]): void {
         let data: Message;
 
-        if (!message) return;
+        if (!message || message === "") return;
 
         const prefixes = [];
         const ascii = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g; // eslint-disable-line no-control-regex
