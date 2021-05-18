@@ -40,7 +40,7 @@ import Socket from "../hub/services/socket";
 import State from "../state";
 import Paths from "./paths";
 import Config from "./config";
-import System from "./system";
+import System, { ProcessQuery } from "./system";
 import { Console, NotificationType } from "./logger";
 import { sanitize } from "./formatters";
 
@@ -121,6 +121,16 @@ export default class Bridges {
         if (State.mode !== "development") return bridges.filter((item) => item.type !== "dev");
 
         return bridges;
+    }
+
+    static kill(bridge: BridgeRecord) {
+        System.kill(ProcessQuery.PORT, bridge.port);
+
+        if (bridge.ports?.start && bridge.ports?.end) {
+            for (let i = bridge.ports.start; i <= bridge.ports.end; i += 1) {
+                System.kill(ProcessQuery.PORT, bridge.port);
+            }
+        }
     }
 
     static manage(action: string) {

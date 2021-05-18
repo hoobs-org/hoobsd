@@ -38,14 +38,14 @@ import {
 
 import Paths from "../services/paths";
 import Config from "../services/config";
-import System from "../services/system";
+import System, { ProcessQuery } from "../services/system";
 import State from "../state";
 import Users from "../services/users";
 import IPC from "./services/ipc";
 import Socket from "./services/socket";
 import Monitor from "./services/monitor";
 import Pipe from "../services/pipe";
-import { BridgeRecord, BridgeProcess } from "../services/bridges";
+import Bridges, { BridgeRecord, BridgeProcess } from "../services/bridges";
 import { Console, Events, NotificationType } from "../services/logger";
 
 import IndexController from "./controllers/index";
@@ -66,7 +66,7 @@ import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
-const BRIDGE_TEARDOWN_DELAY = 5.5 * 1000;
+const BRIDGE_TEARDOWN_DELAY = 2 * 1000;
 
 function running(pid: number): boolean {
     try {
@@ -259,6 +259,7 @@ export default class API extends EventEmitter {
             waits = [];
 
             Console.info(`${bridge.display || bridge.id} starting`);
+            Bridges.kill(bridge);
 
             const forked = Process.fork(hoobsd, flags, { env: { ...process.env }, silent: true });
 
@@ -419,6 +420,7 @@ export default class API extends EventEmitter {
             Console.warn("running in development mode");
         }
 
+        System.kill(ProcessQuery.PORT, this.port);
         System.preload();
 
         this.listner?.listen(this.port, () => {

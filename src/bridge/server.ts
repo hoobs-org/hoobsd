@@ -71,7 +71,7 @@ import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 import { Services, Characteristics } from "./services/types";
 
-const INSTANCE_KILL_DELAY = 5 * 1000;
+const INSTANCE_KILL_DELAY = 2 * 1000;
 
 // @ts-ignore
 PluginManager.PLUGIN_IDENTIFIER_PATTERN = /^((@[\S]*)\/)?([\S-]*)$/;
