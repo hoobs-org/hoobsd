@@ -35,6 +35,11 @@ import Paths from "./paths";
 import Releases from "./releases";
 import { Console } from "./logger";
 
+export const enum ProcessQuery {
+    PID = "pid",
+    PORT = "port",
+}
+
 export default class System {
     static preload(): void {
         System.info();
@@ -156,6 +161,16 @@ export default class System {
                 State.cache?.remove("system/info");
             }
         }
+    }
+
+    static kill(type: ProcessQuery, value: any) {
+        switch (type) {
+            case ProcessQuery.PORT:
+                value = System.shell(`lsof -t -i:${value}`);
+                break;
+        }
+
+        if (!Number.isNaN(parseInt(value, 10))) System.shell(`kill -9 ${value}`);
     }
 
     static shell(command: string, multiline?: boolean): string {
