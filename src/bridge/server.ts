@@ -227,7 +227,7 @@ export default class Server extends EventEmitter {
         this.restoreCachedPlatformAccessories();
         this.api.signalFinished();
 
-        await Promise.all(promises);
+        await Promise.allSettled(promises);
 
         promises = [];
 

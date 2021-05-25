@@ -255,7 +255,7 @@ export default class API extends EventEmitter {
 
         waits.push(this.teardown(bridge.id));
 
-        Promise.all(waits).then(() => {
+        Promise.allSettled(waits).then(() => {
             waits = [];
 
             Console.info(`${bridge.display || bridge.id} starting`);
@@ -407,7 +407,7 @@ export default class API extends EventEmitter {
                 }
             }
 
-            Promise.all(waits).then(() => {
+            Promise.allSettled(waits).then(() => {
                 waits = [];
 
                 resolve();
@@ -463,7 +463,7 @@ export default class API extends EventEmitter {
                     waits.push(this.teardown(bridges[i]));
                 }
 
-                Promise.all(waits).then(() => {
+                Promise.allSettled(waits).then(() => {
                     waits = [];
 
                     const keys = Object.keys(this.bridges);
