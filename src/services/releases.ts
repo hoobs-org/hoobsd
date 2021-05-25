@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Request from "axios";
+import Request from "../request";
 import State from "../state";
 
 export default class Releases {
