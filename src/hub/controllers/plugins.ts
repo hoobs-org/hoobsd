@@ -35,24 +35,30 @@ export default class PluginsController {
         State.app?.delete("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.uninstall(request, response));
     }
 
-    async all(_request: Request, response: Response): Promise<void> {
+    all(_request: Request, response: Response): void {
         const results:{ [key: string]: any }[] = [];
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
+                waits.push(new Promise((resolve) => {
+                    this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")).then((plugins) => {
+                        if (plugins) {
+                            for (let j = 0; j < plugins.length; j += 1) {
+                                plugins[j].bridge = State.bridges[i].id;
 
-                if (plugins) {
-                    for (let j = 0; j < plugins.length; j += 1) {
-                        plugins[j].bridge = State.bridges[i].id;
-
-                        results.push(plugins[j]);
-                    }
-                }
+                                results.push(plugins[j]);
+                                resolve();
+                            }
+                        }
+                    });
+                }));
             }
         }
 
-        response.send(results);
+        Promise.allSettled(waits).then(() => {
+            response.send(results);
+        });
     }
 
     installed(request: Request, response: Response): void {
