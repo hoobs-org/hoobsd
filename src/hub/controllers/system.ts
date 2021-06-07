@@ -212,10 +212,10 @@ export default class SystemController {
             return;
         }
 
-        const form = new Forms.IncomingForm();
-
-        form.multiples = false;
-        form.maxFileSize = 2 * 1024 * 1024 * 1024;
+        const form = new Forms.IncomingForm({
+            multiples: false,
+            maxFileSize: 2 * 1024 * 1024 * 1024,
+        });
 
         form.parse(request, async (_error, _fields, files) => {
             const file = <Forms.File>files.file;

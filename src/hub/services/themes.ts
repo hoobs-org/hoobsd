@@ -399,7 +399,7 @@ export default class Themes {
         writeFileSync(join(Paths.themes, theme.name, "theme.css"), Themes.generate(theme.name, theme));
     }
 
-    static backdrop(file: string, type: string): string {
+    static backdrop(file: string, type: string | null): string {
         const filename = `backdrop_${(new Date()).getTime()}`;
 
         switch (type) {

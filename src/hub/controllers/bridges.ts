@@ -80,10 +80,10 @@ export default class BridgesController {
             return;
         }
 
-        const form = new Forms.IncomingForm();
-
-        form.multiples = false;
-        form.maxFileSize = 2 * 1024 * 1024 * 1024;
+        const form = new Forms.IncomingForm({
+            multiples: false,
+            maxFileSize: 2 * 1024 * 1024 * 1024,
+        });
 
         form.parse(request, (_error, fields, files) => {
             const file: Forms.File = <Forms.File>files.file;
