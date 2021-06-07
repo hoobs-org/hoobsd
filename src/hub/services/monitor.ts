@@ -63,7 +63,7 @@ export default async function Monitor() {
     waits.push(new Promise((resolve) => SystemInfo.mem().then((value) => { memory = value; }).finally(() => resolve())));
     waits.push(new Promise((resolve) => SystemInfo.cpuTemperature().then((value) => { temp = value; }).finally(() => resolve())));
 
-    Promise.all(waits).then(() => {
+    Promise.allSettled(waits).then(() => {
         Console.emit(Events.MONITOR, "hub", {
             bridges: results,
             cpu,

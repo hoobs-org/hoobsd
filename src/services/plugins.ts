@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import Request from "axios";
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
 
@@ -31,6 +30,7 @@ import {
 
 import { Plugin } from "homebridge/lib/plugin";
 import { PluginManager, PackageJSON } from "homebridge/lib/pluginManager";
+import Request from "../request";
 import State from "../state";
 import Paths from "./paths";
 import Config from "./config";

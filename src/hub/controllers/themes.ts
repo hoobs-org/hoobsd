@@ -40,9 +40,9 @@ export default class ThemesController {
     }
 
     backdrop(request: Request, response: Response): void {
-        const form = new Forms.IncomingForm();
-
-        form.multiples = false;
+        const form = new Forms.IncomingForm({
+            multiples: false,
+        });
 
         form.parse(request, (_error, _fields, files) => {
             const file = <Forms.File>files.file;

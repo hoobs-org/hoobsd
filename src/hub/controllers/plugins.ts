@@ -35,24 +35,30 @@ export default class PluginsController {
         State.app?.delete("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.uninstall(request, response));
     }
 
-    async all(_request: Request, response: Response): Promise<void> {
+    all(_request: Request, response: Response): void {
         const results:{ [key: string]: any }[] = [];
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const plugins = await this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev"));
+                waits.push(new Promise((resolve) => {
+                    this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")).then((plugins) => {
+                        if (plugins) {
+                            for (let j = 0; j < plugins.length; j += 1) {
+                                plugins[j].bridge = State.bridges[i].id;
 
-                if (plugins) {
-                    for (let j = 0; j < plugins.length; j += 1) {
-                        plugins[j].bridge = State.bridges[i].id;
-
-                        results.push(plugins[j]);
-                    }
-                }
+                                results.push(plugins[j]);
+                                resolve();
+                            }
+                        }
+                    });
+                }));
             }
         }
 
-        response.send(results);
+        Promise.allSettled(waits).then(() => {
+            response.send(results);
+        });
     }
 
     installed(request: Request, response: Response): void {
@@ -179,74 +185,80 @@ export default class PluginsController {
     }
 
     private async bridge(id: string, development?: boolean): Promise<{ [key:string]: any }[]> {
-        const results = [];
+        const results: { [key:string]: any }[] = [];
         const bridge = State.bridges.find((item) => item.id === id);
         const plugins = Plugins.installed(id, development);
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < plugins.length; i += 1) {
-            const plugin = plugins[i];
-            const directory = bridge?.type === "dev" ? bridge?.project || "" : plugin.getPluginPath();
-            const pjson = Plugins.loadPackage(directory) || {};
-            const identifier = bridge?.type === "dev" ? pjson.name : plugin.getPluginIdentifier();
+            waits.push(new Promise((resolve) => {
+                const plugin = plugins[i];
+                const directory = bridge?.type === "dev" ? bridge?.project || "" : plugin.getPluginPath();
+                const pjson = Plugins.loadPackage(directory) || {};
+                const identifier = bridge?.type === "dev" ? pjson.name : plugin.getPluginIdentifier();
 
-            const name = PluginManager.extractPluginName(identifier);
-            const scope = PluginManager.extractPluginScope(identifier);
+                const name = PluginManager.extractPluginName(identifier);
+                const scope = PluginManager.extractPluginScope(identifier);
 
-            let latest = (plugin.version || "").replace(/v/gi, "");
-            let certified = false;
-            let rating = 0;
-            let icon = "";
+                let latest = (plugin.version || "").replace(/v/gi, "");
+                let certified = false;
+                let rating = 0;
+                let icon = "";
 
-            let definition: { [key: string]: any } | undefined;
-            let schema: { [key: string]: any } | undefined;
-            let details: any[] = [];
+                let definition: { [key: string]: any } | undefined;
+                let schema: { [key: string]: any } | undefined;
+                let details: any[] = [];
 
-            const waits: Promise<void>[] = [];
+                const intermediate: Promise<void>[] = [];
 
-            if (bridge?.type === "dev") {
-                waits.push(new Promise((resolve) => {
-                    Plugins.pluginSchema(bridge, identifier, {}).then((response) => {
-                        schema = response;
-                        details = [{ name: identifier, alias: schema.alias, type: schema.accessory ? "accessory" : "platform" }];
-                    }).finally(() => resolve());
-                }));
-            } else {
-                definition = await Plugins.pluginDefinition(identifier);
-
-                waits.push(new Promise((resolve) => Plugins.pluginSchema(bridge, identifier, definition || {}).then((response) => { schema = response; }).finally(() => resolve())));
-                waits.push(new Promise((resolve) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => resolve())));
-            }
-
-            await Promise.all(waits);
-
-            if (definition) {
-                if ((definition.tags || {}).latest) {
-                    latest = (definition.tags.latest || "").replace(/v/gi, "");
-                } else if (definition.versions) {
-                    latest = (Object.keys(definition.versions).pop() || "").replace(/v/gi, "");
+                if (bridge?.type === "dev") {
+                    intermediate.push(new Promise((complete) => {
+                        Plugins.pluginSchema(bridge, identifier, {}).then((response) => {
+                            schema = response;
+                            details = [{ name: identifier, alias: schema.alias, type: schema.accessory ? "accessory" : "platform" }];
+                        }).finally(() => complete());
+                    }));
+                } else {
+                    intermediate.push(new Promise((complete) => Plugins.pluginDefinition(identifier).then((response) => { definition = response; }).finally(() => complete())));
+                    intermediate.push(new Promise((complete) => Plugins.pluginSchema(bridge, identifier, definition || {}).then((response) => { schema = response; }).finally(() => complete())));
+                    intermediate.push(new Promise((complete) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => complete())));
                 }
 
-                certified = definition.certified;
-                rating = definition.rating;
-                icon = definition.icon;
-            }
+                Promise.allSettled(intermediate).then(() => {
+                    if (definition) {
+                        if ((definition.tags || {}).latest) {
+                            latest = (definition.tags.latest || "").replace(/v/gi, "");
+                        } else if (definition.versions) {
+                            latest = (Object.keys(definition.versions).pop() || "").replace(/v/gi, "");
+                        }
 
-            results.push({
-                identifier,
-                scope,
-                name,
-                icon,
-                alias: schema?.alias || schema?.plugin_alias || schema?.pluginAlias || (details[0] || {}).alias || name,
-                version: (plugin.version || "").replace(/v/gi, ""),
-                latest,
-                certified,
-                rating,
-                keywords: pjson.keywords || [],
-                details,
-                schema,
-                description: pjson.description,
-            });
+                        certified = definition.certified;
+                        rating = definition.rating;
+                        icon = definition.icon;
+                    }
+
+                    results.push({
+                        identifier,
+                        scope,
+                        name,
+                        icon,
+                        alias: schema?.alias || schema?.plugin_alias || schema?.pluginAlias || (details[0] || {}).alias || name,
+                        version: (plugin.version || "").replace(/v/gi, ""),
+                        latest,
+                        certified,
+                        rating,
+                        keywords: pjson.keywords || [],
+                        details,
+                        schema,
+                        description: pjson.description,
+                    });
+
+                    resolve();
+                });
+            }));
         }
+
+        await Promise.allSettled(waits);
 
         return results;
     }

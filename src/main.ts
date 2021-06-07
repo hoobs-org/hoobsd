@@ -50,7 +50,7 @@ function teardown() {
     if (State.bridge) waits.push(State.bridge.stop());
     if (State.hub) waits.push(State.hub.stop());
 
-    Promise.all(waits).then(() => {
+    Promise.allSettled(waits).then(() => {
         waits = [];
 
         process.exit();

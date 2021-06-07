@@ -68,7 +68,7 @@ export default class StatusController {
         if (!applications.hoobsd) waits.push(new Promise((resolve) => { System.hoobsd.info().then((info: { [key: string]: any }) => { applications.hoobsd = info; }).finally(() => { resolve(); }); }));
         if (!applications.runtime) waits.push(new Promise((resolve) => { System.runtime.info().then((info: { [key: string]: any }) => { applications.runtime = info; }).finally(() => { resolve(); }); }));
 
-        await Promise.all(waits);
+        await Promise.allSettled(waits);
 
         let product = "custom";
         let upgraded = true;
