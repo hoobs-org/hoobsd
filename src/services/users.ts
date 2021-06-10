@@ -81,11 +81,11 @@ export default class Users {
                 token: await Users.hashValue(user.password, key),
             };
 
-            const session = Buffer.from(JSON.stringify(token), "utf8").toString("base64");
-
-            State.cache?.set(session, remember ? 525600 : State.hub?.settings.inactive_logoff || 30, remember ? 525600 : State.hub?.settings.inactive_logoff || 30);
-
-            return session;
+            return State.cache?.set(
+                Buffer.from(JSON.stringify(token), "utf8").toString("base64"),
+                remember ? 525600 : State.hub?.settings.inactive_logoff || 30,
+                remember ? 525600 : State.hub?.settings.inactive_logoff || 30,
+            );
         }
 
         return false;

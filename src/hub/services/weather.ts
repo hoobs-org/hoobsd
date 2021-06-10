@@ -49,9 +49,7 @@ export default class Weather {
             country: item.sys.country,
         }));
 
-        State.cache?.set(key, results, 60);
-
-        return results;
+        return State.cache?.set(key, results, 60);
     }
 
     static async current(): Promise<{ [key: string]: any }> {
@@ -85,9 +83,7 @@ export default class Weather {
             },
         };
 
-        State.cache?.set(key, results, 30);
-
-        return results;
+        return State.cache?.set(key, results, 30);
     }
 
     static async forecast(): Promise<{ [key: string]: any }[]> {
@@ -167,8 +163,6 @@ export default class Weather {
             results[index].wind.speed = parseFloat((wind / count).toFixed(2));
         }
 
-        State.cache?.set(key, results, 60);
-
-        return results;
+        return State.cache?.set(key, results, 60);
     }
 }

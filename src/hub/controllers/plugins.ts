@@ -213,14 +213,17 @@ export default class PluginsController {
 
                 if (bridge?.type === "dev") {
                     intermediate.push(new Promise((complete) => {
-                        Plugins.pluginSchema(bridge, identifier, {}).then((response) => {
-                            schema = response;
-                            details = [{ name: identifier, alias: schema.alias, type: schema.accessory ? "accessory" : "platform" }];
+                        Plugins.pluginSchema(bridge, identifier).then((response) => {
+                            schema = response.schema;
+                            details = [{ name: identifier, alias: schema?.alias, type: schema?.accessory ? "accessory" : "platform" }];
                         }).finally(() => complete());
                     }));
                 } else {
-                    intermediate.push(new Promise((complete) => Plugins.pluginDefinition(identifier).then((response) => { definition = response; }).finally(() => complete())));
-                    intermediate.push(new Promise((complete) => Plugins.pluginSchema(bridge, identifier, definition || {}).then((response) => { schema = response; }).finally(() => complete())));
+                    intermediate.push(new Promise((complete) => Plugins.pluginSchema(bridge, identifier).then((response) => {
+                        definition = response.definition;
+                        schema = response.schema;
+                    }).finally(() => complete())));
+
                     intermediate.push(new Promise((complete) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => complete())));
                 }
 
