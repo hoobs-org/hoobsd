@@ -83,7 +83,7 @@ export default class Users {
 
             return State.cache?.set(
                 Buffer.from(JSON.stringify(token), "utf8").toString("base64"),
-                remember ? 525600 : State.hub?.settings.inactive_logoff || 30,
+                Buffer.from(JSON.stringify(token), "utf8").toString("base64"),
                 remember ? 525600 : State.hub?.settings.inactive_logoff || 30,
             );
         }
