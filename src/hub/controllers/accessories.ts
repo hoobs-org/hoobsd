@@ -68,9 +68,7 @@ export default class AccessoriesController {
             return 0;
         });
 
-        State.cache?.set(key, results, 720);
-
-        return results;
+        return State.cache?.set(key, results, 720);
     }
 
     static set layout(value: { [key: string]: any }) {

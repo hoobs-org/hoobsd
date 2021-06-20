@@ -34,10 +34,11 @@ export default class Cache {
         return <T>value;
     }
 
-    set(key: string, value: unknown, age: number): boolean {
+    set(key: string, value: unknown, age: number): any {
         this.client.del(key);
+        this.client.set(key, value, (age || 30) * 60);
 
-        return this.client.set(key, value, (age || 30) * 60);
+        return value;
     }
 
     touch(key: string, age: number): boolean {

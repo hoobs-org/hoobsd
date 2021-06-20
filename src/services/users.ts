@@ -72,20 +72,20 @@ export default class Users {
         const key: string = await Users.generateSalt();
 
         if (user) {
-            const token = {
+            const token = Buffer.from(JSON.stringify({
                 key,
                 id: user.id,
                 name: user.name,
                 username: user.username,
                 permissions: user.permissions,
                 token: await Users.hashValue(user.password, key),
-            };
+            }), "utf8").toString("base64");
 
-            const session = Buffer.from(JSON.stringify(token), "utf8").toString("base64");
+            const ttl = remember ? 525600 : State.hub?.settings.inactive_logoff || 30;
 
-            State.cache?.set(session, remember ? 525600 : State.hub?.settings.inactive_logoff || 30, remember ? 525600 : State.hub?.settings.inactive_logoff || 30);
+            State.cache?.set(token, ttl, ttl);
 
-            return session;
+            return token;
         }
 
         return false;

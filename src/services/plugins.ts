@@ -436,7 +436,7 @@ export default class Plugins {
         return results;
     }
 
-    static async pluginSchema(bridge: BridgeRecord | undefined, identifier: string, definition: { [key: string]: any }): Promise<{ [key: string]: any }> {
+    static async pluginSchema(bridge: BridgeRecord | undefined, identifier: string): Promise<{ [key: string]: any }> {
         const key = `plugin/schema:${identifier}`;
         const cached = State.cache?.get<{ [key: string]: any }>(key);
 
@@ -446,45 +446,49 @@ export default class Plugins {
             const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
 
             return {
-                name: identifier,
-                alias: raw.alias || raw.pluginAlias || identifier,
-                accessory: raw.pluginType === "accessory",
-                config: {
-                    type: "object",
-                    properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
+                schema: {
+                    name: identifier,
+                    alias: raw.alias || raw.pluginAlias || identifier,
+                    accessory: raw.pluginType === "accessory",
+                    config: {
+                        type: "object",
+                        properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
+                    },
                 },
             };
         }
+
+        const definition: { [key: string]: any } = (await Plugins.pluginDefinition(identifier)) || {};
 
         if (bridge && !definition.override_schema && existsSync(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"))) {
             const raw: { [key: string]: any } = Paths.loadJson(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"), {});
 
-            const schema = {
-                name: identifier,
-                alias: raw.alias || raw.pluginAlias || identifier,
-                accessory: raw.pluginType === "accessory",
-                config: {
-                    type: "object",
-                    properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
+            return State.cache?.set(key, {
+                definition,
+                schema: {
+                    name: identifier,
+                    alias: raw.alias || raw.pluginAlias || identifier,
+                    accessory: raw.pluginType === "accessory",
+                    config: {
+                        type: "object",
+                        properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
+                    },
                 },
-            };
-
-            State.cache?.set(key, schema, 60);
-
-            return schema;
+            }, 60);
         }
 
         try {
-            const schema = ((await Request.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {};
-
-            State.cache?.set(key, schema, 60);
-
-            return schema;
+            return State.cache?.set(key, {
+                definition,
+                schema: ((await Request.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {},
+            }, 60);
         } catch (_error) {
             Console.warn("plugin site unavailable");
         }
 
-        return {};
+        return {
+            definition,
+        };
     }
 
     static async pluginDefinition(identifier: string): Promise<{ [key: string]: any } | undefined> {
@@ -494,11 +498,7 @@ export default class Plugins {
         if (cached) return cached;
 
         try {
-            const definition = ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results;
-
-            State.cache?.set(key, definition, 60);
-
-            return definition;
+            return State.cache?.set(key, ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results, 60);
         } catch (_error) {
             Console.warn("plugin site unavailable");
         }

@@ -28,7 +28,7 @@ export default class Releases {
 
         const { results } = (await Request.get(`https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`)).data;
 
-        if (results) State.cache?.set(key, results, application === "node" ? 12 * 60 : 4 * 60);
+        if (results) return State.cache?.set(key, results, application === "node" ? 12 * 60 : 4 * 60);
 
         return results || {};
     }

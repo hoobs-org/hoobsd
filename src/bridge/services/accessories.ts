@@ -97,9 +97,7 @@ export default class Accessories {
             }
         }
 
-        State.cache?.set(key, accessories, 30);
-
-        return accessories;
+        return State.cache?.set(key, accessories, 30);
     }
 
     private loadOne(accessory: string): { [key: string]: any } {
@@ -308,17 +306,9 @@ export default class Accessories {
                         if (context && context.controller) {
                             context.controller.delegate.handleSnapshotRequest({ width: 480, height: 270 }, (_error: any, buffer: Buffer) => {
                                 if (!buffer && context.controller.cachedSnapshot) {
-                                    const screenshot = context.controller.cachedSnapshot.toString("base64");
-
-                                    State.cache?.set(key, screenshot, 0.0166);
-
-                                    resolve(screenshot);
+                                    resolve(State.cache?.set(key, context.controller.cachedSnapshot.toString("base64"), 0.0166));
                                 } else if (buffer) {
-                                    const screenshot = buffer.toString("base64");
-
-                                    State.cache?.set(key, screenshot, 0.0166);
-
-                                    resolve(screenshot);
+                                    resolve(State.cache?.set(key, buffer.toString("base64"), 0.0166));
                                 } else {
                                     resolve(undefined);
                                 }

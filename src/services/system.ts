@@ -136,9 +136,7 @@ export default class System {
             results.mdns_broadcast = broadcast;
         }
 
-        State.cache?.set(key, results, 60);
-
-        return results;
+        return State.cache?.set(key, results, 60);
     }
 
     static hostname(value: string) {
@@ -282,18 +280,14 @@ export default class System {
                 if (path === "/usr/lib/hoobs") mode = "production";
                 if (path === join(__dirname, "../../../../gui")) mode = "development";
 
-                const results = {
+                return State.cache?.set(key, {
                     gui_prefix: "/usr/",
                     gui_version: installed,
                     gui_current: current,
                     gui_upgraded: (installed || current) === current ? true : !Semver.gt(current, installed || ""),
                     gui_download: download,
                     gui_mode: mode,
-                };
-
-                State.cache?.set(key, results, 60);
-
-                return results;
+                }, 60);
             },
 
             release: async (beta: boolean): Promise<{ [key: string]: string }> => {
@@ -363,18 +357,14 @@ export default class System {
                 if (existsSync(`${prefix}lib/hbs/package.json`)) mode = "production";
                 if (existsSync(`${prefix}/package.json`)) mode = "development";
 
-                const results = {
+                return State.cache?.set(key, {
                     cli_prefix: prefix,
                     cli_version: installed,
                     cli_current: current,
                     cli_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
                     cli_download: download,
                     cli_mode: mode,
-                };
-
-                State.cache?.set(key, results, 4 * 60);
-
-                return results;
+                }, 4 * 60);
             },
 
             release: async (beta: boolean): Promise<{ [key: string]: string }> => {
@@ -444,7 +434,7 @@ export default class System {
                 if (existsSync(`${prefix}lib/hoobsd/package.json`)) mode = "production";
                 if (existsSync(`${prefix}/package.json`)) mode = "development";
 
-                const results = {
+                return State.cache?.set(key, {
                     hoobsd_prefix: prefix,
                     hoobsd_version: installed,
                     hoobsd_current: current,
@@ -452,11 +442,7 @@ export default class System {
                     hoobsd_download: download,
                     hoobsd_mode: mode,
                     hoobsd_running: (System.shell("command -v pidof") !== "" && System.shell("pidof hoobsd")) !== "",
-                };
-
-                State.cache?.set(key, results, 4 * 60);
-
-                return results;
+                }, 4 * 60);
             },
 
             release: async (beta: boolean): Promise<{ [key: string]: string }> => {
@@ -510,15 +496,11 @@ export default class System {
                     current = process.version.replace("v", "");
                 }
 
-                const results = {
+                return State.cache?.set(key, {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
                     node_current: current,
                     node_upgraded: process.version.replace("v", "") === current || current === "" || process.version.replace("v", "") === "" ? true : !Semver.gt(current, process.version.replace("v", "")),
-                };
-
-                State.cache?.set(key, results, 12 * 60);
-
-                return results;
+                }, 12 * 60);
             },
 
             release: async (beta: boolean): Promise<string> => {
