@@ -63,10 +63,29 @@ export default class StatusController {
         const waits: Promise<void>[] = [];
         const applications: { [key: string]: any } = State.cache?.get<{ [key: string]: any }>(key) || {};
 
-        if (!applications.cli) waits.push(new Promise((resolve) => { System.cli.info().then((info: { [key: string]: any }) => { applications.cli = info; }).finally(() => { resolve(); }); }));
-        if (!applications.gui) waits.push(new Promise((resolve) => { System.gui.info().then((info: { [key: string]: any }) => { applications.gui = info; }).finally(() => { resolve(); }); }));
-        if (!applications.hoobsd) waits.push(new Promise((resolve) => { System.hoobsd.info().then((info: { [key: string]: any }) => { applications.hoobsd = info; }).finally(() => { resolve(); }); }));
-        if (!applications.runtime) waits.push(new Promise((resolve) => { System.runtime.info().then((info: { [key: string]: any }) => { applications.runtime = info; }).finally(() => { resolve(); }); }));
+        if (!applications.cli) {
+            waits.push(new Promise((resolve) => {
+                System.cli.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.cli = info; }).finally(() => { resolve(); });
+            }));
+        }
+
+        if (!applications.gui) {
+            waits.push(new Promise((resolve) => {
+                System.gui.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.gui = info; }).finally(() => { resolve(); });
+            }));
+        }
+
+        if (!applications.hoobsd) {
+            waits.push(new Promise((resolve) => {
+                System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.hoobsd = info; }).finally(() => { resolve(); });
+            }));
+        }
+
+        if (!applications.runtime) {
+            waits.push(new Promise((resolve) => {
+                System.runtime.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.runtime = info; }).finally(() => { resolve(); });
+            }));
+        }
 
         await Promise.allSettled(waits);
 
