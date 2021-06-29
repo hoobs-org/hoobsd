@@ -239,7 +239,7 @@ export default class SystemController {
 
         const system = System.info();
 
-        let data = await System.runtime.info();
+        let data = await System.runtime.info(system.repo === "edge" || system.repo === "bleeding");
 
         if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get" && !data.node_upgraded) {
             Console.info("upgrading node");
@@ -247,7 +247,7 @@ export default class SystemController {
             await System.runtime.upgrade();
         }
 
-        data = await System.cli.info();
+        data = await System.cli.info(system.repo === "edge" || system.repo === "bleeding");
 
         if (!data.cli_upgraded) {
             Console.info("upgrading cli");
@@ -255,7 +255,7 @@ export default class SystemController {
             await System.cli.upgrade();
         }
 
-        data = await System.gui.info();
+        data = await System.gui.info(system.repo === "edge" || system.repo === "bleeding");
 
         if (data.gui_version && !data.gui_upgraded) {
             Console.info("upgrading gui");
@@ -263,7 +263,7 @@ export default class SystemController {
             await System.gui.upgrade();
         }
 
-        data = await System.hoobsd.info();
+        data = await System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding");
 
         if (!data.hoobsd_upgraded) {
             Console.info("upgrading hoobsd");

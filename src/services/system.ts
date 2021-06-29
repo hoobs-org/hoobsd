@@ -43,10 +43,18 @@ export const enum ProcessQuery {
 export default class System {
     static preload(): void {
         System.info();
-        System.cli.info();
-        System.gui.info();
-        System.hoobsd.info();
-        System.runtime.info();
+
+        System.cli.info(true);
+        System.cli.info(false);
+
+        System.gui.info(true);
+        System.gui.info(false);
+
+        System.hoobsd.info(true);
+        System.hoobsd.info(false);
+
+        System.runtime.info(true);
+        System.runtime.info(false);
     }
 
     static info(): { [key: string]: any } {
@@ -72,6 +80,7 @@ export default class System {
 
         results.arch = System.shell("uname -m");
         results.init_system = "";
+        results.repo = "stable";
 
         if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
         if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
@@ -86,6 +95,10 @@ export default class System {
             case "debian":
             case "raspbian":
                 results.package_manager = (System.shell("command -v apt-get")) !== "" ? "apt-get" : "";
+
+                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") results.repo = "bleeding";
+                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") results.repo = "edge";
+
                 break;
 
             case "fedora":
@@ -249,12 +262,28 @@ export default class System {
         }
     }
 
+    static switch(level: string): void {
+        switch (level) {
+            case "bleeding":
+                execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: "ignore" });
+                break;
+
+            case "edge":
+                execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: "ignore" });
+                break;
+
+            default:
+                execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: "ignore" });
+                break;
+        }
+    }
+
     static get gui(): { [key: string]: any } {
         const key = "system/gui";
 
         return {
             info: async (beta: boolean): Promise<{ [key: string]: any }> => {
-                const cached = State.cache?.get<{ [key: string]: any }>(key);
+                const cached = State.cache?.get<{ [key: string]: any }>(`${key}/${beta ? "beta" : "stable"}`);
 
                 if (cached) return cached;
 
@@ -280,7 +309,7 @@ export default class System {
                 if (path === "/usr/lib/hoobs") mode = "production";
                 if (path === join(__dirname, "../../../../gui")) mode = "development";
 
-                return State.cache?.set(key, {
+                return State.cache?.set(`${key}/${beta ? "beta" : "stable"}`, {
                     gui_prefix: "/usr/",
                     gui_version: installed,
                     gui_current: current,
@@ -302,7 +331,8 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = System.info();
 
-                State.cache?.remove(key);
+                State.cache?.remove(`${key}/stable`);
+                State.cache?.remove(`${key}/beta`);
 
                 if (system.package_manager === "apt-get") {
                     await System.execute("apt-get update");
@@ -317,7 +347,7 @@ export default class System {
 
         return {
             info: async (beta: boolean): Promise<{ [key: string]: any }> => {
-                const cached = State.cache?.get<{ [key: string]: any }>(key);
+                const cached = State.cache?.get<{ [key: string]: any }>(`${key}/${beta ? "beta" : "stable"}`);
 
                 if (cached) return cached;
 
@@ -357,7 +387,7 @@ export default class System {
                 if (existsSync(`${prefix}lib/hbs/package.json`)) mode = "production";
                 if (existsSync(`${prefix}/package.json`)) mode = "development";
 
-                return State.cache?.set(key, {
+                return State.cache?.set(`${key}/${beta ? "beta" : "stable"}`, {
                     cli_prefix: prefix,
                     cli_version: installed,
                     cli_current: current,
@@ -379,7 +409,8 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = System.info();
 
-                State.cache?.remove(key);
+                State.cache?.remove(`${key}/stable`);
+                State.cache?.remove(`${key}/beta`);
 
                 if (system.package_manager === "apt-get") {
                     await System.execute("apt-get update");
@@ -394,7 +425,7 @@ export default class System {
 
         return {
             info: async (beta: boolean): Promise<{ [key: string]: any }> => {
-                const cached = State.cache?.get<{ [key: string]: any }>(key);
+                const cached = State.cache?.get<{ [key: string]: any }>(`${key}/${beta ? "beta" : "stable"}`);
 
                 if (cached) return cached;
 
@@ -434,7 +465,7 @@ export default class System {
                 if (existsSync(`${prefix}lib/hoobsd/package.json`)) mode = "production";
                 if (existsSync(`${prefix}/package.json`)) mode = "development";
 
-                return State.cache?.set(key, {
+                return State.cache?.set(`${key}/${beta ? "beta" : "stable"}`, {
                     hoobsd_prefix: prefix,
                     hoobsd_version: installed,
                     hoobsd_current: current,
@@ -457,7 +488,8 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = System.info();
 
-                State.cache?.remove(key);
+                State.cache?.remove(`${key}/stable`);
+                State.cache?.remove(`${key}/beta`);
 
                 if (system.package_manager === "apt-get") {
                     await System.execute("apt-get update");
@@ -472,7 +504,7 @@ export default class System {
 
         return {
             info: async (beta: boolean): Promise<{ [key: string]: any }> => {
-                const cached = State.cache?.get<{ [key: string]: any }>(key);
+                const cached = State.cache?.get<{ [key: string]: any }>(`${key}/${beta ? "beta" : "stable"}`);
 
                 if (cached) return cached;
 
@@ -496,7 +528,7 @@ export default class System {
                     current = process.version.replace("v", "");
                 }
 
-                return State.cache?.set(key, {
+                return State.cache?.set(`${key}/${beta ? "beta" : "stable"}`, {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
                     node_current: current,
                     node_upgraded: process.version.replace("v", "") === current || current === "" || process.version.replace("v", "") === "" ? true : !Semver.gt(current, process.version.replace("v", "")),
@@ -528,10 +560,11 @@ export default class System {
             upgrade: async (): Promise<void> => {
                 const system = System.info();
 
-                State.cache?.remove(key);
+                State.cache?.remove(`${key}/stable`);
+                State.cache?.remove(`${key}/beta`);
 
                 if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
-                    execSync("curl -sL https://deb.nodesource.com/setup_lts.x | bash", { stdio: "ignore" });
+                    System.switch(system.repo);
 
                     await System.execute("apt-get update");
                     await System.execute("apt-get install -y curl tar git python3 make gcc g++ nodejs");
