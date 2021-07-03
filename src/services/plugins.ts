@@ -18,6 +18,7 @@
 
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
+import { CancelToken } from "cancel-token";
 
 import {
     uuid,
@@ -38,6 +39,8 @@ import System from "./system";
 import { BridgeRecord } from "./bridges";
 import { Console, NotificationType } from "./logger";
 
+const REQUEST_TIMEOUT = 5 * 1000;
+
 export default class Plugins {
     static get directory(): string {
         return join(Paths.data(State.id), "node_modules");
@@ -48,6 +51,11 @@ export default class Plugins {
     }
 
     static load(bridge: string, development?: boolean): { [key: string]: any }[] {
+        const key = `plugin/installed:${bridge}:${development ? "development" : "production"}`;
+        const cached = State.cache?.get<{ [key: string]: any }[]>(key);
+
+        if (cached) return cached;
+
         const results: { [key: string]: any }[] = [];
 
         if (development) {
@@ -84,7 +92,7 @@ export default class Plugins {
             }
         }
 
-        return results;
+        return State.cache?.set(key, results, 120);
     }
 
     static async linkLibs(bridge?: string): Promise<void> {
@@ -116,6 +124,9 @@ export default class Plugins {
 
                         Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
                     }
+
+                    State.cache?.remove(`plugin/installed:${bridge}:development`);
+                    State.cache?.remove(`plugin/installed:${bridge}:production`);
 
                     setTimeout(() => {
                         if (existsSync(path) && existsSync(join(path, "package.json"))) {
@@ -214,6 +225,9 @@ export default class Plugins {
                             Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
                         }
 
+                        State.cache?.remove(`plugin/installed:${bridge}:development`);
+                        State.cache?.remove(`plugin/installed:${bridge}:production`);
+
                         const config = Config.configuration(bridge);
 
                         let index = config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === name);
@@ -282,6 +296,9 @@ export default class Plugins {
 
                             Paths.saveJson(join(Paths.data(bridge), "sidecars.json"), sidecars, true);
                         }
+
+                        State.cache?.remove(`plugin/installed:${bridge}:development`);
+                        State.cache?.remove(`plugin/installed:${bridge}:production`);
 
                         Config.touchConfig(bridge);
 
@@ -477,10 +494,19 @@ export default class Plugins {
             }, 60);
         }
 
+        const source = CancelToken.source();
+
+        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
         try {
             return State.cache?.set(key, {
                 definition,
-                schema: ((await Request.get(`https://plugins.hoobs.org/api/schema/${identifier}`)).data || {}).results || {},
+                schema: ((await Request({
+                    method: "get",
+                    url: `https://plugins.hoobs.org/api/schema/${identifier}`,
+                    timeout: REQUEST_TIMEOUT,
+                    cancelToken: source.token,
+                })).data || {}).results || {},
             }, 60);
         } catch (_error) {
             Console.warn("plugin site unavailable");
@@ -497,8 +523,17 @@ export default class Plugins {
 
         if (cached) return cached;
 
+        const source = CancelToken.source();
+
+        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
         try {
-            return State.cache?.set(key, ((await Request.get(`https://plugins.hoobs.org/api/plugin/${identifier}`)).data || {}).results, 60);
+            return State.cache?.set(key, ((await Request({
+                method: "get",
+                url: `https://plugins.hoobs.org/api/plugin/${identifier}`,
+                timeout: REQUEST_TIMEOUT,
+                cancelToken: source.token,
+            })).data || {}).results, 120);
         } catch (_error) {
             Console.warn("plugin site unavailable");
         }

@@ -16,8 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { CancelToken } from "cancel-token";
 import Request from "../../request";
 import State from "../../state";
+
+const REQUEST_TIMEOUT = 5 * 1000;
 
 export interface Position {
     lat: number;
@@ -28,7 +31,16 @@ export default class Weather {
     static async geocode(query: string): Promise<Position> {
         if (!query || query === "") return { lat: 0, lng: 0 };
 
-        const { results } = (await Request.get(`http://open.mapquestapi.com/geocoding/v1/address?key=${State.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`)).data;
+        const source = CancelToken.source();
+
+        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
+        const { results } = (await Request({
+            method: "get",
+            url: `http://open.mapquestapi.com/geocoding/v1/address?key=${State.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`,
+            timeout: REQUEST_TIMEOUT,
+            cancelToken: source.token,
+        })).data;
 
         return results[0].locations[0].latLng;
     }
@@ -39,9 +51,16 @@ export default class Weather {
 
         if (cached) return cached;
 
-        const locations: { [key: string]: any } = (
-            await Request.get(`https://api.openweathermap.org/data/2.5/find?lat=${position.lat}&lon=${position.lng}&cnt=${count || 5}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`)
-        ).data || {};
+        const source = CancelToken.source();
+
+        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
+        const locations: { [key: string]: any } = (await Request({
+            method: "get",
+            url: `https://api.openweathermap.org/data/2.5/find?lat=${position.lat}&lon=${position.lng}&cnt=${count || 5}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`,
+            timeout: REQUEST_TIMEOUT,
+            cancelToken: source.token,
+        })).data || {};
 
         const results: { [key: string]: number | string }[] = (locations.list || []).map((item: { [key: string]: any }) => ({
             id: item.id,
@@ -62,8 +81,16 @@ export default class Weather {
 
         if (cached) return cached;
 
-        const url = `https://api.openweathermap.org/data/2.5/weather?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`;
-        const weather = (await Request.get(url)).data || {};
+        const source = CancelToken.source();
+
+        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
+        const weather = (await Request({
+            method: "get",
+            url: `https://api.openweathermap.org/data/2.5/weather?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`,
+            timeout: REQUEST_TIMEOUT,
+            cancelToken: source.token,
+        })).data || {};
 
         const results = {
             units,
@@ -97,8 +124,16 @@ export default class Weather {
         if (cached) return cached;
 
         const results: { [key: string]: any }[] = [];
-        const url = `https://api.openweathermap.org/data/2.5/forecast?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`;
-        const list = ((await Request.get(url)).data || {}).list || [];
+        const source = CancelToken.source();
+
+        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
+        const list = ((await Request({
+            method: "get",
+            url: `https://api.openweathermap.org/data/2.5/forecast?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`,
+            timeout: REQUEST_TIMEOUT,
+            cancelToken: source.token,
+        })).data || {}).list || [];
 
         let day = "";
         let index = -1;
