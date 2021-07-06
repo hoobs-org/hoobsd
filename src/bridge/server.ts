@@ -475,6 +475,11 @@ export default class Server extends EventEmitter {
         if (services.length === 0 && controllers.length === 0) return undefined;
 
         if (!(services[0] instanceof Service)) {
+            services.map((service) => {
+                // @ts-ignore
+                service.sType = service.sType || service.UUID;
+            });
+
             return AccessoryLoader.parseAccessoryJSON({
                 displayName,
                 services,
