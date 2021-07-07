@@ -105,7 +105,7 @@ export default class Plugins {
         const tag = version || "latest";
 
         return new Promise((resolve, reject) => {
-            Plugins.pluginDefinition(name).then((definition) => {
+            Plugins.definition(name).then((definition) => {
                 const identifiers = [];
 
                 identifiers.push(`${name}@${tag}`);
@@ -206,7 +206,7 @@ export default class Plugins {
 
     static uninstall(bridge: string, name: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            Plugins.pluginDefinition(name).then((definition) => {
+            Plugins.definition(name).then((definition) => {
                 const identifiers = [];
 
                 identifiers.push(name);
@@ -283,7 +283,7 @@ export default class Plugins {
 
                 flags.push(`${name}@${tag}`);
 
-                Plugins.pluginDefinition(name).then((definition) => {
+                Plugins.definition(name).then((definition) => {
                     if ((definition || {}).sidecar) {
                         flags.push(definition?.sidecar);
                     }
@@ -453,13 +453,8 @@ export default class Plugins {
         return results;
     }
 
-    static async pluginSchema(bridge: BridgeRecord | undefined, identifier: string): Promise<{ [key: string]: any }> {
-        const key = `plugin/schema:${identifier}`;
-        const cached = State.cache?.get<{ [key: string]: any }>(key);
-
-        if (cached) return cached;
-
-        if (bridge?.type === "dev") {
+    static development(bridge: BridgeRecord | undefined, identifier: string): { [key: string]: any } {
+        if (bridge && existsSync(join(bridge?.project || "", "config.schema.json"))) {
             const raw: { [key: string]: any } = Paths.loadJson(join(bridge?.project || "", "config.schema.json"), {});
 
             return {
@@ -475,13 +470,21 @@ export default class Plugins {
             };
         }
 
-        const definition: { [key: string]: any } = (await Plugins.pluginDefinition(identifier)) || {};
+        return {
+            schema: {},
+        };
+    }
 
-        if (bridge && !definition.override_schema && existsSync(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"))) {
+    static schema(bridge: BridgeRecord | undefined, identifier: string): { [key: string]: any } {
+        const key = `plugin/schema:${identifier}`;
+        const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+        if (cached) return cached;
+
+        if (bridge && existsSync(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"))) {
             const raw: { [key: string]: any } = Paths.loadJson(join(Paths.data(bridge.id), "node_modules", identifier, "config.schema.json"), {});
 
-            return State.cache?.set(key, {
-                definition,
+            return {
                 schema: {
                     name: identifier,
                     alias: raw.alias || raw.pluginAlias || identifier,
@@ -491,53 +494,113 @@ export default class Plugins {
                         properties: (raw.schema || raw.config).properties || raw.config || raw.schema || {},
                     },
                 },
-            }, 60);
-        }
-
-        const source = CancelToken.source();
-
-        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
-
-        try {
-            return State.cache?.set(key, {
-                definition,
-                schema: ((await Request({
-                    method: "get",
-                    url: `https://plugins.hoobs.org/api/schema/${identifier}`,
-                    timeout: REQUEST_TIMEOUT,
-                    cancelToken: source.token,
-                })).data || {}).results || {},
-            }, 60);
-        } catch (_error) {
-            Console.warn("plugin site unavailable");
+            };
         }
 
         return {
-            definition,
+            schema: {},
         };
     }
 
-    static async pluginDefinition(identifier: string): Promise<{ [key: string]: any } | undefined> {
-        const key = `plugin/definition:${identifier}`;
-        const cached = State.cache?.get<{ [key: string]: any }>(key);
+    static async schemas(identifiers: string[]): Promise<{ [key: string]: any }> {
+        const results: { [key: string]: any } = await Plugins.definitions(identifiers) || {};
+        const uncached: string[] = [];
 
-        if (cached) return cached;
+        for (let i = 0; i < identifiers.length; i += 1) {
+            const key = `plugin/schema:${identifiers[i]}`;
+            const cached = State.cache?.get<{ [key: string]: any }>(key);
 
-        const source = CancelToken.source();
+            if (cached) {
+                if (!results[identifiers[i]]) results[identifiers[i]] = {};
 
-        setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
-
-        try {
-            return State.cache?.set(key, ((await Request({
-                method: "get",
-                url: `https://plugins.hoobs.org/api/plugin/${identifier}`,
-                timeout: REQUEST_TIMEOUT,
-                cancelToken: source.token,
-            })).data || {}).results, 120);
-        } catch (_error) {
-            Console.warn("plugin site unavailable");
+                results[identifiers[i]].schema = cached.schema;
+            } else if (results[identifiers[i]].definition.override_schema) {
+                uncached.push(identifiers[i]);
+            }
         }
 
-        return undefined;
+        if (uncached.length > 0) {
+            let response: { [key: string]: any } = {};
+            const source = CancelToken.source();
+
+            setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
+            try {
+                response = ((await Request({
+                    method: "get",
+                    url: `https://plugins.hoobs.org/api/schemas?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
+                    timeout: REQUEST_TIMEOUT,
+                    cancelToken: source.token,
+                })).data || {}).results;
+            } catch (_error) {
+                Console.warn("plugin site unavailable");
+            }
+
+            if (response) {
+                const items = Object.keys(response);
+
+                for (let i = 0; i < items.length; i += 1) {
+                    if (!results[items[i]]) results[items[i]] = {};
+
+                    results[items[i]].schema = response[items[i]];
+
+                    State.cache?.set(`plugin/schema:${items[i]}`, results[items[i]], 120);
+                }
+            }
+        }
+
+        return results;
+    }
+
+    static async definitions(identifiers: string[]): Promise<{ [key: string]: any } | undefined> {
+        const results: { [key: string]: any } = {};
+        const uncached: string[] = [];
+
+        for (let i = 0; i < identifiers.length; i += 1) {
+            const key = `plugin/definition:${identifiers[i]}`;
+            const cached = State.cache?.get<{ [key: string]: any }>(key);
+
+            if (cached) {
+                if (!results[identifiers[i]]) results[identifiers[i]] = {};
+
+                results[identifiers[i]].definition = cached;
+            } else {
+                uncached.push(identifiers[i]);
+            }
+        }
+
+        if (uncached.length > 0) {
+            let response: { [key: string]: any } = {};
+            const source = CancelToken.source();
+
+            setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
+
+            try {
+                response = ((await Request({
+                    method: "get",
+                    url: `https://plugins.hoobs.org/api/plugins?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
+                    timeout: REQUEST_TIMEOUT,
+                    cancelToken: source.token,
+                })).data || {}).results;
+            } catch (_error) {
+                Console.warn("plugin site unavailable");
+            }
+
+            const items = Object.keys(response);
+
+            for (let i = 0; i < items.length; i += 1) {
+                if (!results[items[i]]) results[items[i]] = {};
+
+                results[items[i]].definition = response[items[i]];
+
+                State.cache?.set(`plugin/definition:${items[i]}`, response[items[i]], 120);
+            }
+        }
+
+        return results;
+    }
+
+    static async definition(identifier: string): Promise<{ [key: string]: any } | undefined> {
+        return (((await Plugins.definitions([identifier])) || {})[identifier] || {}).definition;
     }
 }
