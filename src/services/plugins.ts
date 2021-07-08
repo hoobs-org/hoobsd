@@ -97,7 +97,7 @@ export default class Plugins {
 
     static async linkLibs(bridge?: string): Promise<void> {
         if (!existsSync(join(Paths.data(bridge), "node_modules", "hap-nodejs"))) {
-            await System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge) });
+            await System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines --network-timeout 100000 hap-nodejs`, { cwd: Paths.data(bridge) });
         }
     }
 
@@ -114,7 +114,7 @@ export default class Plugins {
                     identifiers.push(definition?.sidecar);
                 }
 
-                System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
+                System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines --network-timeout 100000 ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
                     const path = join(Paths.data(bridge), "node_modules", name);
 
                     if ((definition || {}).sidecar) {
@@ -280,7 +280,7 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
-
+                flags.push("--network-timeout 100000");
                 flags.push(`${name}@${tag}`);
 
                 Plugins.definition(name).then((definition) => {
@@ -314,7 +314,7 @@ export default class Plugins {
                     });
                 });
             } else {
-                System.execute(`${Paths.yarn} upgrade --ignore-engines`, { cwd: Paths.data(bridge) }).then(() => {
+                System.execute(`${Paths.yarn} upgrade --ignore-engines --network-timeout 100000`, { cwd: Paths.data(bridge) }).then(() => {
                     Config.touchConfig(bridge);
 
                     Console.notify(

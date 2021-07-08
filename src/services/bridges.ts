@@ -621,7 +621,7 @@ export default class Bridges {
                                 if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
                                 if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) Paths.saveJson(Paths.bridges, bridges);
 
-                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(id) });
+                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines --network-timeout 100000`, { cwd: Paths.data(id) });
                             }
 
                             removeSync(join(Paths.backups, "stage"));
@@ -672,7 +672,7 @@ export default class Bridges {
                             const bridges = Paths.loadJson<BridgeRecord[]>(Paths.bridges, []);
 
                             for (let i = 0; i < bridges.length; i += 1) {
-                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines`, { cwd: Paths.data(bridges[i].id), detached: true });
+                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines --network-timeout 100000`, { cwd: Paths.data(bridges[i].id), detached: true });
                             }
 
                             State.restoring = false;
