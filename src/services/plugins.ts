@@ -39,7 +39,7 @@ import System from "./system";
 import { BridgeRecord } from "./bridges";
 import { Console, NotificationType } from "./logger";
 
-const REQUEST_TIMEOUT = 5 * 1000;
+const REQUEST_TIMEOUT = 15 * 1000;
 
 export default class Plugins {
     static get directory(): string {

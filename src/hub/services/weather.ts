@@ -20,7 +20,7 @@ import { CancelToken } from "cancel-token";
 import Request from "../../request";
 import State from "../../state";
 
-const REQUEST_TIMEOUT = 5 * 1000;
+const REQUEST_TIMEOUT = 30 * 1000;
 
 export interface Position {
     lat: number;
