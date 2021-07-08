@@ -241,7 +241,7 @@ export default class API extends EventEmitter {
             "--port", `${bridge.port}`,
         ];
 
-        if (State.debug) flags.push("--debug");
+        if (State.debug || bridge.debugging) flags.push("--debug");
         if (State.verbose) flags.push("--verbose");
         if (State.container) flags.push("--container");
         if (!State.orphans) flags.push("--orphans");

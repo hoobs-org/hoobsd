@@ -59,6 +59,7 @@ export interface BridgeRecord {
     plugins?: string;
     advertiser?: string;
     project?: string,
+    debugging?: boolean,
 }
 
 export interface BridgeProcess {
@@ -209,7 +210,7 @@ export default class Bridges {
 
     static update(name: string): { [key: string]: any } {
         return {
-            info: (display: string, pin?: string, username?: string, autostart?: number, advertiser?: string): Promise<boolean> => new Promise((resolve) => {
+            info: (display: string, pin?: string, username?: string, autostart?: number, advertiser?: string, debugging?: boolean): Promise<boolean> => new Promise((resolve) => {
                 if (!name) return resolve(false);
 
                 const id = sanitize(name);
@@ -221,6 +222,7 @@ export default class Bridges {
                     State.bridges[index].username = username || State.bridges[index].username || Config.generateUsername();
                     State.bridges[index].autostart = autostart || 0;
                     State.bridges[index].advertiser = advertiser || State.bridges[index].advertiser || "bonjour";
+                    State.bridges[index].debugging = debugging;
 
                     Paths.saveJson(Paths.bridges, State.bridges);
 

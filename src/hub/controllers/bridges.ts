@@ -60,6 +60,7 @@ export default class BridgesController {
             request.body.username || Config.generateUsername(),
             request.body.autostart || 0,
             request.body.advertiser,
+            request.body.debugging,
         );
 
         return this.list(request, response);
