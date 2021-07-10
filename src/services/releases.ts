@@ -33,15 +33,19 @@ export default class Releases {
 
         setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
-        const { results } = (await Request({
-            method: "get",
-            url: `https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`,
-            timeout: REQUEST_TIMEOUT,
-            cancelToken: source.token,
-        })).data;
+        try {
+            const { results } = (await Request({
+                method: "get",
+                url: `https://support.hoobs.org/api/releases/${application}/${beta ? "beta" : "latest"}`,
+                timeout: REQUEST_TIMEOUT,
+                cancelToken: source.token,
+            })).data;
 
-        if (results) return State.cache?.set(key, results, application === "node" ? 12 * 60 : 4 * 60);
+            if (results) return State.cache?.set(key, results, application === "node" ? 12 * 60 : 4 * 60);
 
-        return results || {};
+            return results || {};
+        } catch (_error) {
+            return {};
+        }
     }
 }
