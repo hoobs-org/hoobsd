@@ -271,17 +271,6 @@ export default class API extends EventEmitter {
                 socket: new Socket(<IPC>State.ipc, forked),
             };
 
-            const handler = () => {
-                Console.notify(
-                    bridge.id,
-                    "Bridge Stopped",
-                    `${bridge.display || bridge.id} has stopped.`,
-                    NotificationType.ERROR,
-                );
-
-                setTimeout(() => this.launch(bridge), BRIDGE_RELAUNCH_DELAY);
-            };
-
             const stdout = new Pipe((data) => {
                 const messages: string[] = data.toString().split("\n");
 
@@ -310,7 +299,25 @@ export default class API extends EventEmitter {
                 }
             });
 
-            this.bridges[bridge.id].process.once("exit", handler);
+            this.bridges[bridge.id].process.removeAllListeners("exit");
+
+            this.bridges[bridge.id].process.once("exit", () => {
+                Console.notify(
+                    bridge.id,
+                    "Bridge Stopped",
+                    `${bridge.display || bridge.id} has stopped.`,
+                    NotificationType.ERROR,
+                );
+            });
+
+            setTimeout(() => {
+                if (running(this.bridges[bridge.id].process.pid)) {
+                    this.bridges[bridge.id].process.once("exit", () => {
+                        setTimeout(() => this.launch(bridge), BRIDGE_RELAUNCH_DELAY);
+                    });
+                }
+            }, BRIDGE_LAUNCH_DELAY * 2);
+
             this.bridges[bridge.id].process.stdout?.pipe(stdout);
             this.bridges[bridge.id].process.stderr?.pipe(stderr);
 
