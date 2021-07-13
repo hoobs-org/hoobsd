@@ -35,6 +35,8 @@ import Hub from "./hub";
 import { jsonEquals, cloneJson } from "./services/json";
 import { sanitize } from "./services/formatters";
 
+process.setMaxListeners(0);
+
 if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
     State.container = true;
 }

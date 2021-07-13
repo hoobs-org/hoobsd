@@ -103,7 +103,9 @@ export default class Cache {
                 });
             }
 
-            Paths.saveJson(join(path, "cache"), cache, false, "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo", true);
+            try {
+                Paths.saveJson(join(path, "cache"), cache, false, "jB862gBM2dk3!^0XY@xIwM1631Ue7zqo", true);
+            } catch (_error) { /* NULL */ }
         }
     }
 }

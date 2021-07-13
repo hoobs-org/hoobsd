@@ -36,35 +36,31 @@ export default class PluginsController {
     }
 
     all(_request: Request, response: Response): void {
-        const results:{ [key: string]: any }[] = [];
-        const waits: Promise<void>[] = [];
+        const plugins: { [key: string]: any }[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].type !== "hub") {
-                waits.push(new Promise((resolve) => {
-                    this.bridge(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")).then((plugins) => {
-                        if (plugins) {
-                            for (let j = 0; j < plugins.length; j += 1) {
-                                plugins[j].bridge = State.bridges[i].id;
-
-                                results.push(plugins[j]);
-                                resolve();
-                            }
-                        }
-                    });
-                }));
-            }
+            plugins.push(...this.list(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")));
         }
 
-        Promise.allSettled(waits).then(() => {
+        this.schemas(plugins).then((results) => {
             response.send(results);
+        }).catch(() => {
+            response.send([]);
         });
     }
 
     installed(request: Request, response: Response): void {
-        this.bridge(request.params.bridge).then((installed) => {
-            response.send(installed);
-        });
+        const bridge = State.bridges.find((item) => item.id === request.params.bridge);
+
+        if (bridge) {
+            this.schemas(this.list(bridge.id, (State.mode === "development" && bridge.type === "dev"))).then((results) => {
+                response.send(results);
+            }).catch(() => {
+                response.send([]);
+            });
+        } else {
+            response.send([]);
+        }
     }
 
     install(request: Request, response: Response): void {
@@ -184,90 +180,89 @@ export default class PluginsController {
         });
     }
 
-    private async bridge(id: string, development?: boolean): Promise<{ [key:string]: any }[]> {
+    private list(id: string, development?: boolean): { [key:string]: any }[] {
         const results: { [key:string]: any }[] = [];
         const bridge = State.bridges.find((item) => item.id === id);
         const plugins = Plugins.installed(id, development);
-        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < plugins.length; i += 1) {
-            waits.push(new Promise((resolve) => {
-                const plugin = plugins[i];
-                const directory = bridge?.type === "dev" ? bridge?.project || "" : plugin.getPluginPath();
-                const pjson = Plugins.loadPackage(directory) || {};
-                const identifier = bridge?.type === "dev" ? pjson.name : plugin.getPluginIdentifier();
+            const plugin = plugins[i];
+            const directory = bridge?.type === "dev" ? bridge?.project || "" : plugin.getPluginPath();
+            const pjson = Plugins.loadPackage(directory) || {};
+            const identifier = bridge?.type === "dev" ? pjson.name : plugin.getPluginIdentifier();
 
-                const name = PluginManager.extractPluginName(identifier);
-                const scope = PluginManager.extractPluginScope(identifier);
-
-                let latest = (plugin.version || "").replace(/v/gi, "");
-                let certified = false;
-                let rating = 0;
-                let icon = "";
-
-                let definition: { [key: string]: any } | undefined;
-                let schema: { [key: string]: any } | undefined;
-                let details: any[] = [];
-
-                const intermediate: Promise<void>[] = [];
-
-                if (bridge?.type === "dev") {
-                    intermediate.push(new Promise((complete) => {
-                        Plugins.pluginSchema(bridge, identifier).then((response) => {
-                            schema = response.schema;
-                            details = [{ name: identifier, alias: schema?.alias, type: schema?.accessory ? "accessory" : "platform" }];
-                        }).finally(() => complete());
-                    }));
-                } else {
-                    intermediate.push(new Promise((complete) => Plugins.pluginSchema(bridge, identifier).then((response) => {
-                        definition = response.definition;
-                        schema = response.schema;
-                    }).finally(() => complete())));
-
-                    intermediate.push(new Promise((complete) => Plugins.getPluginType(id, identifier, directory, pjson).then((response) => { details = response || []; }).finally(() => complete())));
-                }
-
-                Promise.allSettled(intermediate).then(() => {
-                    if (definition) {
-                        if ((definition.tags || {}).latest) {
-                            latest = (definition.tags.latest || "").replace(/v/gi, "");
-                        } else if (definition.versions) {
-                            latest = (Object.keys(definition.versions).pop() || "").replace(/v/gi, "");
-                        }
-
-                        certified = definition.certified;
-                        rating = definition.rating;
-                        icon = definition.icon;
-                    }
-
-                    results.push({
-                        identifier,
-                        scope,
-                        name,
-                        icon,
-                        alias: schema?.alias || schema?.plugin_alias || schema?.pluginAlias || (details[0] || {}).alias || name,
-                        version: (plugin.version || "").replace(/v/gi, ""),
-                        latest,
-                        certified,
-                        rating,
-                        keywords: pjson.keywords || [],
-                        details,
-                        schema,
-                        description: pjson.description,
-                    });
-
-                    resolve();
-                });
-            }));
+            results.push({
+                identifier,
+                version: (plugin.version || "").replace(/v/gi, ""),
+                bridge,
+                directory,
+                scope: PluginManager.extractPluginScope(identifier),
+                name: PluginManager.extractPluginName(identifier),
+                pjson,
+            });
         }
 
-        await Promise.allSettled(waits);
+        return results;
+    }
+
+    private async schemas(plugins: { [key:string]: any }[]): Promise<{ [key:string]: any }[]> {
+        const identifiers: string[] = [...new Set(plugins.map((item) => item.identifier))];
+        const definitions = await Plugins.schemas(identifiers);
+        const results: { [key:string]: any }[] = [];
+
+        for (let i = 0; i < plugins.length; i += 1) {
+            const record: { [key:string]: any } = definitions[plugins[i].identifier] || {};
+
+            if (plugins[i].bridge.type === "dev") {
+                record.schema = (Plugins.development(plugins[i].bridge, plugins[i].identifier) || {}).schema || {};
+                record.details = [{ name: plugins[i].identifier, alias: record.schema.alias, type: record.schema.accessory ? "accessory" : "platform" }];
+            } else if (!record.override_schema) {
+                record.schema = (Plugins.schema(plugins[i].bridge, plugins[i].identifier) || {}).schema || {};
+                record.details = await Plugins.getPluginType(plugins[i].bridge.id, plugins[i].identifier, plugins[i].directory, plugins[i].pjson);
+            } else {
+                record.details = await Plugins.getPluginType(plugins[i].bridge.id, plugins[i].identifier, plugins[i].directory, plugins[i].pjson);
+            }
+
+            let latest = plugins[i].version;
+            let certified = false;
+            let rating = 0;
+            let icon = "";
+
+            if (record.definition) {
+                if ((record.definition.tags || {}).latest) {
+                    latest = (record.definition.tags.latest || "").replace(/v/gi, "");
+                } else if (record.definition.versions) {
+                    latest = (Object.keys(record.definition.versions).pop() || "").replace(/v/gi, "");
+                }
+
+                certified = record.definition.certified;
+                rating = record.definition.rating;
+                icon = record.definition.icon;
+            }
+
+            results.push({
+                bridge: plugins[i].bridge.id,
+                identifier: plugins[i].identifier,
+                scope: plugins[i].scope,
+                name: plugins[i].name,
+                icon,
+                alias: record.schema.alias || record.schema.plugin_alias || record.schema.pluginAlias || (record.details[0] || {}).alias || plugins[i].name,
+                version: plugins[i].version,
+                latest,
+                certified,
+                rating,
+                keywords: plugins[i].pjson.keywords || [],
+                details: record.details,
+                schema: record.schema,
+                description: plugins[i].pjson.description,
+            });
+        }
 
         return results;
     }
 
     private async accessories(bridge: string, plugin: string): Promise<string[]> {
-        const results = (await State.ipc?.fetch(bridge, "accessories:list")).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
+        const results = ((await State.ipc?.fetch(bridge, "accessories:list")) || []).filter((item: { [key: string]: any }) => item.plugin === plugin).map((item: { [key: string]: any }) => item.accessory_identifier);
 
         return results;
     }

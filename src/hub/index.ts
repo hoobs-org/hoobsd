@@ -67,6 +67,7 @@ import WeatherController from "./controllers/weather";
 
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
 const BRIDGE_TEARDOWN_DELAY = 2 * 1000;
+const BRIDGE_RELAUNCH_DELAY = 7 * 1000;
 
 function running(pid: number): boolean {
     try {
@@ -241,7 +242,7 @@ export default class API extends EventEmitter {
             "--port", `${bridge.port}`,
         ];
 
-        if (State.debug) flags.push("--debug");
+        if (State.debug || bridge.debugging) flags.push("--debug");
         if (State.verbose) flags.push("--verbose");
         if (State.container) flags.push("--container");
         if (!State.orphans) flags.push("--orphans");
@@ -268,17 +269,6 @@ export default class API extends EventEmitter {
                 port: bridge.port,
                 process: forked,
                 socket: new Socket(<IPC>State.ipc, forked),
-            };
-
-            const handler = () => {
-                Console.notify(
-                    bridge.id,
-                    "Bridge Stopped",
-                    `${bridge.display || bridge.id} has stopped.`,
-                    NotificationType.ERROR,
-                );
-
-                setTimeout(() => this.launch(bridge), BRIDGE_TEARDOWN_DELAY);
             };
 
             const stdout = new Pipe((data) => {
@@ -309,7 +299,25 @@ export default class API extends EventEmitter {
                 }
             });
 
-            this.bridges[bridge.id].process.once("exit", handler);
+            this.bridges[bridge.id].process.removeAllListeners("exit");
+
+            this.bridges[bridge.id].process.once("exit", () => {
+                Console.notify(
+                    bridge.id,
+                    "Bridge Stopped",
+                    `${bridge.display || bridge.id} has stopped.`,
+                    NotificationType.ERROR,
+                );
+            });
+
+            setTimeout(() => {
+                if (running(this.bridges[bridge.id].process.pid)) {
+                    this.bridges[bridge.id].process.once("exit", () => {
+                        setTimeout(() => this.launch(bridge), BRIDGE_RELAUNCH_DELAY);
+                    });
+                }
+            }, BRIDGE_LAUNCH_DELAY * 2);
+
             this.bridges[bridge.id].process.stdout?.pipe(stdout);
             this.bridges[bridge.id].process.stderr?.pipe(stderr);
 

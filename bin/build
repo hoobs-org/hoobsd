@@ -102,11 +102,52 @@ Program.command("server", { isDefault: true })
             execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postinst")}`, { cwd: root, stdio: "inherit" });
             execSync("dpkg-deb --build dist", { cwd: root, stdio: "inherit" });
 
-            if (!existsSync(join(root, "../repo/deb", command.repo || "edge")))  mkdirSync(join(root, "../repo/deb", command.repo || "edge"));
-            if (existsSync(join(root, "../repo/deb", command.repo || "edge", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb", command.repo || "edge", `hoobsd-v${pjson.version}.deb`));
+            switch (command.repo) {
+                case "stable":
+                    if (!existsSync(join(root, "../repo/deb/stable")))  mkdirSync(join(root, "../repo/deb/stable"));
+                    if (!existsSync(join(root, "../repo/deb/edge")))  mkdirSync(join(root, "../repo/deb/edge"));
+                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
 
-            moveSync(join(root, "dist.deb"), join(root, "../repo/deb", command.repo || "edge", `hoobsd-v${pjson.version}.deb`));
-            execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb", command.repo || "edge", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    if (existsSync(join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`));
+                    if (existsSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
+                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
+
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`));
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
+
+                    unlinkSync(join(root, "dist.deb"));
+
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    break;
+
+                case "edge":
+                    if (!existsSync(join(root, "../repo/deb/edge")))  mkdirSync(join(root, "../repo/deb/edge"));
+                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
+
+                    if (existsSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
+                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
+
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
+
+                    unlinkSync(join(root, "dist.deb"));
+
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    break;
+
+                default:
+                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
+                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
+
+                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
+                    unlinkSync(join(root, "dist.deb"));
+                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
+                    break;
+            }
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
         }
