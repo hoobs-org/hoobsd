@@ -31,8 +31,12 @@ import Paths from "./services/paths";
 import { BridgeRecord } from "./services/bridges";
 import { UserRecord } from "./services/users";
 
+const pjson = existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json");
+const ejson = existsSync(join(__dirname, "./node_modules/homebridge/package.json")) ? join(__dirname, "./node_modules/homebridge/package.json") : join(__dirname, "../../node_modules/homebridge/package.json");
+
 export interface Application {
     version: string;
+    engine: string;
     mode: string;
     enviornment: DotenvParseOutput | undefined;
 
@@ -66,7 +70,8 @@ export interface Application {
 }
 
 const state: Application = {
-    version: Paths.loadJson<any>(existsSync(join(__dirname, "./package.json")) ? join(__dirname, "./package.json") : join(__dirname, "../../package.json"), {}).version,
+    version: Paths.loadJson<any>(pjson, {}).version,
+    engine: Paths.loadJson<any>(ejson, {}).version,
     mode: "production",
     enviornment: {},
 
