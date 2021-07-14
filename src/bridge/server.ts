@@ -21,6 +21,7 @@ import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
 import { existsSync, copyFileSync, unlinkSync } from "fs-extra";
+import Watcher from "chokidar";
 
 import {
     Accessory,
@@ -103,6 +104,8 @@ export default class Server extends EventEmitter {
 
     private development = false;
 
+    private watcher: Watcher.FSWatcher | undefined;
+
     private readonly unbridgedAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
     constructor(port?: number, development?: boolean) {
@@ -166,6 +169,17 @@ export default class Server extends EventEmitter {
         await Plugins.linkLibs(State.id);
 
         Paths.saveJson(join(Paths.data(State.id), "config.json"), this.config);
+
+        this.watcher = Watcher.watch(join(Paths.data(State.id), "config.json")).on("change", () => {
+            const config = Paths.loadJson<any>(join(Paths.data(State.id), "config.json"), {});
+
+            if (this.running) {
+                Config.saveConfig({
+                    accessories: config.accessories || [],
+                    platforms: config.platforms || [],
+                }, State.id);
+            }
+        });
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
@@ -240,6 +254,7 @@ export default class Server extends EventEmitter {
     public stop(): Promise<void> {
         return new Promise((resolve) => {
             this.running = false;
+            this.watcher?.close();
             this.bridge.unpublish();
 
             for (const accessory of this.unbridgedAccessories.values()) {

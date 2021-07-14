@@ -21,6 +21,7 @@ import { join } from "path";
 import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
+import { FSWatcher } from "chokidar";
 import { IPC } from "./services/ipc";
 import { Loggers } from "./services/logger";
 import Cache from "./services/cache";
@@ -39,6 +40,7 @@ export interface Application {
     engine: string;
     mode: string;
     enviornment: DotenvParseOutput | undefined;
+    watchers: FSWatcher[];
 
     app: Express | undefined;
     io: IO.Server | undefined;
@@ -74,6 +76,7 @@ const state: Application = {
     engine: Paths.loadJson<any>(ejson, {}).version,
     mode: "production",
     enviornment: {},
+    watchers: [],
 
     app: undefined,
     io: undefined,
