@@ -441,18 +441,10 @@ export default class API extends EventEmitter {
         Monitor();
 
         setTimeout(() => {
-            let bridges = State.bridges.filter((item) => item.type === "bridge");
+            const bridges = State.bridges.filter((item) => item.type === "bridge" || item.type === "dev");
 
             for (let i = 0; i < bridges.length; i += 1) {
                 this.launch(bridges[i]);
-            }
-
-            if (State.mode === "development") {
-                bridges = State.bridges.filter((item) => item.type === "dev");
-
-                for (let i = 0; i < bridges.length; i += 1) {
-                    this.launch(bridges[i]);
-                }
             }
         }, BRIDGE_LAUNCH_DELAY);
     }

@@ -48,6 +48,10 @@ function teardown() {
 
     State.terminating = true;
 
+    for (let i = 0; i < State.watchers.length; i += 1) {
+        State.watchers[i].close();
+    }
+
     if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id));
     if (State.bridge) waits.push(State.bridge.stop());
     if (State.hub) waits.push(State.hub.stop());
@@ -90,24 +94,24 @@ export = function Daemon(): void {
             if (bridge) {
                 State.hub = Hub.createServer(command.port || bridge.port);
 
-                Watcher.watch(Paths.bridges).on("change", () => {
+                State.watchers.push(Watcher.watch(Paths.bridges).on("change", () => {
                     if (!State.restoring) {
                         State.bridges = Bridges.list();
                         State.hub?.sync();
                     }
-                });
+                }));
 
-                Watcher.watch(join(Paths.data(), "access")).on("change", () => {
+                State.watchers.push(Watcher.watch(join(Paths.data(), "access")).on("change", () => {
                     if (!State.restoring) State.users = Users.list();
-                });
+                }));
 
-                Watcher.watch(Paths.config).on("change", () => {
+                State.watchers.push(Watcher.watch(Paths.config).on("change", () => {
                     if (!State.restoring) State.hub?.reload();
-                });
+                }));
 
-                Watcher.watch(Paths.log).on("change", () => {
+                State.watchers.push(Watcher.watch(Paths.log).on("change", () => {
                     if (!State.terminating) Console.save();
-                });
+                }));
 
                 State.hub.start();
             } else {
@@ -138,7 +142,7 @@ export = function Daemon(): void {
                     State.bridge = new Bridge(command.port || bridge.port);
                 }
 
-                Watcher.watch(Paths.bridges).on("change", () => {
+                State.watchers.push(Watcher.watch(Paths.bridges).on("change", () => {
                     const current = cloneJson(State.bridges.find((n: any) => n.id === State.id));
 
                     if (current) {
@@ -152,13 +156,13 @@ export = function Daemon(): void {
                             State.bridge?.restart();
                         }
                     }
-                });
+                }));
 
-                Watcher.watch(Paths.config).on("change", () => {
+                State.watchers.push(Watcher.watch(Paths.config).on("change", () => {
                     Console.info("Configuration change");
 
                     State.bridge?.restart();
-                });
+                }));
 
                 State.bridge.start();
             } else {

@@ -39,7 +39,7 @@ export default class PluginsController {
         const plugins: { [key: string]: any }[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
-            plugins.push(...this.list(State.bridges[i].id, (State.mode === "development" && State.bridges[i].type === "dev")));
+            plugins.push(...this.list(State.bridges[i].id, State.bridges[i].type === "dev"));
         }
 
         this.schemas(plugins).then((results) => {
@@ -53,7 +53,7 @@ export default class PluginsController {
         const bridge = State.bridges.find((item) => item.id === request.params.bridge);
 
         if (bridge) {
-            this.schemas(this.list(bridge.id, (State.mode === "development" && bridge.type === "dev"))).then((results) => {
+            this.schemas(this.list(bridge.id, bridge.type === "dev")).then((results) => {
                 response.send(results);
             }).catch(() => {
                 response.send([]);

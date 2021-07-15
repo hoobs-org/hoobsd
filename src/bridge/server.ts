@@ -21,6 +21,7 @@ import _ from "lodash";
 import { join } from "path";
 import { EventEmitter } from "events";
 import { existsSync, copyFileSync, unlinkSync } from "fs-extra";
+import Watcher from "chokidar";
 
 import {
     Accessory,
@@ -70,6 +71,7 @@ import Accessories from "./services/accessories";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 import { Services, Characteristics } from "./services/types";
+import { jsonEquals } from "../services/json";
 
 const INSTANCE_KILL_DELAY = 2 * 1000;
 
@@ -102,6 +104,8 @@ export default class Server extends EventEmitter {
     private platformAccessories: PlatformAccessory[] = [];
 
     private development = false;
+
+    private watcher: Watcher.FSWatcher | undefined;
 
     private readonly unbridgedAccessories: Map<MacAddress, PlatformAccessory> = new Map();
 
@@ -166,6 +170,19 @@ export default class Server extends EventEmitter {
         await Plugins.linkLibs(State.id);
 
         Paths.saveJson(join(Paths.data(State.id), "config.json"), this.config);
+
+        this.watcher = Watcher.watch(join(Paths.data(State.id), "config.json")).on("change", () => {
+            if (this.running) {
+                const config = Paths.loadJson<any>(join(Paths.data(State.id), "config.json"), {});
+                const existing = { accessories: this.config.accessories || [], platforms: this.config.platforms || [] };
+                const modified = _.extend(existing, { accessories: config.accessories || [], platforms: config.platforms || [] });
+
+                Config.filterConfig(config?.accessories);
+                Config.filterConfig(config?.platforms);
+
+                if (!jsonEquals(existing, modified)) Config.saveConfig(modified, State.id);
+            }
+        });
 
         this.loadCachedPlatformAccessoriesFromDisk();
 
@@ -240,6 +257,7 @@ export default class Server extends EventEmitter {
     public stop(): Promise<void> {
         return new Promise((resolve) => {
             this.running = false;
+            this.watcher?.close();
             this.bridge.unpublish();
 
             for (const accessory of this.unbridgedAccessories.values()) {
