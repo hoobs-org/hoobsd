@@ -71,6 +71,7 @@ import Accessories from "./services/accessories";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 import { Services, Characteristics } from "./services/types";
+import { jsonEquals } from "../services/json";
 
 const INSTANCE_KILL_DELAY = 2 * 1000;
 
@@ -171,13 +172,15 @@ export default class Server extends EventEmitter {
         Paths.saveJson(join(Paths.data(State.id), "config.json"), this.config);
 
         this.watcher = Watcher.watch(join(Paths.data(State.id), "config.json")).on("change", () => {
-            const config = Paths.loadJson<any>(join(Paths.data(State.id), "config.json"), {});
-
             if (this.running) {
-                Config.saveConfig({
-                    accessories: config.accessories || [],
-                    platforms: config.platforms || [],
-                }, State.id);
+                const config = Paths.loadJson<any>(join(Paths.data(State.id), "config.json"), {});
+                const existing = { accessories: this.config.accessories || [], platforms: this.config.platforms || [] };
+                const modified = _.extend(existing, { accessories: config.accessories || [], platforms: config.platforms || [] });
+
+                Config.filterConfig(config?.accessories);
+                Config.filterConfig(config?.platforms);
+
+                if (!jsonEquals(existing, modified)) Config.saveConfig(modified, State.id);
             }
         });
 
