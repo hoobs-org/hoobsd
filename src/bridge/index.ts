@@ -23,6 +23,7 @@ import { join } from "path";
 import State from "../state";
 import Paths from "../services/paths";
 import Homebridge from "./server";
+import System, { LedStatus } from "../services/system";
 import Config from "../services/config";
 import Plugin from "../services/plugin";
 import Plugins from "../services/plugins";
@@ -113,6 +114,10 @@ export default class Bridge extends EventEmitter {
                 accessory,
                 value,
             });
+        });
+
+        State.homebridge?.on(Events.LISTENING, () => {
+            System.led(LedStatus.GOOD);
         });
 
         if ((bridge?.autostart || 0) >= 0) {
