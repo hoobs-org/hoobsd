@@ -30,7 +30,7 @@ import Users from "./services/users";
 import Bridge from "./bridge";
 import Cache from "./services/cache";
 import Paths from "./services/paths";
-import System from "./services/system";
+import System, { LedStatus } from "./services/system";
 import Hub from "./hub";
 import { jsonEquals, cloneJson } from "./services/json";
 import { sanitize } from "./services/formatters";
@@ -216,8 +216,8 @@ export = function Daemon(): void {
 
     process.on("uncaughtException", (error) => {
         Console.error(`${error.stack}`);
-
         teardown();
+        System.led(LedStatus.ERROR);
     });
 
     process.on("unhandledRejection", (reason) => {
