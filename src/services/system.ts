@@ -67,13 +67,13 @@ export default class System {
         if (existsSync("/sys/class/leds/led0/brightness") && existsSync("/sys/class/leds/led1/brightness")) {
             switch (status) {
                 case LedStatus.GOOD:
-                    writeFileSync("/sys/class/leds/led0/brightness", "1");
+                    writeFileSync("/sys/class/leds/led0/brightness", "255");
                     writeFileSync("/sys/class/leds/led1/brightness", "0");
                     break;
 
                 case LedStatus.ERROR:
                     writeFileSync("/sys/class/leds/led0/brightness", "0");
-                    writeFileSync("/sys/class/leds/led1/brightness", "1");
+                    writeFileSync("/sys/class/leds/led1/brightness", "255");
                     break;
 
                 default:
