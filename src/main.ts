@@ -49,7 +49,7 @@ function teardown() {
     State.terminating = true;
 
     for (let i = 0; i < State.watchers.length; i += 1) {
-        State.watchers[i].close();
+        waits.push(State.watchers[i].close());
     }
 
     if (State.cache && !State.restoring) State.cache.save(Paths.data(State.id));
@@ -58,6 +58,7 @@ function teardown() {
 
     Promise.allSettled(waits).then(() => {
         waits = [];
+        State.watchers = [];
 
         process.exit();
     });
@@ -161,7 +162,9 @@ export = function Daemon(): void {
                 State.watchers.push(Watcher.watch(Paths.config).on("change", () => {
                     Console.info("Configuration change");
 
-                    State.bridge?.restart();
+                    if (!State.saving) State.bridge?.restart();
+
+                    State.saving = false;
                 }));
 
                 State.bridge.start();

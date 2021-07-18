@@ -102,7 +102,7 @@ export default class Config {
         return config;
     }
 
-    static saveConfig(config: any, bridge?: string, touch?: boolean): void {
+    static saveConfig(config: any, bridge?: string, touch?: boolean, updating?: boolean): void {
         const id = bridge || State.id;
 
         let current: any = {};
@@ -116,10 +116,7 @@ export default class Config {
             Config.filterConfig(config?.accessories);
             Config.filterConfig(config?.platforms);
 
-            const maps: { [key: string]: any } = {
-                accessories: {},
-                platforms: {},
-            };
+            const maps: { [key: string]: any } = { accessories: {}, platforms: {} };
 
             for (let i = 0; i < (current?.accessories || []).length; i += 1) {
                 if ((current.accessories[i].plugin_map || {}).plugin_name) maps.accessories[current.accessories[i].accessory] = current.accessories[i].plugin_map.plugin_name;
@@ -137,6 +134,8 @@ export default class Config {
                 if (maps.platforms[config.platforms[i].platform]) config.platforms[i].plugin_map = { plugin_name: maps.platforms[config.platforms[i].platform] };
             }
         }
+
+        State.saving = updating || false;
 
         if (!jsonEquals(current, config)) {
             Paths.saveJson(join(Paths.data(), `${id}.conf`), config, false, "5hZ4CHz@m75RDPyTTLM#2p9EU$^3B&ML");
