@@ -40,6 +40,12 @@ export const enum ProcessQuery {
     PORT = "port",
 }
 
+export const enum LedStatus {
+    GOOD = "good",
+    ERROR = "error",
+    STOPPED = "stopped",
+}
+
 export default class System {
     static preload(): void {
         System.info();
@@ -55,6 +61,27 @@ export default class System {
 
         System.runtime.info(true);
         System.runtime.info(false);
+    }
+
+    static led(status: LedStatus) {
+        if (existsSync("/sys/class/leds/led0/brightness") && existsSync("/sys/class/leds/led1/brightness")) {
+            switch (status) {
+                case LedStatus.GOOD:
+                    writeFileSync("/sys/class/leds/led0/brightness", "255");
+                    writeFileSync("/sys/class/leds/led1/brightness", "0");
+                    break;
+
+                case LedStatus.ERROR:
+                    writeFileSync("/sys/class/leds/led0/brightness", "0");
+                    writeFileSync("/sys/class/leds/led1/brightness", "255");
+                    break;
+
+                default:
+                    writeFileSync("/sys/class/leds/led0/brightness", "0");
+                    writeFileSync("/sys/class/leds/led1/brightness", "0");
+                    break;
+            }
+        }
     }
 
     static info(): { [key: string]: any } {

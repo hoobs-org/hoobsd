@@ -38,7 +38,7 @@ import {
 
 import Paths from "../services/paths";
 import Config from "../services/config";
-import System, { ProcessQuery } from "../services/system";
+import System, { ProcessQuery, LedStatus } from "../services/system";
 import State from "../state";
 import Users from "../services/users";
 import IPC from "./services/ipc";
@@ -446,6 +446,8 @@ export default class API extends EventEmitter {
             for (let i = 0; i < bridges.length; i += 1) {
                 this.launch(bridges[i]);
             }
+
+            System.led(LedStatus.GOOD);
         }, BRIDGE_LAUNCH_DELAY);
     }
 
@@ -476,6 +478,8 @@ export default class API extends EventEmitter {
                     this.terminator.terminate().then(() => {
                         Console.debug("Stopped");
                         Console.save();
+
+                        System.led(LedStatus.STOPPED);
 
                         resolve();
                     });

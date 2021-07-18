@@ -171,17 +171,15 @@ export default class Server extends EventEmitter {
 
         Paths.saveJson(join(Paths.data(State.id), "config.json"), this.config);
 
-        this.watcher = Watcher.watch(join(Paths.data(State.id), "config.json")).on("change", () => {
-            if (this.running) {
-                const config = Paths.loadJson<any>(join(Paths.data(State.id), "config.json"), {});
-                const existing = { accessories: this.config.accessories || [], platforms: this.config.platforms || [] };
-                const modified = _.extend(existing, { accessories: config.accessories || [], platforms: config.platforms || [] });
+        this.watcher = Watcher.watch(join(Paths.data(State.id), "config.json")).on("change", (path: string) => {
+            setTimeout(() => {
+                const config = Paths.loadJson<any>(path, {});
+                const modified = Config.configuration();
 
-                Config.filterConfig(config?.accessories);
-                Config.filterConfig(config?.platforms);
+                _.merge(modified, { accessories: config.accessories || [], platforms: config.platforms || [] });
 
-                if (!jsonEquals(existing, modified)) Config.saveConfig(modified, State.id);
-            }
+                Config.saveConfig(modified, State.id, false, true);
+            }, 100);
         });
 
         this.loadCachedPlatformAccessoriesFromDisk();
@@ -256,9 +254,12 @@ export default class Server extends EventEmitter {
 
     public stop(): Promise<void> {
         return new Promise((resolve) => {
+            const waits: Promise<void>[] = [];
+
             this.running = false;
-            this.watcher?.close();
             this.bridge.unpublish();
+
+            if (this.watcher) waits.push(this.watcher.close());
 
             for (const accessory of this.unbridgedAccessories.values()) {
                 accessory._associatedHAPAccessory.unpublish();
@@ -267,17 +268,19 @@ export default class Server extends EventEmitter {
             this.saveCachedPlatformAccessoriesOnDisk();
             this.api.signalShutdown();
 
-            setTimeout(() => {
-                this.emit(Events.SHUTDOWN);
+            Promise.allSettled(waits).then(() => {
+                setTimeout(() => {
+                    this.emit(Events.SHUTDOWN);
 
-                try {
-                    if (existsSync(join(Paths.data(State.id), "config.json"))) unlinkSync(join(Paths.data(State.id), "config.json"));
-                } catch (error) {
-                    Console.warn(error.message);
-                }
+                    try {
+                        if (existsSync(join(Paths.data(State.id), "config.json"))) unlinkSync(join(Paths.data(State.id), "config.json"));
+                    } catch (error) {
+                        Console.warn(error.message);
+                    }
 
-                resolve();
-            }, INSTANCE_KILL_DELAY);
+                    resolve();
+                }, INSTANCE_KILL_DELAY);
+            });
         });
     }
 
