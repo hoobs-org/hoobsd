@@ -123,8 +123,10 @@ export default class System {
             case "raspbian":
                 results.package_manager = (System.shell("command -v apt-get")) !== "" ? "apt-get" : "";
 
-                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") results.repo = "bleeding";
-                if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") results.repo = "edge";
+                if (existsSync("/etc/apt/sources.list.d/hoobs.list")) {
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") results.repo = "bleeding";
+                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") results.repo = "edge";
+                }
 
                 break;
 
