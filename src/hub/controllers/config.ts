@@ -22,6 +22,7 @@ import Config from "../../services/config";
 import Security from "../../services/security";
 import { Console, Events, NotificationType } from "../../services/logger";
 import { BridgeRecord } from "../../services/bridges";
+import { cloneJson } from "../../services/json";
 
 export default class ConfigController {
     constructor() {
@@ -35,7 +36,7 @@ export default class ConfigController {
         Security(request, response, () => {
             response.send(State.hub?.config);
         }, () => {
-            const { ...config } = State.hub?.config;
+            const config = cloneJson(State.hub?.config);
 
             delete config.weather;
             delete config.dashboard;

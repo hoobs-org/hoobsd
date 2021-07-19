@@ -22,6 +22,7 @@ import State from "../../state";
 import Config from "../../services/config";
 import Security from "../../services/security";
 import Plugins from "../../services/plugins";
+import { cloneJson } from "../../services/json";
 
 export default class PluginsController {
     constructor() {
@@ -159,7 +160,7 @@ export default class PluginsController {
 
         Plugins.uninstall(request.params.bridge, identifier).then(() => {
             if (State.hub?.config.dashboard && State.hub?.config.dashboard.items) {
-                const { ...config } = State.hub?.config;
+                const config = cloneJson(State.hub?.config);
 
                 for (let i = 0; i < accessories.length; i += 1) {
                     let index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === accessories[i]);
