@@ -47,6 +47,7 @@ import Monitor from "./services/monitor";
 import Pipe from "../services/pipe";
 import Bridges, { BridgeRecord, BridgeProcess } from "../services/bridges";
 import { Console, Events, NotificationType } from "../services/logger";
+import { cloneJson } from "../services/json";
 
 import IndexController from "./controllers/index";
 import AuthController from "./controllers/auth";
@@ -262,7 +263,7 @@ export default class API extends EventEmitter {
             Console.info(`${bridge.display || bridge.id} starting`);
             Bridges.kill(bridge);
 
-            const forked = Process.fork(hoobsd, flags, { env: { ...process.env }, silent: true });
+            const forked = Process.fork(hoobsd, flags, { env: cloneJson(process.env), silent: true });
 
             this.bridges[bridge.id] = {
                 bridge,
