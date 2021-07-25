@@ -430,7 +430,6 @@ export default class API extends EventEmitter {
         }
 
         System.kill(ProcessQuery.PORT, this.port);
-        System.preload();
 
         this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();
