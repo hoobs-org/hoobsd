@@ -67,7 +67,7 @@ import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
-const BRIDGE_TEARDOWN_DELAY = 2 * 1000;
+const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 const BRIDGE_RELAUNCH_DELAY = 7 * 1000;
 
 function running(pid: number): boolean {
@@ -202,9 +202,17 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
-        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
-        State.app?.use("/themes", Express.static(Paths.themes));
+        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static"), {
+            setHeaders: (response) => { response.setHeader("cache-control", "public, max-age=1209600000"); },
+        }));
+
+        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static"), {
+            setHeaders: (response) => { response.setHeader("cache-control", "public, max-age=1209600000"); },
+        }));
+
+        State.app?.use("/themes", Express.static(Paths.themes, {
+            setHeaders: (response) => { response.setHeader("cache-control", "public, max-age=0"); },
+        }));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
             setHeaders: (response, path) => {
@@ -430,7 +438,6 @@ export default class API extends EventEmitter {
         }
 
         System.kill(ProcessQuery.PORT, this.port);
-        System.preload();
 
         this.listner?.listen(this.port, () => {
             this.time = new Date().getTime();

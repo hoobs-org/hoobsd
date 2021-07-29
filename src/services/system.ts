@@ -47,22 +47,6 @@ export const enum LedStatus {
 }
 
 export default class System {
-    static preload(): void {
-        System.info();
-
-        System.cli.info(true);
-        System.cli.info(false);
-
-        System.gui.info(true);
-        System.gui.info(false);
-
-        System.hoobsd.info(true);
-        System.hoobsd.info(false);
-
-        System.runtime.info(true);
-        System.runtime.info(false);
-    }
-
     static led(status: LedStatus) {
         if (existsSync("/sys/class/leds/led0/brightness") && existsSync("/sys/class/leds/led1/brightness")) {
             switch (status) {

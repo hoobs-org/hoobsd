@@ -57,15 +57,16 @@ export default class Plugins {
         if (cached) return cached;
 
         const results: { [key: string]: any }[] = [];
+        const record = development ? State.bridges.find((item) => item.id === bridge) : undefined;
 
-        if (development) {
-            const pjson = Plugins.loadPackage(State.project || "") || {};
+        if (development && record) {
+            const pjson = Plugins.loadPackage(record.project || "") || {};
 
             results.push({
                 identifier: pjson.name,
                 name: PluginManager.extractPluginName(pjson.name),
                 scope: PluginManager.extractPluginScope(pjson.name),
-                directory: State.project,
+                directory: record.project,
                 pjson,
                 library: pjson.main || "./index.js",
             });
