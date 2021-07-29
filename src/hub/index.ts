@@ -67,7 +67,7 @@ import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
-const BRIDGE_TEARDOWN_DELAY = 2 * 1000;
+const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 const BRIDGE_RELAUNCH_DELAY = 7 * 1000;
 
 function running(pid: number): boolean {

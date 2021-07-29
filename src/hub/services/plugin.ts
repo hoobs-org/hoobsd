@@ -30,7 +30,7 @@ export default async function Plugin(request: Request, response: Response, next:
 
     for (let i = 0; i < State.bridges.length; i += 1) {
         if (State.bridges[i].type !== "hub") {
-            const plugin: { [key: string]: any } | undefined = Plugins.load(State.bridges[i].id).find((item) => item.identifier === identifier);
+            const plugin: { [key: string]: any } | undefined = Plugins.load(State.bridges[i].id, State.bridges[i].type === "dev").find((item) => item.identifier === identifier);
 
             if (plugin) {
                 const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.bridges[i].id), "sidecars.json"), {});
