@@ -98,7 +98,7 @@ export default class Plugins {
 
     static async linkLibs(bridge?: string): Promise<void> {
         if (!existsSync(join(Paths.data(bridge), "node_modules", "hap-nodejs"))) {
-            await System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines --network-timeout 100000 hap-nodejs`, { cwd: Paths.data(bridge) });
+            await System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines hap-nodejs`, { cwd: Paths.data(bridge) });
         }
     }
 
@@ -115,7 +115,7 @@ export default class Plugins {
                     identifiers.push(definition?.sidecar);
                 }
 
-                System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines --network-timeout 100000 ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
+                System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
                     const path = join(Paths.data(bridge), "node_modules", name);
 
                     if ((definition || {}).sidecar) {
@@ -281,7 +281,6 @@ export default class Plugins {
                 flags.push("add");
                 flags.push("--unsafe-perm");
                 flags.push("--ignore-engines");
-                flags.push("--network-timeout 100000");
                 flags.push(`${name}@${tag}`);
 
                 Plugins.definition(name).then((definition) => {
@@ -511,11 +510,11 @@ export default class Plugins {
             const key = `plugin/schema:${identifiers[i]}`;
             const cached = State.cache?.get<{ [key: string]: any }>(key);
 
-            if (cached) {
-                if (!results[identifiers[i]]) results[identifiers[i]] = {};
+            if (!results[identifiers[i]]) results[identifiers[i]] = {};
 
+            if (cached && cached.schema && Object.keys(cached.schema).length > 0) {
                 results[identifiers[i]].schema = cached.schema;
-            } else if (results[identifiers[i]].definition.override_schema) {
+            } else if (results[identifiers[i]].definition && results[identifiers[i]].definition.override_schema) {
                 uncached.push(identifiers[i]);
             }
         }
@@ -587,14 +586,16 @@ export default class Plugins {
                 Console.warn("plugin site unavailable");
             }
 
-            const items = Object.keys(response);
+            if (response) {
+                const items = Object.keys(response);
 
-            for (let i = 0; i < items.length; i += 1) {
-                if (!results[items[i]]) results[items[i]] = {};
+                for (let i = 0; i < items.length; i += 1) {
+                    if (!results[items[i]]) results[items[i]] = {};
 
-                results[items[i]].definition = response[items[i]];
+                    results[items[i]].definition = response[items[i]];
 
-                State.cache?.set(`plugin/definition:${items[i]}`, response[items[i]], 120);
+                    State.cache?.set(`plugin/definition:${items[i]}`, response[items[i]], 120);
+                }
             }
         }
 
