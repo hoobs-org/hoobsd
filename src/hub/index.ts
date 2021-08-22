@@ -331,9 +331,9 @@ export default class API extends EventEmitter {
             this.bridges[bridge.id].process.stderr?.pipe(stderr);
 
             Console.notify(
-                typeof bridge === "string" ? bridge : bridge.id,
+                bridge.id,
                 "Bridge Started",
-                `${typeof bridge === "string" ? bridge : bridge.display} has started.`,
+                `${bridge.display || bridge.id} has started.`,
                 NotificationType.SUCCESS,
                 "layers",
             );
@@ -347,12 +347,20 @@ export default class API extends EventEmitter {
             if (this.bridges[id] && running(this.bridges[id].process.pid)) {
                 Console.info(`${typeof bridge === "string" ? bridge : bridge.display} stopping`);
 
+                let display = "";
+
+                if (typeof bridge === "string") {
+                    display = ((State.bridges || Bridges.list()).find((item) => item.id === bridge) || {}).display || bridge;
+                } else {
+                    display = bridge.display;
+                }
+
                 const handler = () => {
                     setTimeout(() => {
                         Console.notify(
                             typeof bridge === "string" ? bridge : bridge.id,
                             "Bridge Stopped",
-                            `${typeof bridge === "string" ? bridge : bridge.display} has stopped.`,
+                            `${display} has stopped.`,
                             NotificationType.ERROR,
                         );
 
