@@ -47,7 +47,7 @@ import Monitor from "./services/monitor";
 import Pipe from "../services/pipe";
 import Bridges, { BridgeRecord, BridgeProcess } from "../services/bridges";
 import { Console, Events, NotificationType } from "../services/logger";
-import { cloneJson } from "../services/json";
+import { cloneJson, compressJson } from "../services/json";
 
 import IndexController from "./controllers/index";
 import AuthController from "./controllers/auth";
@@ -69,14 +69,6 @@ import WeatherController from "./controllers/weather";
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
 const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 const BRIDGE_RELAUNCH_DELAY = 7 * 1000;
-
-function running(pid: number): boolean {
-    try {
-        return process.kill(pid, 0) || false;
-    } catch (_error) {
-        return false;
-    }
-}
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -109,7 +101,7 @@ export default class API extends EventEmitter {
         State.ipc = new IPC(this.bridges);
 
         State.ipc.on(Events.LOG, (data: any) => Console.log(LogLevel.INFO, data));
-        State.ipc.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, data));
+        State.ipc.on(Events.NOTIFICATION, (data: any) => State.io?.sockets.emit(Events.NOTIFICATION, compressJson(data)));
 
         State.ipc.on(Events.ACCESSORY_CHANGE, (data: any) => {
             const working = AccessoriesController.layout;
@@ -120,7 +112,7 @@ export default class API extends EventEmitter {
             }
 
             data.data.accessory = accessory;
-            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, data);
+            State.io?.sockets.emit(Events.ACCESSORY_CHANGE, compressJson(data));
         });
 
         State.ipc.on(Events.RESTART, async (data: string) => {
@@ -257,7 +249,7 @@ export default class API extends EventEmitter {
         if (!State.orphans) flags.push("--orphans");
 
         let waits: Promise<void>[] = [];
-        const keys = Object.keys(this.bridges).filter((item) => item !== bridge.id && this.bridges[item].port === bridge.port && running(this.bridges[item].process.pid));
+        const keys = Object.keys(this.bridges).filter((item) => item !== bridge.id && this.bridges[item].port === bridge.port && Bridges.running(this.bridges[item].process.pid));
 
         for (let i = 0; i < keys.length; i += 1) {
             waits.push(this.teardown(keys[i]));
@@ -320,7 +312,7 @@ export default class API extends EventEmitter {
             });
 
             setTimeout(() => {
-                if (running(this.bridges[bridge.id].process.pid)) {
+                if (Bridges.running(this.bridges[bridge.id].process.pid)) {
                     this.bridges[bridge.id].process.once("exit", () => {
                         setTimeout(() => this.launch(bridge), BRIDGE_RELAUNCH_DELAY);
                     });
@@ -344,7 +336,7 @@ export default class API extends EventEmitter {
         const id = typeof bridge === "string" ? bridge : bridge.id;
 
         return new Promise((resolve) => {
-            if (this.bridges[id] && running(this.bridges[id].process.pid)) {
+            if (this.bridges[id] && Bridges.running(this.bridges[id].process.pid)) {
                 Console.info(`${typeof bridge === "string" ? bridge : bridge.display} stopping`);
 
                 let display = "";
@@ -427,7 +419,7 @@ export default class API extends EventEmitter {
             }
 
             for (let i = 0; i < bridges.length; i += 1) {
-                if (!this.bridges[bridges[i].id] || !running(this.bridges[bridges[i].id].process.pid)) {
+                if (!this.bridges[bridges[i].id] || !Bridges.running(this.bridges[bridges[i].id].process.pid)) {
                     this.launch(bridges[i]);
                 }
             }

@@ -70,6 +70,14 @@ export interface BridgeProcess {
 }
 
 export default class Bridges {
+    static running(pid: number): boolean {
+        try {
+            return process.kill(pid, 0) || false;
+        } catch (_error) {
+            return false;
+        }
+    }
+
     static locate() {
         const paths = (process.env.PATH || "").split(":");
 

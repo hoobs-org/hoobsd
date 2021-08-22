@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { gzipSync, gunzipSync } from "zlib";
+
 export function parseJson<T>(value: string, replacement: T): T {
     try {
         return <T>JSON.parse(value);
@@ -38,4 +40,30 @@ export function formatJson(object: any, pretty?: boolean): string {
     if (pretty) return JSON.stringify(object, null, 4);
 
     return JSON.stringify(object);
+}
+
+export function compressJson(value: { [key: string]: any }): Uint8Array {
+    const buffer = gzipSync(Buffer.from(JSON.stringify(value)));
+    const content = new ArrayBuffer(buffer.length);
+    const results = new Uint8Array(content);
+
+    for (let i = 0; i < buffer.length; i += 1) {
+        results[i] = buffer[i];
+    }
+
+    return results;
+}
+
+export function decompressJson(value: Uint8Array): { [key: string]: any } {
+    const buffer = Buffer.alloc(value.byteLength);
+
+    for (let i = 0; i < buffer.length; i += 1) {
+        buffer[i] = value[i];
+    }
+
+    try {
+        return JSON.parse(gunzipSync(buffer).toString());
+    } catch (_error) {
+        return {};
+    }
 }
