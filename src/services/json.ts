@@ -56,9 +56,10 @@ export function compressJson(value: { [key: string]: any }): Uint8Array {
 
 export function decompressJson(value: Uint8Array): { [key: string]: any } {
     const buffer = Buffer.alloc(value.byteLength);
+    const view = new Uint8Array(value);
 
     for (let i = 0; i < buffer.length; i += 1) {
-        buffer[i] = value[i];
+        buffer[i] = view[i];
     }
 
     try {
