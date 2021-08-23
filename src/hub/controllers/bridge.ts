@@ -30,20 +30,27 @@ export default class BridgeController {
     }
 
     async all(_request: Request, response: Response): Promise<Response> {
-        const results = [];
+        const results: { [key: string]: any } = [];
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await State.ipc?.fetch(State.bridges[i].id, "status:get");
-
-                if (status) {
-                    results.push({
-                        bridge: State.bridges[i].id,
-                        status,
+                waits.push(new Promise((resolve) => {
+                    State.ipc?.fetch(State.bridges[i].id, "status:get").then((status) => {
+                        if (status) {
+                            results.push({
+                                bridge: State.bridges[i].id,
+                                status,
+                            });
+                        }
+                    }).finally(() => {
+                        resolve();
                     });
-                }
+                }));
             }
         }
+
+        await Promise.allSettled(waits);
 
         return response.send(results);
     }

@@ -342,7 +342,7 @@ export default class API extends EventEmitter {
                 let display = "";
 
                 if (typeof bridge === "string") {
-                    display = ((State.bridges || Bridges.list()).find((item) => item.id === bridge) || {}).display || bridge;
+                    display = (State.bridges.find((item) => item.id === bridge) || {}).display || bridge;
                 } else {
                     display = bridge.display;
                 }

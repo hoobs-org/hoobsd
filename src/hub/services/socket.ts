@@ -18,7 +18,6 @@
 
 import { ChildProcess } from "child_process";
 import IPC from "./ipc";
-import Bridges from "../../services/bridges";
 
 export default class Socket {
     private ipc: IPC;
@@ -62,7 +61,7 @@ export default class Socket {
                     resolve(data);
                 });
 
-                if (Bridges.running(this.forked.pid)) {
+                try {
                     this.forked.send(this.format("fetch", {
                         path,
                         session,
@@ -71,7 +70,7 @@ export default class Socket {
                     }));
 
                     timeout = setTimeout(() => resolve(undefined), 10 * 1000);
-                } else {
+                } catch (_error) {
                     if (timeout) clearTimeout(timeout);
 
                     resolve(undefined);

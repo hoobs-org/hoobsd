@@ -19,7 +19,8 @@
 /* eslint-disable no-template-curly-in-string */
 /* eslint-disable prefer-destructuring */
 
-import { join } from "path";
+import OS from "os";
+import { join, delimiter } from "path";
 
 import {
     exec,
@@ -29,6 +30,7 @@ import {
 } from "child_process";
 
 import { existsSync, readFileSync, writeFileSync } from "fs-extra";
+import ReadLines from "n-readlines";
 import Semver from "semver";
 import State from "../state";
 import Paths from "./paths";
@@ -68,6 +70,33 @@ export default class System {
         }
     }
 
+    static commandExists(command: string): boolean {
+        const paths = (process.env.PATH || "").replace(/["]+/g, "").split(delimiter).filter((item) => item && item !== "");
+
+        for (let i = 0; i < paths.length; i += 1) {
+            if (existsSync(join(paths[i], command))) return true;
+        }
+
+        return false;
+    }
+
+    static grep(file: string, ...search: string[]) {
+        if (!existsSync(file)) return undefined;
+
+        const reader = new ReadLines(file);
+        const expression = new RegExp(`(${search.join("|")})`);
+
+        let line: false | Buffer = reader.next();
+
+        while (line) {
+            if (line.toString().match(expression)) return line.toString();
+
+            line = reader.next();
+        }
+
+        return undefined;
+    }
+
     static info(): { [key: string]: any } {
         const key = "system/info";
         const cached = State.cache?.get<{ [key: string]: any }>(key);
@@ -75,41 +104,51 @@ export default class System {
         if (cached) return cached;
 
         const results: { [key: string]: any } = {};
-        const release = (System.shell("uname")).toLowerCase();
+        const release = OS.platform().toLowerCase();
+
+        let values = [];
 
         switch (release) {
             case "darwin":
-                results.distribution = (((System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductName:")) || "").split(":")[1] || "").trim();
-                results.version = (((System.shell("sw_vers", true)).split("\n").find((item) => item.startsWith("ProductVersion:")) || "").split(":")[1] || "").trim();
+                values = (System.shell("sw_vers", true)).split("\n");
+
+                results.distribution = ((values.find((item) => item.startsWith("ProductName:")) || "").split(":")[1] || "").trim();
+                results.version = ((values.find((item) => item.startsWith("ProductVersion:")) || "").split(":")[1] || "").trim();
                 break;
 
             case "linux":
-                results.distribution = (((System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("ID=")) || "").split("=")[1] || "").replace(/"/g, "");
-                results.version = (((System.shell("cat /etc/*-release", true)).split("\n").find((item) => item.startsWith("VERSION_ID=")) || "").split("=")[1] || "").replace(/"/g, "");
+                values = (System.shell("cat /etc/*-release", true)).split("\n");
+
+                results.distribution = ((values.find((item) => item.startsWith("ID=")) || "").split("=")[1] || "").replace(/"/g, "");
+                results.version = ((values.find((item) => item.startsWith("VERSION_ID=")) || "").split("=")[1] || "").replace(/"/g, "");
                 break;
         }
 
-        results.arch = System.shell("uname -m");
+        results.arch = OS.arch();
         results.init_system = "";
         results.repo = "stable";
 
         if (existsSync("/etc/systemd/system")) results.init_system = "systemd";
         if (existsSync("/Library/LaunchDaemons/")) results.init_system = "launchd";
-        if (!existsSync("/proc/version") || (existsSync("/proc/version") && System.shell("cat /proc/version | grep microsoft") !== "")) results.init_system = "";
 
         switch (results.distribution) {
             case "alpine":
-                results.package_manager = (System.shell("command -v apk")) !== "" ? "apk" : "";
+                results.package_manager = System.commandExists("apk") ? "apk" : "";
                 break;
 
             case "ubuntu":
             case "debian":
             case "raspbian":
-                results.package_manager = (System.shell("command -v apt-get")) !== "" ? "apt-get" : "";
+                results.package_manager = System.commandExists("apt-get") ? "apt-get" : "";
 
                 if (existsSync("/etc/apt/sources.list.d/hoobs.list")) {
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep bleeding") !== "") results.repo = "bleeding";
-                    if (System.shell("cat /etc/apt/sources.list.d/hoobs.list | grep edge") !== "") results.repo = "edge";
+                    const match = System.grep("/etc/apt/sources.list.d/hoobs.list", "bleeding", "edge");
+
+                    if (match && match.indexOf("edge")) {
+                        results.repo = "edge";
+                    } else if (match && match.indexOf("bleeding")) {
+                        results.repo = "bleeding";
+                    }
                 }
 
                 break;
@@ -117,9 +156,9 @@ export default class System {
             case "fedora":
             case "rhel":
             case "centos":
-                if ((System.shell("command -v dnf")) !== "") {
+                if (System.commandExists("dnf")) {
                     results.package_manager = "dnf";
-                } else if ((System.shell("command -v yum")) !== "") {
+                } else if (System.commandExists("yum")) {
                     results.package_manager = "yum";
                 } else {
                     results.package_manager = "";
@@ -138,22 +177,26 @@ export default class System {
         results.sku = "";
 
         if (existsSync("/etc/hoobs")) {
-            const data = readFileSync("/etc/hoobs").toString().split("\n");
+            const reader = new ReadLines("/etc/hoobs");
 
-            for (let i = 0; i < data.length; i += 1) {
-                const field = data[i].split("=");
+            let line: false | Buffer = reader.next();
+
+            while (line) {
+                const field = line.toString().split("=");
 
                 if (field[0] === "ID") results.product = field[1];
                 if (field[0] === "MODEL") results.model = field[1];
                 if (field[0] === "SKU") results.sku = field[1];
+
+                line = reader.next();
             }
         }
 
         if ((results.product === "box" || results.product === "card") && results.init_system === "systemd" && existsSync("/etc/avahi/avahi-daemon.conf")) {
-            let broadcast = System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+            let broadcast = System.grep("/etc/avahi/avahi-daemon.conf", "host-name=");
 
-            if (broadcast.indexOf("#") >= 0) {
-                broadcast = ((System.shell("hostname")).split(".")[0] || "").toLowerCase();
+            if (!broadcast || broadcast.indexOf("#") >= 0) {
+                broadcast = OS.hostname().toLowerCase();
             } else {
                 broadcast = (broadcast.split("=")[1] || "").toLowerCase();
             }
@@ -162,7 +205,7 @@ export default class System {
             results.mdns_broadcast = broadcast;
         }
 
-        return State.cache?.set(key, results, 60);
+        return State.cache?.set(key, results, 14 * 24 * 60);
     }
 
     static hostname(value: string) {
@@ -177,12 +220,14 @@ export default class System {
             formatted = formatted.split(".")[0];
 
             if (formatted && formatted !== "" && formatted !== system.mdns_broadcast) {
-                const broadcast = System.shell("cat /etc/avahi/avahi-daemon.conf | grep host-name=");
+                const broadcast = System.grep("/etc/avahi/avahi-daemon.conf", "host-name=");
                 const content = readFileSync("/etc/avahi/avahi-daemon.conf").toString();
 
-                writeFileSync("/etc/avahi/avahi-daemon.conf", content.replace(broadcast, `host-name=${formatted}`));
-                execSync("systemctl restart avahi-daemon");
-                State.cache?.remove("system/info");
+                if (broadcast) {
+                    writeFileSync("/etc/avahi/avahi-daemon.conf", content.replace(broadcast, `host-name=${formatted}`));
+                    execSync("systemctl restart avahi-daemon");
+                    State.cache?.remove("system/info");
+                }
             }
         }
     }
@@ -204,7 +249,7 @@ export default class System {
             if (!multiline) return results.replace(/\n/g, "");
 
             return results;
-        } catch (error) {
+        } catch (_error) {
             return "";
         }
     }
