@@ -497,6 +497,7 @@ export default class AccessoriesController {
         const id = sanitize(request.params.id);
         const working = AccessoriesController.layout;
         const index = working.rooms.findIndex((item: { [key: string]: any }) => item.id === id);
+        const waits: Promise<void>[] = [];
 
         if (index === -1) return response.send({ error: "room not found" });
 
@@ -583,13 +584,20 @@ export default class AccessoriesController {
                             value: 0,
                         });
 
-                        await State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 });
+                        waits.push(new Promise((resolve) => {
+                            State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 }).finally(() => {
+                                resolve();
+                            });
+                        }));
+
+                        await Promise.allSettled(waits);
                     }
                 }
 
                 break;
 
             default:
+                console.log("HERE");
                 room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
                 room.accessories = room.accessories || [];
                 value = request.body.value;
@@ -603,7 +611,13 @@ export default class AccessoriesController {
                             value,
                         });
 
-                        await State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value });
+                        waits.push(new Promise((resolve) => {
+                            State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value }).finally(() => {
+                                resolve();
+                            });
+                        }));
+
+                        await Promise.allSettled(waits);
                     }
                 }
 
@@ -642,22 +656,32 @@ export default class AccessoriesController {
 
     private async accessories(bridge?: string): Promise<any[]> {
         const working = AccessoriesController.layout;
-
-        let results: any[] = [];
+        const waits: Promise<void>[] = [];
+        const results: any[] = [];
 
         if (bridge) {
-            const accessories = (await State.ipc?.fetch(bridge, "accessories:list")) || [];
-
-            results = results.concat(accessories);
+            waits.push(new Promise((resolve) => {
+                State.ipc?.fetch(bridge, "accessories:list").then((accessories) => {
+                    if (Array.isArray(accessories) && accessories.length > 0) results.push(...accessories);
+                }).finally(() => {
+                    resolve();
+                });
+            }));
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
                 if (State.bridges[i].type !== "hub") {
-                    const accessories = (await State.ipc?.fetch(State.bridges[i].id, "accessories:list")) || [];
-
-                    results = results.concat(accessories);
+                    waits.push(new Promise((resolve) => {
+                        State.ipc?.fetch(State.bridges[i].id, "accessories:list").then((accessories) => {
+                            if (Array.isArray(accessories) && accessories.length > 0) results.push(...accessories);
+                        }).finally(() => {
+                            resolve();
+                        });
+                    }));
                 }
             }
         }
+
+        await Promise.allSettled(waits);
 
         for (let i = 0; i < results.length; i += 1) {
             if (working.accessories[results[i].accessory_identifier]) _.extend(results[i], working.accessories[results[i].accessory_identifier]);

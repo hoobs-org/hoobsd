@@ -70,6 +70,14 @@ export interface BridgeProcess {
 }
 
 export default class Bridges {
+    static running(pid: number): boolean {
+        try {
+            return process.kill(pid, 0) || false;
+        } catch (_error) {
+            return false;
+        }
+    }
+
     static locate() {
         const paths = (process.env.PATH || "").split(":");
 
@@ -259,6 +267,7 @@ export default class Bridges {
 
         const id = sanitize(name);
         const index = State.bridges.findIndex((n: BridgeRecord) => n.id === id);
+        const display = index >= 0 ? State.bridges[index].display : name;
 
         if (index >= 0) {
             State.bridges.splice(index, 1);
@@ -272,7 +281,7 @@ export default class Bridges {
             Console.notify(
                 "hub",
                 "Bridge Removed",
-                `${name} removed.`,
+                `${display} removed.`,
                 NotificationType.WARN,
                 "layers",
             );

@@ -22,6 +22,7 @@ import { LogLevel, Logging } from "homebridge/lib/logger";
 import State from "../state";
 import Paths from "./paths";
 import { colorize } from "./formatters";
+import { compressJson } from "./json";
 
 export interface Message {
     level: LogLevel;
@@ -185,7 +186,7 @@ class Logger {
 
                 if (State.id === "hub") CACHE.push(data);
                 if (State.bridge) State.ipc?.emit(Events.LOG, data);
-                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, compressJson(data));
 
                 if (State.id === "hub" || State.debug) {
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -204,7 +205,7 @@ class Logger {
 
                 if (State.id === "hub") CACHE.push(data);
                 if (State.bridge) State.ipc?.emit(Events.LOG, data);
-                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, compressJson(data));
 
                 if (State.id === "hub" || State.debug) {
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -224,7 +225,7 @@ class Logger {
 
                     if (State.id === "hub") CACHE.push(data);
                     if (State.bridge) State.ipc?.emit(Events.LOG, data);
-                    if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                    if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, compressJson(data));
 
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
                     if (data.bridge && data.bridge !== "" && data.bridge !== State.id) prefixes.push(colorize(State.bridges.findIndex((bridge) => bridge.id === data.bridge), true)(data.display || data.bridge));
@@ -242,7 +243,7 @@ class Logger {
 
                 if (State.id === "hub") CACHE.push(data);
                 if (State.bridge) State.ipc?.emit(Events.LOG, data);
-                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, data);
+                if (State.hub && State.hub.running) State.io?.sockets.emit(Events.LOG, compressJson(data));
 
                 if (State.id === "hub" || State.debug) {
                     if (State.timestamps && data.message && data.message !== "") prefixes.push(Chalk.gray.dim(new Date(data.timestamp).toLocaleString()));
@@ -296,7 +297,7 @@ class Logger {
         }
 
         if (State.hub && State.hub.running) {
-            State.io?.sockets.emit(Events.NOTIFICATION, {
+            State.io?.sockets.emit(Events.NOTIFICATION, compressJson({
                 bridge,
                 data: {
                     title,
@@ -304,7 +305,7 @@ class Logger {
                     type,
                     icon,
                 },
-            });
+            }));
         }
 
         if (State.bridge) {
@@ -322,10 +323,10 @@ class Logger {
 
     emit(event: Events, bridge: string, data: any): void {
         if (State.hub && State.hub.running) {
-            State.io?.sockets.emit(event, {
+            State.io?.sockets.emit(event, compressJson({
                 bridge,
                 data,
-            });
+            }));
         }
 
         if (State.bridge) {

@@ -1,6 +1,6 @@
 {
     "name": "hoobsd",
-    "version": "4.0.100",
+    "version": "4.0.103",
     "description": "Server component for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "repository": {
@@ -38,6 +38,7 @@
         "http-terminator": "^3.0.0",
         "lodash": "^4.17.21",
         "macaddress": "^0.5.1",
+        "n-readlines": "^1.0.1",
         "node-cache": "^5.1.2",
         "node-uname": "^3.0.4",
         "sanitize-filename": "^1.6.3",
@@ -63,6 +64,7 @@
         "@types/http-terminator": "^2.0.1",
         "@types/lodash": "^4.14.168",
         "@types/lodash.debounce": "^4.0.6",
+        "@types/n-readlines": "^1.0.2",
         "@types/node": "^14.14.31",
         "@types/node-cache": "^4.2.5",
         "@types/node-persist": "^3.1.1",

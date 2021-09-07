@@ -251,6 +251,13 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.4.tgz#f0ec25dbf2f0e4b18647313ac031134ca5b24b21"
   integrity sha512-1z8k4wzFnNjVK/tlxvrWuK5WMt6mydWWP7+zvH5eFep4oj+UkrfiJTRtjCeBXNpwaA/FYqqtb4/QS4ianFpIRA==
 
+"@types/n-readlines@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/@types/n-readlines/-/n-readlines-1.0.2.tgz#fbded905bc129188170002f7326231a4fb78b17f"
+  integrity sha512-jEpAbqwRa7bwMU44zSWE0ritLzeaHpEqPMBDCDRHp0Xle4V8xrE2jvqlVewm3KOFFjfYGaDrjpEk2j5Edr1Prw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/node-cache@^4.2.5":
   version "4.2.5"
   resolved "https://registry.yarnpkg.com/@types/node-cache/-/node-cache-4.2.5.tgz#dac6be8bf8f486db4eef66f52f7bb9e90b65d2c1"
@@ -2629,6 +2636,11 @@ multicast-dns@^7.2.2:
   dependencies:
     dns-packet "^5.2.2"
     thunky "^1.0.2"
+
+n-readlines@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/n-readlines/-/n-readlines-1.0.1.tgz#bbb7364d38bc31a170a199f986fcacfa76b95f6e"
+  integrity sha512-z4SyAIVgMy7CkgsoNw7YVz40v0g4+WWvvqy8+ZdHrCtgevcEO758WQyrYcw3XPxcLxF+//RszTz/rO48nzD0wQ==
 
 natural-compare@^1.4.0:
   version "1.4.0"

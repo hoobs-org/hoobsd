@@ -61,14 +61,20 @@ export default class Socket {
                     resolve(data);
                 });
 
-                this.forked.send(this.format("fetch", {
-                    path,
-                    session,
-                    params,
-                    body,
-                }));
+                try {
+                    this.forked.send(this.format("fetch", {
+                        path,
+                        session,
+                        params,
+                        body,
+                    }));
 
-                timeout = setTimeout(() => resolve(undefined), 10 * 1000);
+                    timeout = setTimeout(() => resolve(undefined), 10 * 1000);
+                } catch (_error) {
+                    if (timeout) clearTimeout(timeout);
+
+                    resolve(undefined);
+                }
             } else {
                 resolve(undefined);
             }

@@ -30,37 +30,41 @@ export default class StatusController {
     async status(_request: Request, response: Response): Promise<Response> {
         const key = "system/status";
         const results: { [key: string]: any } = {};
+        const waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
-                const status = await State.ipc?.fetch(State.bridges[i].id, "status:get");
+                waits.push(new Promise((resolve) => {
+                    State.ipc?.fetch(State.bridges[i].id, "status:get").then((status) => {
+                        if (status) {
+                            results[State.bridges[i].id] = {
+                                version: status.version,
+                                running: status.running,
+                                status: status.status,
+                                uptime: status.uptime,
+                                product: status.product,
+                                bridge_name: status.bridge_name,
+                                bridge_username: status.bridge_username,
+                                bridge_port: status.bridge_port,
+                                setup_pin: status.setup_pin,
+                                setup_id: status.setup_id,
+                                bridge_path: status.bridge_path,
+                            };
+                        } else {
+                            results[State.bridges[i].id] = {
+                                running: false,
+                                status: "unavailable",
+                                uptime: 0,
+                            };
+                        }
 
-                if (status) {
-                    results[State.bridges[i].id] = {
-                        version: status.version,
-                        running: status.running,
-                        status: status.status,
-                        uptime: status.uptime,
-                        product: status.product,
-                        bridge_name: status.bridge_name,
-                        bridge_username: status.bridge_username,
-                        bridge_port: status.bridge_port,
-                        setup_pin: status.setup_pin,
-                        setup_id: status.setup_id,
-                        bridge_path: status.bridge_path,
-                    };
-                } else {
-                    results[State.bridges[i].id] = {
-                        running: false,
-                        status: "unavailable",
-                        uptime: 0,
-                    };
-                }
+                        resolve();
+                    });
+                }));
             }
         }
 
         const system = System.info();
-        const waits: Promise<void>[] = [];
         const applications: { [key: string]: any } = State.cache?.get<{ [key: string]: any }>(key) || {};
 
         if (!applications.cli) {
