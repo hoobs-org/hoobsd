@@ -58,7 +58,6 @@ import AccessoriesController from "./controllers/accessories";
 import BridgeController from "./controllers/bridge";
 import CacheController from "./controllers/cache";
 import ConfigController from "./controllers/config";
-import ExtentionsController from "./controllers/extentions";
 import BridgesController from "./controllers/bridges";
 import PluginController from "./controllers/plugin";
 import PluginsController from "./controllers/plugins";
@@ -186,7 +185,6 @@ export default class API extends EventEmitter {
         new BridgeController();
         new CacheController();
         new ConfigController();
-        new ExtentionsController();
         new BridgesController();
         new PluginController();
         new PluginsController();

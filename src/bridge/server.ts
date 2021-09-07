@@ -71,7 +71,6 @@ import Accessories from "./services/accessories";
 import { BridgeRecord } from "../services/bridges";
 import { Console, Prefixed, Events } from "../services/logger";
 import { Services, Characteristics } from "./services/types";
-import { jsonEquals } from "../services/json";
 
 const INSTANCE_KILL_DELAY = 2 * 1000;
 
@@ -203,7 +202,7 @@ export default class Server extends EventEmitter {
                     try {
                         plugin.load();
                         Console.info(`Loaded plugin '${plugins[i].identifier}'`);
-                    } catch (error) {
+                    } catch (error: any) {
                         Console.error(`Error loading plugin "${plugins[i].identifier}"`);
                         Console.error(error.message || "");
                         Console.error(error.stack.toString());
@@ -219,7 +218,7 @@ export default class Server extends EventEmitter {
                             this.pluginManager.currentInitializingPlugin = plugin;
 
                             plugin.initialize(this.api);
-                        } catch (error) {
+                        } catch (error: any) {
                             Console.error(`Error initializing plugin '${plugins[i].identifier}'`);
                             Console.error(error.stack);
 
@@ -274,7 +273,7 @@ export default class Server extends EventEmitter {
 
                     try {
                         if (existsSync(join(Paths.data(State.id), "config.json"))) unlinkSync(join(Paths.data(State.id), "config.json"));
-                    } catch (error) {
+                    } catch (error: any) {
                         Console.warn(error.message);
                     }
 
