@@ -50,7 +50,24 @@ export const enum LedStatus {
 
 export default class System {
     static led(status: LedStatus) {
-        if (existsSync("/sys/class/leds/led0/brightness") && existsSync("/sys/class/leds/led1/brightness")) {
+        if (existsSync("/sys/devices/platform/leds/leds/ACT/brightness") && existsSync("/sys/devices/platform/leds/leds/PWR/brightness")) {
+            switch (status) {
+                case LedStatus.GOOD:
+                    writeFileSync("/sys/devices/platform/leds/leds/ACT/brightness", "255");
+                    writeFileSync("/sys/devices/platform/leds/leds/PWR/brightness", "0");
+                    break;
+
+                case LedStatus.ERROR:
+                    writeFileSync("/sys/devices/platform/leds/leds/ACT/brightness", "0");
+                    writeFileSync("/sys/devices/platform/leds/leds/PWR/brightness", "255");
+                    break;
+
+                default:
+                    writeFileSync("/sys/devices/platform/leds/leds/ACT/brightness", "0");
+                    writeFileSync("/sys/devices/platform/leds/leds/PWR/brightness", "0");
+                    break;
+            }
+        } else if (existsSync("/sys/class/leds/led0/brightness") && existsSync("/sys/class/leds/led1/brightness")) {
             switch (status) {
                 case LedStatus.GOOD:
                     writeFileSync("/sys/class/leds/led0/brightness", "255");
