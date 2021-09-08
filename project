@@ -113,9 +113,9 @@ build() {
     touch build.log
     truncate -s 0 build.log
 
-    image amd64
     image arm64
     image armhf
+    image amd64
 }
 
 case $1 in
