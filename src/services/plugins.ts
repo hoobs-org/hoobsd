@@ -398,7 +398,7 @@ export default class Plugins {
                 } else if (plugin && typeof plugin.default === "function") {
                     plugin.default(options);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 Console.error(`Unable to determine plugin type for "${name}"`);
                 Console.error(error.stack);
             }
@@ -427,7 +427,7 @@ export default class Plugins {
         if (existsSync(filename)) {
             try {
                 results = JSON.parse(readFileSync(filename).toString());
-            } catch (error) {
+            } catch (error: any) {
                 Console.error(`Plugin ${filename} contains an invalid package`);
                 Console.error(error.stack);
             }
@@ -444,7 +444,7 @@ export default class Plugins {
         if (existsSync(filename)) {
             try {
                 results = JSON.parse(readFileSync(filename).toString());
-            } catch (error) {
+            } catch (error: any) {
                 Console.error(`Plugin ${filename} contains an invalid config schema`);
                 Console.error(error.stack);
             }

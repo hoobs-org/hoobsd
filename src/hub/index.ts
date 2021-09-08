@@ -232,7 +232,7 @@ export default class API extends EventEmitter {
     }
 
     launch(bridge: BridgeRecord): void {
-        const hoobsd = Path.join(__dirname, "../../../bin/hoobsd");
+        const hoobsd = State.mode === "development" ? Path.join(Path.resolve(Paths.application), "debug") : Path.join(__dirname, "../../../bin/hoobsd");
 
         const flags: string[] = [
             "bridge",

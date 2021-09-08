@@ -42,7 +42,7 @@ export default class Paths {
 
         try {
             contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
-        } catch (error) {
+        } catch (error: any) {
             Console.error(error.message);
 
             return replacement;

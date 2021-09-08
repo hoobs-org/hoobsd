@@ -107,4 +107,5 @@ dist
 .DS_Store
 
 # Build output
-lib/
+cache/
+builds/

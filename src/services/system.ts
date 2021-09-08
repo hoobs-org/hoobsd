@@ -20,7 +20,7 @@
 /* eslint-disable prefer-destructuring */
 
 import OS from "os";
-import { join, delimiter } from "path";
+import Path from "path";
 
 import {
     exec,
@@ -71,10 +71,10 @@ export default class System {
     }
 
     static commandExists(command: string): boolean {
-        const paths = (process.env.PATH || "").replace(/["]+/g, "").split(delimiter).filter((item) => item && item !== "");
+        const paths = (process.env.PATH || "").replace(/["]+/g, "").split(Path.delimiter).filter((item) => item && item !== "");
 
         for (let i = 0; i < paths.length; i += 1) {
-            if (existsSync(join(paths[i], command))) return true;
+            if (existsSync(Path.join(paths[i], command))) return true;
         }
 
         return false;
@@ -296,9 +296,7 @@ export default class System {
         Console.warn("service restart command received");
 
         if (!State.container && State.mode === "production") {
-            exec(`${join(__dirname, "../../../bin/hoobsd")} service restart`);
-        } else {
-            exec(`touch ${join(__dirname, "../../../src/main.ts")}`);
+            exec(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`);
         }
     }
 
@@ -308,7 +306,7 @@ export default class System {
         if (!State.container && State.mode === "production") {
             exec("shutdown -r now");
         } else {
-            exec(`touch ${join(__dirname, "../../../src/main.ts")}`);
+            exec(`touch ${Path.join(__dirname, "../../../src/main.ts")}`);
         }
     }
 
@@ -348,9 +346,9 @@ export default class System {
                 let path: string | undefined = "/usr/lib/hoobs";
                 let installed: string | undefined = "";
 
-                if (!existsSync(join(path, "package.json"))) path = join(__dirname, "../../../../gui");
-                if (!existsSync(join(path, "package.json"))) path = undefined;
-                if (path) installed = (Paths.loadJson<{ [key: string]: any }>(join(path, "package.json"), {})).version || "";
+                if (!existsSync(Path.join(path, "package.json"))) path = Path.join(__dirname, "../../../../gui");
+                if (!existsSync(Path.join(path, "package.json"))) path = undefined;
+                if (path) installed = (Paths.loadJson<{ [key: string]: any }>(Path.join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
                 const release = await System.gui.release(beta);
@@ -365,7 +363,7 @@ export default class System {
                 let mode = "none";
 
                 if (path === "/usr/lib/hoobs") mode = "production";
-                if (path === join(__dirname, "../../../../gui")) mode = "development";
+                if (path === Path.join(__dirname, "../../../../gui")) mode = "development";
 
                 return State.cache?.set(`${key}/${beta ? "beta" : "stable"}`, {
                     gui_prefix: "/usr/",
@@ -387,16 +385,18 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = System.info();
+                if (State.mode === "production") {
+                    const system = System.info();
 
-                State.cache?.remove(`${key}/stable`);
-                State.cache?.remove(`${key}/beta`);
+                    State.cache?.remove(`${key}/stable`);
+                    State.cache?.remove(`${key}/beta`);
 
-                System.switch(system.repo);
+                    System.switch(system.repo);
 
-                if (system.package_manager === "apt-get") {
-                    await System.execute("apt-get update");
-                    await System.execute("apt-get install -y hoobs-gui");
+                    if (system.package_manager === "apt-get") {
+                        await System.execute("apt-get update");
+                        await System.execute("apt-get install -y hoobs-gui");
+                    }
                 }
             },
         };
@@ -414,18 +414,23 @@ export default class System {
                 let path = "/usr/bin/hbs";
                 let prefix = "/usr/";
 
-                const paths = (process.env.PATH || "").split(":");
+                if (State.mode === "development") {
+                    path = Path.join(Path.resolve(Path.join(Paths.application, "../cli")), "debug");
+                    prefix = Path.resolve(Path.join(Paths.application, "../cli"));
+                } else {
+                    const paths = (process.env.PATH || "").split(":");
 
-                for (let i = 0; i < paths.length; i += 1) {
-                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "hbs"))) {
-                        path = join(paths[i], "hbs");
+                    for (let i = 0; i < paths.length; i += 1) {
+                        if (paths[i].indexOf("/tmp/") === -1 && existsSync(Path.join(paths[i], "hbs"))) {
+                            path = Path.join(paths[i], "hbs");
 
-                        break;
+                            break;
+                        }
                     }
-                }
 
-                if (!existsSync(path)) path = "";
-                if (path !== "") prefix = path.replace("bin/hbs", "");
+                    if (!existsSync(path)) path = "";
+                    if (path !== "") prefix = path.replace("bin/hbs", "");
+                }
 
                 let installed = "";
 
@@ -467,16 +472,18 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = System.info();
+                if (State.mode === "production") {
+                    const system = System.info();
 
-                State.cache?.remove(`${key}/stable`);
-                State.cache?.remove(`${key}/beta`);
+                    State.cache?.remove(`${key}/stable`);
+                    State.cache?.remove(`${key}/beta`);
 
-                System.switch(system.repo);
+                    System.switch(system.repo);
 
-                if (system.package_manager === "apt-get") {
-                    await System.execute("apt-get update");
-                    await System.execute("apt-get install -y hoobs-cli");
+                    if (system.package_manager === "apt-get") {
+                        await System.execute("apt-get update");
+                        await System.execute("apt-get install -y hoobs-cli");
+                    }
                 }
             },
         };
@@ -494,18 +501,23 @@ export default class System {
                 let path = "/usr/bin/hoobsd";
                 let prefix = "/usr/";
 
-                const paths = (process.env.PATH || "").split(":");
+                if (State.mode === "development") {
+                    path = Path.join(Path.resolve(Paths.application), "debug");
+                    prefix = Path.resolve(Paths.application);
+                } else {
+                    const paths = (process.env.PATH || "").split(":");
 
-                for (let i = 0; i < paths.length; i += 1) {
-                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "hoobsd"))) {
-                        path = join(paths[i], "hoobsd");
+                    for (let i = 0; i < paths.length; i += 1) {
+                        if (paths[i].indexOf("/tmp/") === -1 && existsSync(Path.join(paths[i], "hoobsd"))) {
+                            path = Path.join(paths[i], "hoobsd");
 
-                        break;
+                            break;
+                        }
                     }
-                }
 
-                if (!existsSync(path)) path = "";
-                if (path !== "") prefix = path.replace("bin/hoobsd", "");
+                    if (!existsSync(path)) path = "";
+                    if (path !== "") prefix = path.replace("bin/hoobsd", "");
+                }
 
                 let installed = "";
 
@@ -548,16 +560,18 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = System.info();
+                if (State.mode === "production") {
+                    const system = System.info();
 
-                State.cache?.remove(`${key}/stable`);
-                State.cache?.remove(`${key}/beta`);
+                    State.cache?.remove(`${key}/stable`);
+                    State.cache?.remove(`${key}/beta`);
 
-                System.switch(system.repo);
+                    System.switch(system.repo);
 
-                if (system.package_manager === "apt-get") {
-                    await System.execute("apt-get update");
-                    await System.execute("apt-get install -y hoobsd");
+                    if (system.package_manager === "apt-get") {
+                        await System.execute("apt-get update");
+                        await System.execute("apt-get install -y hoobsd");
+                    }
                 }
             },
         };
@@ -577,8 +591,8 @@ export default class System {
                 const paths = (process.env.PATH || "").split(":");
 
                 for (let i = 0; i < paths.length; i += 1) {
-                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(join(paths[i], "node"))) {
-                        path = join(paths[i], "node");
+                    if (paths[i].indexOf("/tmp/") === -1 && existsSync(Path.join(paths[i], "node"))) {
+                        path = Path.join(paths[i], "node");
 
                         break;
                     }
@@ -622,16 +636,18 @@ export default class System {
             },
 
             upgrade: async (): Promise<void> => {
-                const system = System.info();
+                if (State.mode === "production") {
+                    const system = System.info();
 
-                State.cache?.remove(`${key}/stable`);
-                State.cache?.remove(`${key}/beta`);
+                    State.cache?.remove(`${key}/stable`);
+                    State.cache?.remove(`${key}/beta`);
 
-                if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
-                    System.switch(system.repo);
+                    if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") {
+                        System.switch(system.repo);
 
-                    await System.execute("apt-get update");
-                    await System.execute("apt-get install -y curl tar git python3 make gcc g++ nodejs");
+                        await System.execute("apt-get update");
+                        await System.execute("apt-get install -y curl tar git python3 make gcc g++ nodejs");
+                    }
                 }
             },
         };

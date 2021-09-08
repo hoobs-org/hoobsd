@@ -46,7 +46,7 @@ export default class Plugin {
             State.ipc?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
                 try {
                     controller(request, response);
-                } catch (error) {
+                } catch (error: any) {
                     this.logger.error(error?.message || "Error running route");
                 }
             });
