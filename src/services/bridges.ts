@@ -39,6 +39,7 @@ import Path from "path";
 import Socket from "../hub/services/socket";
 import State from "../state";
 import Paths from "./paths";
+import Plugins from "./plugins";
 import Config from "./config";
 import System, { ProcessQuery } from "./system";
 import { Console, NotificationType } from "./logger";
@@ -237,10 +238,7 @@ export default class Bridges {
                 const index = State.bridges.findIndex((n) => n.id === id);
 
                 if (index >= 0) {
-                    State.bridges[index].ports = {
-                        start,
-                        end,
-                    };
+                    State.bridges[index].ports = { start, end };
 
                     Paths.saveJson(Paths.bridges, State.bridges);
 
@@ -268,13 +266,7 @@ export default class Bridges {
             removeSync(Path.join(Paths.data(), `${id}.persist`));
             removeSync(Path.join(Paths.data(), `${id}.conf`));
 
-            Console.notify(
-                "hub",
-                "Bridge Removed",
-                `${display} removed.`,
-                NotificationType.WARN,
-                "layers",
-            );
+            Console.notify("hub", "Bridge Removed", `${display} removed.`, NotificationType.WARN, "layers");
 
             return true;
         }
@@ -282,76 +274,112 @@ export default class Bridges {
         return false;
     }
 
-    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string) {
-        const bridges: BridgeRecord[] = [];
+    static append(id: string, display: string, type: string, port: number, pin: string, username: string, autostart: number, advertiser: string, plugin?: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const bridges: BridgeRecord[] = [];
+            const waits: Promise<void>[] = [];
 
-        for (let i = 0; i < State.bridges.length; i += 1) {
-            if (State.bridges[i].id === "hub") {
-                bridges.unshift({
-                    id: State.bridges[i].id,
-                    type: State.bridges[i].type,
-                    display: State.bridges[i].display,
-                    port: State.bridges[i].port,
-                    pin: State.bridges[i].pin,
-                    username: State.bridges[i].username,
-                    autostart: 0,
-                    advertiser: undefined,
-                });
-            } else {
-                bridges.push({
-                    id: State.bridges[i].id,
-                    type: State.bridges[i].type,
-                    display: State.bridges[i].display,
-                    port: State.bridges[i].port,
-                    pin: State.bridges[i].pin,
-                    username: State.bridges[i].username,
-                    ports: State.bridges[i].ports,
-                    autostart: State.bridges[i].autostart,
-                    advertiser: State.bridges[i].advertiser,
-                    project: State.bridges[i].project,
-                });
+            if (id !== "hub" && existsSync(Path.join(Paths.data(id), "package.json"))) {
+                Paths.saveJson(Path.join(Paths.data(id), "package.json"), {
+                    name: "plugins",
+                    description: "HOOBS Plugins",
+                    private: true,
+                    dependencies: {},
+                }, true);
             }
-        }
 
-        if (id === "hub") {
-            bridges.unshift({
-                id,
-                type,
-                display,
-                port,
-                pin,
-                username,
-                autostart: 0,
-                advertiser: undefined,
-            });
-        } else {
-            bridges.push({
-                id,
-                type,
-                display,
-                port,
-                pin,
-                username,
-                autostart: autostart || 0,
-                advertiser,
-            });
-        }
+            if (id !== "hub" && plugin) {
+                let name: string | undefined = plugin;
+                let scope: string | undefined = "";
 
-        Paths.saveJson(Paths.bridges, bridges);
+                if ((name || "").startsWith("@")) {
+                    name = (name || "").substring(1);
+                    scope = name.split("/").shift();
+                    name = name.split("/").pop();
+                }
+
+                let tag: string | undefined = "latest";
+
+                if ((name || "").indexOf("@") >= 0) {
+                    tag = (name || "").split("@").pop();
+                    name = (name || "").split("@").shift();
+                }
+
+                const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+
+                waits.push(Plugins.install(id, identifier, (tag || "")));
+            }
+
+            Promise.all(waits).then(() => {
+                for (let i = 0; i < State.bridges.length; i += 1) {
+                    if (State.bridges[i].id === "hub") {
+                        bridges.unshift({
+                            id: State.bridges[i].id,
+                            type: State.bridges[i].type,
+                            display: State.bridges[i].display,
+                            port: State.bridges[i].port,
+                            pin: State.bridges[i].pin,
+                            username: State.bridges[i].username,
+                            autostart: 0,
+                            advertiser: undefined,
+                        });
+                    } else {
+                        bridges.push({
+                            id: State.bridges[i].id,
+                            type: State.bridges[i].type,
+                            display: State.bridges[i].display,
+                            port: State.bridges[i].port,
+                            pin: State.bridges[i].pin,
+                            username: State.bridges[i].username,
+                            ports: State.bridges[i].ports,
+                            autostart: State.bridges[i].autostart,
+                            advertiser: State.bridges[i].advertiser,
+                            project: State.bridges[i].project,
+                        });
+                    }
+                }
+
+                if (id === "hub") {
+                    bridges.unshift({
+                        id,
+                        type,
+                        display,
+                        port,
+                        pin,
+                        username,
+                        autostart: 0,
+                        advertiser: undefined,
+                    });
+                } else {
+                    bridges.push({
+                        id,
+                        type,
+                        display,
+                        port,
+                        pin,
+                        username,
+                        autostart: autostart || 0,
+                        advertiser,
+                    });
+                }
+
+                Paths.saveJson(Paths.bridges, bridges);
+
+                resolve();
+            }).catch((error) => reject(error));
+        });
     }
 
-    static create(name: string, port: number, pin: string, username: string, advertiser: string): void {
-        if (!existsSync(Paths.bridges)) writeFileSync(Paths.bridges, "[]");
+    static create(name: string, port: number, pin: string, username: string, advertiser: string, plugin?: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!existsSync(Paths.bridges)) writeFileSync(Paths.bridges, "[]");
 
-        Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0, advertiser);
+            Bridges.append(sanitize(name), name, sanitize(name) === "hub" ? "hub" : "bridge", port, pin, username, 0, advertiser, plugin).then(() => {
+                Console.notify("hub", "Bridge Added", `${name} added.`, NotificationType.SUCCESS, "layers");
 
-        Console.notify(
-            "hub",
-            "Bridge Added",
-            `${name} added.`,
-            NotificationType.SUCCESS,
-            "layers",
-        );
+                resolve();
+            }).catch((error) => reject(error));
+        });
     }
 
     static accessories(bridge: string): { [key: string]: any }[] {
@@ -417,13 +445,7 @@ export default class Bridges {
 
             Paths.saveJson(Paths.bridges, State.bridges);
 
-            Console.notify(
-                id,
-                "Caches Purged",
-                "Accessory and connection cache purged.",
-                NotificationType.SUCCESS,
-                "memory",
-            );
+            Console.notify(id, "Caches Purged", "Accessory and connection cache purged.", NotificationType.SUCCESS, "memory");
         }
     }
 
@@ -482,10 +504,7 @@ export default class Bridges {
                 resolve(`${filename}.bridge`);
             });
 
-            archive.on("error", (error) => {
-                reject(error);
-            });
-
+            archive.on("error", (error) => reject(error));
             archive.pipe(output);
 
             archive.file(Path.join(Paths.data(), "meta"), { name: "meta" });
@@ -519,10 +538,7 @@ export default class Bridges {
                 resolve(`${filename}.backup`);
             });
 
-            archive.on("error", (error) => {
-                reject(error);
-            });
-
+            archive.on("error", (error) => reject(error));
             archive.pipe(output);
 
             for (let i = 0; i < entries.length; i += 1) {
@@ -601,30 +617,29 @@ export default class Bridges {
 
                     ensureDirSync(Path.join(Paths.backups, "stage"));
 
-                    createReadStream(filename).pipe(Unzip.Extract({
-                        path: Path.join(Paths.backups, "stage"),
-                    })).on("finish", () => {
+                    createReadStream(filename).pipe(Unzip.Extract({ path: Path.join(Paths.backups, "stage") })).on("finish", () => {
                         unlinkSync(filename);
 
                         setTimeout(async () => {
                             copySync(Path.join(Paths.backups, "stage", `${metadata.data.name}.conf`), Path.join(Paths.data(), `${id}.conf`));
                             copySync(Path.join(Paths.backups, "stage", metadata.data.name), Path.join(Paths.data(), id));
 
-                            Bridges.create(name, port, pin, username, advertiser);
+                            Bridges.create(name, port, pin, username, advertiser).then(async () => {
+                                const bridges = Bridges.list();
+                                const index = bridges.findIndex((n) => n.id === id);
 
-                            const bridges = Bridges.list();
-                            const index = bridges.findIndex((n) => n.id === id);
+                                if (index >= 0) {
+                                    if (metadata.data.autostart !== undefined) bridges[index].autostart = metadata.data.autostart;
+                                    if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
+                                    if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) Paths.saveJson(Paths.bridges, bridges);
 
-                            if (index >= 0) {
-                                if (metadata.data.autostart !== undefined) bridges[index].autostart = metadata.data.autostart;
-                                if (metadata.data.ports !== undefined) bridges[index].ports = metadata.data.ports;
-                                if (metadata.data.autostart !== undefined || metadata.data.ports !== undefined) Paths.saveJson(Paths.bridges, bridges);
+                                    await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines --network-timeout 100000 --network-concurrency 1 --force`, { cwd: Paths.data(id) });
+                                }
+                            }).finally(() => {
+                                removeSync(Path.join(Paths.backups, "stage"));
 
-                                await System.execute(`${Paths.yarn} install --unsafe-perm --ignore-engines --network-timeout 100000 --network-concurrency 1 --force`, { cwd: Paths.data(id) });
-                            }
-
-                            removeSync(Path.join(Paths.backups, "stage"));
-                            resolve();
+                                resolve();
+                            });
                         }, BRIDGE_TEARDOWN_DELAY);
                     });
                 } else {

@@ -35,43 +35,50 @@ export default class BridgesController {
         State.app?.delete("/api/bridge/:id", Security, (request, response) => this.remove(request, response));
     }
 
-    list(_request: Request, response: Response): Response {
-        return response.send(State.bridges.filter((item) => item.type !== "hub"));
+    list(_request: Request, response: Response): void {
+        response.send(State.bridges.filter((item) => item.type !== "hub"));
     }
 
-    count(_request: Request, response: Response): Response {
-        return response.send({ bridges: (State.bridges.filter((item) => item.type !== "hub")).length });
+    count(_request: Request, response: Response): void {
+        response.send({ bridges: (State.bridges.filter((item) => item.type !== "hub")).length });
     }
 
-    create(request: Request, response: Response): Response {
-        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
-
-        Bridges.create(request.body.name, parseInt(request.body.port, 10), request.body.pin || "031-45-154", request.body.username || Config.generateUsername(), request.body.advertiser || "bonjour");
-
-        return this.list(request, response);
+    create(request: Request, response: Response): void {
+        if (State.bridges.filter((item) => item.type !== "hub").length > 0 && !request.user?.permissions?.bridges) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            Bridges.create(
+                request.body.name,
+                parseInt(request.body.port, 10),
+                request.body.pin || "031-45-154",
+                request.body.username || Config.generateUsername(),
+                request.body.advertiser || "bonjour",
+                request.body.plugin,
+            ).finally(() => response.send(Bridges.list().filter((item) => item.type !== "hub")));
+        }
     }
 
-    async update(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
-
-        await Bridges.update(request.params.id).info(
-            request.body.display,
-            request.body.pin || "031-45-154",
-            request.body.username || Config.generateUsername(),
-            request.body.autostart || 0,
-            request.body.advertiser,
-            request.body.debugging,
-        );
-
-        return this.list(request, response);
+    update(request: Request, response: Response): void {
+        if (!request.user?.permissions?.bridges) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            Bridges.update(request.params.id).info(
+                request.body.display,
+                request.body.pin || "031-45-154",
+                request.body.username || Config.generateUsername(),
+                request.body.autostart || 0,
+                request.body.advertiser,
+                request.body.debugging,
+            ).finally(() => response.send(State.bridges.filter((item) => item.type !== "hub")));
+        }
     }
 
-    async ports(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
-
-        await Bridges.update(request.params.id).ports(request.body.start, request.body.end);
-
-        return this.list(request, response);
+    ports(request: Request, response: Response): void {
+        if (!request.user?.permissions?.bridges) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            Bridges.update(request.params.id).ports(request.body.start, request.body.end).finally(() => response.send(State.bridges.filter((item) => item.type !== "hub")));
+        }
     }
 
     import(request: Request, response: Response): void {
@@ -96,9 +103,7 @@ export default class BridgesController {
                 <string>fields.username || Config.generateUsername(),
                 <string>fields.advertiser || "bonjour",
                 file.path, true,
-            ).finally(() => {
-                this.list(request, response);
-            });
+            ).finally(() => response.send(Bridges.list().filter((item) => item.type !== "hub")));
         });
     }
 
@@ -117,11 +122,13 @@ export default class BridgesController {
         }));
     }
 
-    remove(request: Request, response: Response): Response {
-        if (!request.user?.permissions?.bridges) return response.send({ token: false, error: "Unauthorized." });
+    remove(request: Request, response: Response): void {
+        if (!request.user?.permissions?.bridges) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            Bridges.uninstall(request.params.id);
 
-        Bridges.uninstall(request.params.id);
-
-        return this.list(request, response);
+            response.send(Bridges.list().filter((item) => item.type !== "hub"));
+        }
     }
 }
