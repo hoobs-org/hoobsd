@@ -1,0 +1,139 @@
+steps:
+  - mkimg: "{{ output }}"
+    size: 3G
+
+  - mklabel: msdos
+    device: "{{ output }}"
+
+  - mkpart: primary
+    fs-type: 'fat32'
+    device: "{{ output }}"
+    start: 4MiB
+    end: 20%
+    tag: /boot
+
+  - mkpart: primary
+    device: "{{ output }}"
+    start: 20%
+    end: 100%
+    tag: /
+
+  - kpartx: "{{ output }}"
+
+  - mkfs: vfat
+    partition: /boot
+    label: RASPIFIRM
+
+  - mkfs: ext4
+    partition: /
+    label: RASPIROOT
+
+  - mount: /
+
+  - mount: /boot
+    mount-on: /
+    dirname: '/boot/firmware'
+
+  - qemu-debootstrap: __RELEASE__
+    mirror: http://deb.debian.org/debian
+    target: /
+    arch: __ARCH__
+    components:
+    - main
+    - contrib
+    - non-free
+
+  - create-file: /etc/apt/sources.list
+    contents: |
+      deb http://deb.debian.org/debian __RELEASE__ main contrib non-free
+      deb http://security.debian.org/debian-security __SECURITY_SUITE__ main contrib non-free
+
+  - chroot: /
+    shell: |
+      apt-get update
+
+  - apt: install
+    packages:
+    - gnupg
+    - less
+    - ca-certificates
+    - dosfstools
+    - parted
+    - dpkg
+    - wget
+    - curl
+    - tar
+    - git
+    - make
+    - gcc
+    - g++
+    - __LINUX_IMAGE__
+    tag: /
+
+  - chroot: /
+    shell: |
+      mount -t proc /proc proc/
+      apt-get -y install python3-minimal
+
+  - create-dir: /var/build
+
+  - create-dir: /var/build/DEBIAN
+
+  - create-dir: /var/build/usr
+
+  - create-dir: /var/build/usr/lib
+
+  - create-dir: /var/build/usr/bin
+
+  - chroot: /
+    shell: |
+      curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg > /dev/null
+      curl -s https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg > /dev/null
+
+  - create-file: /etc/apt/sources.list.d/nodesource.list
+    contents: |
+      deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/__NODE_REPO__ __RELEASE__ main
+      deb-src [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/__NODE_REPO__ __RELEASE__ main
+
+  - create-file: /etc/apt/sources.list.d/yarn.list
+    contents: |
+      deb [signed-by=/usr/share/keyrings/yarn.gpg] https://dl.yarnpkg.com/debian stable main
+
+  - chroot: /
+    shell: |
+      apt-get update
+
+  - apt: install
+    packages:
+    - libpam-dev
+    - nodejs
+    - yarn
+    tag: /
+
+  - copy-file: /var/build/DEBIAN/control
+    src: cache/control
+
+  - copy-file: /var/build/usr/bin/hoobsd
+    src: main
+    perm: 0775
+
+  - shell: |
+      rm -fR "${ROOT?}/var/build/usr/lib/hoobsd"
+      cp -R cache/hoobsd "${ROOT?}/var/build/usr/lib/"
+      cp -R cache/package.json "${ROOT?}/var/build/usr/lib/hoobsd/"
+    root-fs: /
+
+  - chroot: /
+    shell: |
+      node -v
+      npm -v
+
+  - chroot: /
+    shell: |
+      (cd /var/build/usr/lib/hoobsd && yarn install --unsafe-perm)
+      (cd /var && dpkg-deb --build build)
+
+  - shell: |
+      cp "${ROOT?}/var/build.deb" "builds/hoobsd-__VERSION__-hoobs-__ARCH__.deb"
+    root-fs: /
+  

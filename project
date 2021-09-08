@@ -1,0 +1,151 @@
+#!/bin/bash
+
+COUNT=0
+
+version() {
+    case $1 in
+        nodesource )
+            echo `node -e 'console.log(require("./package.json").engines.nodesource)'`
+            ;;
+
+        * )
+            echo `node -e 'console.log(require("./package.json").version)'`
+            ;;
+    esac
+}
+
+debug() {
+    make -s clean
+    make -s build
+
+    sudo ./debug --mode development $@
+}
+
+include() {
+    if [[ -f "../repo/debian/pool/main/h/hoobsd/hoobsd_$2_$3.deb" ]]; then
+        echo "$2-$3 already published"
+    else
+        case $1 in
+            stable )
+                reprepro -b ../repo/debian includedeb bleeding builds/hoobsd-$2-hoobs-$3.deb
+                reprepro -b ../repo/debian includedeb edge builds/hoobsd-$2-hoobs-$3.deb
+                reprepro -b ../repo/debian includedeb stable builds/hoobsd-$2-hoobs-$3.deb
+                ;;
+
+            edge )
+                reprepro -b ../repo/debian includedeb bleeding builds/hoobsd-$2-hoobs-$3.deb
+                reprepro -b ../repo/debian includedeb edge builds/hoobsd-$2-hoobs-$3.deb
+                ;;
+
+            bleeding )
+                reprepro -b ../repo/debian includedeb bleeding builds/hoobsd-$2-hoobs-$3.deb
+                ;;
+        esac
+    fi
+}
+
+publish() {
+    current=$(version)
+
+    case $1 in
+        stable )
+            include "stable" "$current" "amd64"
+            include "stable" "$current" "arm64"
+            include "stable" "$current" "armhf"
+            ;;
+
+        edge )
+            include "edge" "$current" "amd64"
+            include "edge" "$current" "arm64"
+            include "edge" "$current" "armhf"
+            ;;
+
+        bleeding )
+            include "bleeding" "$current" "amd64"
+            include "bleeding" "$current" "arm64"
+            include "bleeding" "$current" "armhf"
+            ;;
+
+        list )
+            list $2
+            ;;
+    esac
+}
+
+list() {
+    case $1 in
+        stable )
+            reprepro -b ../repo/debian list stable hoobsd
+            ;;
+
+        edge )
+            reprepro -b ../repo/debian list edge hoobsd
+            ;;
+
+        bleeding )
+            reprepro -b ../repo/debian list bleeding hoobsd
+            ;;
+
+        * )
+            reprepro -b ../repo/debian list stable hoobsd
+            reprepro -b ../repo/debian list edge hoobsd
+            reprepro -b ../repo/debian list bleeding hoobsd
+            ;;
+    esac
+}
+
+image() {
+    if [[ $COUNT -gt 0 ]] ; then
+        echo "" >> build.log
+    fi
+
+    echo "$1 - $(date)" >> build.log
+    echo "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> build.log
+
+    make hoobsd-$1
+
+    echo "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" >> build.log
+
+    COUNT=$((COUNT+1))
+}
+
+build() {
+    touch build.log
+    truncate -s 0 build.log
+
+    image amd64
+    image arm64
+    image armhf
+}
+
+case $1 in
+    version )
+        shift
+
+        version $@
+        ;;
+
+    lint )
+        make lint
+        ;;
+
+    debug )
+        shift
+
+        debug $@
+        ;;
+
+    build )
+        build
+        ;;
+
+    publish )
+        shift
+
+        publish $@
+        ;;
+
+    clean )
+        make clean
+        ;;
+esac

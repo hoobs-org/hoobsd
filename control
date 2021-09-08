@@ -1,0 +1,10 @@
+Package: hoobsd
+Version: __VERSION__
+Section: base
+Priority: optional
+Architecture: __ARCH__
+Installed-Size: 65
+Depends: __DEPENDS__
+Maintainer: HOOBS Maintainers <info@hoobs.com>
+Homepage: https://hoobs.com
+Description: Server component for the certified HOOBS smart home stack.

@@ -14,10 +14,8 @@
     "author": {
         "name": "Michael J Kellsy"
     },
-    "scripts": {
-        "lint": "eslint 'src/**/*.ts'",
-        "build": "bin/build --lint",
-        "debug": "bin/debug build"
+    "engines": {
+        "nodesource": "node_14.x"
     },
     "dependencies": {
         "archiver": "^5.3.0",
@@ -81,7 +79,6 @@
         "eslint-plugin-jsx-a11y": "^6.3.1",
         "eslint-plugin-react": "^7.22.0",
         "eslint-plugin-react-hooks": "^4.1.2",
-        "nodemon": "^2.0.12",
         "prompts": "^2.3.2",
         "rimraf": "^3.0.2",
         "ts-node": "^9.0.0",

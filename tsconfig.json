@@ -12,7 +12,7 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "outDir": "./lib/hoobsd",
+        "outDir": "./cache/hoobsd",
         "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,
@@ -25,6 +25,10 @@
         "src/"
     ],
     "exclude": [
-        "**/*.test.js"
+        "**/*.test.js",
+        "var/",
+        "cache/*",
+        "debug",
+        "main"
     ]
 }
