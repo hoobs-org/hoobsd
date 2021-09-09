@@ -86,13 +86,13 @@ export default class AuthController {
     }
 
     terminal(request: Request, response: Response): void {
-        if (!request.user?.permissions?.terminal) Users.terminal.reset();
+        if (request.user?.permissions?.terminal) Users.terminal.reset();
 
         response.send();
     }
 
     chpasswd(request: Request, response: Response): void {
-        if (!request.user?.permissions?.terminal) Users.terminal.chpasswd(request.body.username, request.body.password);
+        if (request.user?.permissions?.terminal) Users.terminal.chpasswd(request.body.username, request.body.password);
 
         response.send();
     }
