@@ -22,6 +22,7 @@ import { existsSync } from "fs-extra";
 import State from "../state";
 import Paths from "./paths";
 import { parseJson } from "./json";
+import System from "./system";
 
 export interface UserRecord {
     id: number;
@@ -207,5 +208,23 @@ export default class Users {
         }
 
         return false;
+    }
+
+    static get terminal() {
+        return {
+            reset() {
+                if (System.shell("cat /etc/passwd | grep \"hoobs\"") !== "") {
+                    System.shell("echo \"hoobs:hoobsadmin\" | chpasswd");
+                    System.shell("passwd --expire hoobs");
+                }
+            },
+
+            chpasswd(username: string, password: string) {
+                if (username && username !== "" && username.toLowerCase() !== "root" && System.shell(`cat /etc/passwd | grep "${username.toLowerCase()}"`) !== "") {
+                    System.shell(`echo "${username}:${password}" | chpasswd`);
+                    System.shell(`passwd -x -1 ${username}`);
+                }
+            },
+        };
     }
 }

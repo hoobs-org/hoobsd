@@ -20,6 +20,7 @@ import { Request, Response } from "express-serve-static-core";
 import State from "../../state";
 import Config from "../../services/config";
 import Users, { UserRecord } from "../../services/users";
+import Security from "../../services/security";
 
 export default class AuthController {
     constructor() {
@@ -28,6 +29,8 @@ export default class AuthController {
         State.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
         State.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
         State.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
+        State.app?.delete("/api/auth/terminal/reset", Security, (request, response) => this.terminal(request, response));
+        State.app?.post("/api/auth/terminal/chpasswd", Security, (request, response) => this.chpasswd(request, response));
     }
 
     state(_request: Request, response: Response): Response {
@@ -80,5 +83,17 @@ export default class AuthController {
         State.cache?.remove(request.headers.authorization);
 
         return response.send({ success: true });
+    }
+
+    terminal(request: Request, response: Response): void {
+        if (!request.user?.permissions?.terminal) Users.terminal.reset();
+
+        response.send();
+    }
+
+    chpasswd(request: Request, response: Response): void {
+        if (!request.user?.permissions?.terminal) Users.terminal.chpasswd(request.body.username, request.body.password);
+
+        response.send();
     }
 }
