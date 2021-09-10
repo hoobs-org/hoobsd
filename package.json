@@ -18,6 +18,7 @@
         "nodesource": "node_14.x"
     },
     "dependencies": {
+        "@hoobs/network": "^1.0.14",
         "archiver": "^5.3.0",
         "axios": "^0.21.1",
         "body-parser": "^1.19.0",

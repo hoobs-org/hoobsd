@@ -62,6 +62,7 @@ import BridgesController from "./controllers/bridges";
 import PluginController from "./controllers/plugin";
 import PluginsController from "./controllers/plugins";
 import SystemController from "./controllers/system";
+import NetworkController from "./controllers/network";
 import ThemesController from "./controllers/themes";
 import WeatherController from "./controllers/weather";
 
@@ -189,6 +190,7 @@ export default class API extends EventEmitter {
         new PluginController();
         new PluginsController();
         new SystemController();
+        new NetworkController();
         new ThemesController();
         new WeatherController();
 

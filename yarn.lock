@@ -63,6 +63,11 @@
     source-map-support "^0.5.19"
     tslib "^2.0.3"
 
+"@hoobs/network@^1.0.14":
+  version "1.0.14"
+  resolved "https://registry.yarnpkg.com/@hoobs/network/-/network-1.0.14.tgz#447ee0d5b915a56a8a11acf84b1b2b645ee60fed"
+  integrity sha512-If3NELgjNDToVB22eupyvOl9gpK7IQ8cHdAMfTGV28C8mAYvpxE/sm/WB4cnlafIw8qClXk/5XAVMtf8CXVM4Q==
+
 "@humanwhocodes/config-array@^0.5.0":
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.5.0.tgz#1407967d4c6eecd7388f83acf1eaf4d0c6e58ef9"
