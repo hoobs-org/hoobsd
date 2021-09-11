@@ -32,16 +32,14 @@ export default class NetworkController {
         State.app?.post("/api/wireless/disable", Security, (_request, response) => this.state(false, response));
         State.app?.post("/api/wireless/:iface/connect", Security, (request, response) => this.connect(request, response));
         State.app?.post("/api/wireless/:iface/disconnect", Security, (request, response) => this.disconnect(request, response));
-        State.app?.post("/api/hotspot/start", Security, (request, response) => this.start(request, response));
-        State.app?.post("/api/hotspot/stop", Security, (_request, response) => this.stop(response));
     }
 
     networkCheck() {
         if (!Network.connected && !Network.hotspot.running && Network.wireless.enabled) {
-            const device = (Network.devices().filter((item: any) => item.type === "wifi")[0] || {}).iface || "wlan0";
-
-            Network.wireless.disconnect(device);
-            Network.hotspot.start("HOOBS", device);
+            System.reboot();
+        } else {
+            System.shell("systemctl restart avahi-daemon");
+            State.cache?.remove("system/info");
         }
     }
 
@@ -97,6 +95,9 @@ export default class NetworkController {
 
                     System.shell(`nmcli device reapply '${(request.params.iface || "").replace(/'/gi, "'\"'\"'")}'`);
                 }
+
+                System.shell("systemctl restart avahi-daemon");
+                State.cache?.remove("system/info");
             }
         }
 
@@ -110,23 +111,6 @@ export default class NetworkController {
             Network.wireless.disconnect(request.params.iface);
             Network.wireless.forget(request.body.ssid);
         }
-
-        this.networkCheck();
-
-        response.send();
-    }
-
-    start(request: Request, response: Response) {
-        if (!Network.hotspot.running && Network.wireless.enabled) {
-            Network.wireless.disconnect(request.body.iface || "wlan0");
-            Network.hotspot.start(request.body.ssid || "HOOBS", request.body.iface || "wlan0");
-        }
-
-        response.send();
-    }
-
-    stop(response: Response) {
-        Network.hotspot.stop();
 
         this.networkCheck();
 
