@@ -392,6 +392,8 @@ export default class System {
                 State.cache?.remove(`${key}/stable`);
                 State.cache?.remove(`${key}/beta`);
 
+                System.switch(system.repo);
+
                 if (system.package_manager === "apt-get") {
                     await System.execute("apt-get update");
                     await System.execute("apt-get install -y hoobs-gui");
@@ -469,6 +471,8 @@ export default class System {
 
                 State.cache?.remove(`${key}/stable`);
                 State.cache?.remove(`${key}/beta`);
+
+                System.switch(system.repo);
 
                 if (system.package_manager === "apt-get") {
                     await System.execute("apt-get update");
@@ -548,6 +552,8 @@ export default class System {
 
                 State.cache?.remove(`${key}/stable`);
                 State.cache?.remove(`${key}/beta`);
+
+                System.switch(system.repo);
 
                 if (system.package_manager === "apt-get") {
                     await System.execute("apt-get update");
