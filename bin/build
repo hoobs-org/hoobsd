@@ -41,7 +41,6 @@ Program.version(pjson.version, "-v, --version", "output the current version")
 
 Program.command("server", { isDefault: true })
     .description("build hoobs server")
-    .option("-r, --repo <name>", "select the repo to publish to")
     .option("-l, --lint", "lint the code before building")
     .option("-p, --pack", "create pack file for offline testing")
     .action((command) => {
@@ -78,10 +77,10 @@ Program.command("server", { isDefault: true })
             execSync(`chmod 755 ${join(root, "dist/usr/bin", "hoobsd")}`, { cwd: root, stdio: "inherit" });
             execSync(`tar -zcf ../hoobsd-v${pjson.version}.tar.gz .`, { cwd: join(root, "dist/usr"), stdio: "inherit" });
 
-            if (!existsSync(join(root, "../repo/src"))) mkdirSync(join(root, "../repo/src"));
-            if (existsSync(join(root, "../repo/src", `hoobsd-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "../repo/src", `hoobsd-v${pjson.version}.tar.gz`));
+            if (!existsSync(join(root, "builds"))) mkdirSync(join(root, "builds"));
+            if (existsSync(join(root, "builds", `hoobsd-v${pjson.version}.tar.gz`))) unlinkSync(join(root, "builds", `hoobsd-v${pjson.version}.tar.gz`));
 
-            moveSync(join(root, "dist", `hoobsd-v${pjson.version}.tar.gz`), join(root, "../repo/src", `hoobsd-v${pjson.version}.tar.gz`));
+            moveSync(join(root, "dist", `hoobsd-v${pjson.version}.tar.gz`), join(root, "builds", `hoobsd-v${pjson.version}.tar.gz`));
             mkdirSync(join(root, "dist/DEBIAN"));
 
             let control = "";
@@ -102,52 +101,11 @@ Program.command("server", { isDefault: true })
             execSync(`chmod 755 ${join(root, "dist/DEBIAN", "postinst")}`, { cwd: root, stdio: "inherit" });
             execSync("dpkg-deb --build dist", { cwd: root, stdio: "inherit" });
 
-            switch (command.repo) {
-                case "stable":
-                    if (!existsSync(join(root, "../repo/deb/stable")))  mkdirSync(join(root, "../repo/deb/stable"));
-                    if (!existsSync(join(root, "../repo/deb/edge")))  mkdirSync(join(root, "../repo/deb/edge"));
-                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
+            if (existsSync(join(root, "builds", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "builds", `hoobsd-v${pjson.version}.deb`));
 
-                    if (existsSync(join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`));
-                    if (existsSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
-                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
-
-                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`));
-                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
-                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
-
-                    unlinkSync(join(root, "dist.deb"));
-
-                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/stable", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
-                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
-                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
-                    break;
-
-                case "edge":
-                    if (!existsSync(join(root, "../repo/deb/edge")))  mkdirSync(join(root, "../repo/deb/edge"));
-                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
-
-                    if (existsSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
-                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
-
-                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`));
-                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
-
-                    unlinkSync(join(root, "dist.deb"));
-
-                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/edge", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
-                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
-                    break;
-
-                default:
-                    if (!existsSync(join(root, "../repo/deb/bleeding")))  mkdirSync(join(root, "../repo/deb/bleeding"));
-                    if (existsSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`))) unlinkSync(join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
-
-                    copyFileSync(join(root, "dist.deb"), join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`));
-                    unlinkSync(join(root, "dist.deb"));
-                    execSync(`dpkg-sig --sign builder ${join(root, "../repo/deb/bleeding", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
-                    break;
-            }
+            copyFileSync(join(root, "dist.deb"), join(root, "builds", `hoobsd-v${pjson.version}.deb`));
+            unlinkSync(join(root, "dist.deb"));
+            execSync(`dpkg-sig --sign builder ${join(root, "builds", `hoobsd-v${pjson.version}.deb`)}`, { cwd: root, stdio: "inherit" });
 
             if (existsSync(join(root, "dist"))) execSync(`${join(root, "node_modules", ".bin", "rimraf")} ${join(root, "dist")}`, { cwd: root, stdio: "inherit" });
         }
