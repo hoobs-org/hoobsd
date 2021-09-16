@@ -29,8 +29,8 @@ export default class AuthController {
         State.app?.post("/api/auth/logon", (request, response) => this.logon(request, response));
         State.app?.get("/api/auth/logout", (request, response) => this.logout(request, response));
         State.app?.get("/api/auth/validate", (request, response) => this.validate(request, response));
-        State.app?.delete("/api/auth/terminal/reset", Security, (request, response) => this.terminal(request, response));
-        State.app?.post("/api/auth/terminal/chpasswd", Security, (request, response) => this.chpasswd(request, response));
+        State.app?.delete("/api/auth/terminal/reset", (request, response, next) => Security(request, response, next), (request, response) => this.terminal(request, response));
+        State.app?.post("/api/auth/terminal/chpasswd", (request, response, next) => Security(request, response, next), (request, response) => this.chpasswd(request, response));
     }
 
     state(_request: Request, response: Response): Response {

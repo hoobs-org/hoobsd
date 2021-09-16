@@ -28,19 +28,19 @@ import { sanitize } from "../../services/formatters";
 
 export default class AccessoriesController {
     constructor() {
-        State.app?.get("/api/accessories", Security, (request, response) => this.list(request, response));
-        State.app?.get("/api/accessories/hidden", Security, (request, response) => this.hidden(request, response));
-        State.app?.get("/api/accessories/:bridge", Security, (request, response) => this.list(request, response));
-        State.app?.get("/api/accessory/:bridge/:id", Security, (request, response) => this.get(request, response));
+        State.app?.get("/api/accessories", (request, response, next) => Security(request, response, next), (request, response) => this.list(request, response));
+        State.app?.get("/api/accessories/hidden", (request, response, next) => Security(request, response, next), (request, response) => this.hidden(request, response));
+        State.app?.get("/api/accessories/:bridge", (request, response, next) => Security(request, response, next), (request, response) => this.list(request, response));
+        State.app?.get("/api/accessory/:bridge/:id", (request, response, next) => Security(request, response, next), (request, response) => this.get(request, response));
         State.app?.get("/api/accessory/:bridge/:id/stream", (request, response) => this.stream(request, response));
-        State.app?.get("/api/accessory/:bridge/:id/snapshot", Security, (request, response) => this.snapshot(request, response));
-        State.app?.get("/api/accessory/:bridge/:id/characteristics", Security, (request, response) => this.characteristics(request, response));
-        State.app?.put("/api/accessory/:bridge/:id/:service", Security, (request, response) => this.set(request, response));
-        State.app?.get("/api/rooms", Security, (request, response) => this.rooms(request, response));
-        State.app?.get("/api/room/:id", Security, (request, response) => this.room(request, response));
-        State.app?.delete("/api/room/:id", Security, (request, response) => this.remove(request, response));
-        State.app?.put("/api/room/:id/:service", Security, (request, response) => this.update(request, response));
-        State.app?.put("/api/room", Security, (request, response) => this.add(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/snapshot", (request, response, next) => Security(request, response, next), (request, response) => this.snapshot(request, response));
+        State.app?.get("/api/accessory/:bridge/:id/characteristics", (request, response, next) => Security(request, response, next), (request, response) => this.characteristics(request, response));
+        State.app?.put("/api/accessory/:bridge/:id/:service", (request, response, next) => Security(request, response, next), (request, response) => this.set(request, response));
+        State.app?.get("/api/rooms", (request, response, next) => Security(request, response, next), (request, response) => this.rooms(request, response));
+        State.app?.get("/api/room/:id", (request, response, next) => Security(request, response, next), (request, response) => this.room(request, response));
+        State.app?.delete("/api/room/:id", (request, response, next) => Security(request, response, next), (request, response) => this.remove(request, response));
+        State.app?.put("/api/room/:id/:service", (request, response, next) => Security(request, response, next), (request, response) => this.update(request, response));
+        State.app?.put("/api/room", (request, response, next) => Security(request, response, next), (request, response) => this.add(request, response));
     }
 
     static get layout(): { [key: string]: any } {

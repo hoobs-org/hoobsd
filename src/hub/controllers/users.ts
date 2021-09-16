@@ -25,9 +25,9 @@ export default class UsersController {
     constructor() {
         State.app?.get("/api/users", (request, response) => this.list(request, response));
         State.app?.put("/api/users", (request, response) => this.create(request, response));
-        State.app?.get("/api/users/:id", Security, (request, response) => this.get(request, response));
-        State.app?.post("/api/users/:id", Security, (request, response) => this.update(request, response));
-        State.app?.delete("/api/users/:id", Security, (request, response) => this.delete(request, response));
+        State.app?.get("/api/users/:id", (request, response, next) => Security(request, response, next), (request, response) => this.get(request, response));
+        State.app?.post("/api/users/:id", (request, response, next) => Security(request, response, next), (request, response) => this.update(request, response));
+        State.app?.delete("/api/users/:id", (request, response, next) => Security(request, response, next), (request, response) => this.delete(request, response));
     }
 
     async list(_request: Request, response: Response): Promise<void> {

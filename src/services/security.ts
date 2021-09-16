@@ -23,11 +23,7 @@ import Users from "./users";
 export default async function Security(request: Request, response: Response, next: NextFunction, deny?: NextFunction): Promise<void> {
     if (State.hub?.settings.disable_auth) {
         next();
-
-        return;
-    }
-
-    if ((!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
+    } else if ((!request.headers.authorization || !(await Users.validateToken(request.headers.authorization)))) {
         if (deny) {
             deny();
         } else {
@@ -35,9 +31,7 @@ export default async function Security(request: Request, response: Response, nex
                 error: "unauthorized",
             });
         }
-
-        return;
+    } else {
+        next();
     }
-
-    next();
 }

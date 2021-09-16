@@ -24,14 +24,14 @@ import Security from "../../services/security";
 
 export default class NetworkController {
     constructor() {
-        State.app?.get("/api/network", Security, (_request, response) => this.status(response));
-        State.app?.post("/api/network/:iface/up", Security, (request, response) => this.up(request, response));
-        State.app?.post("/api/network/:iface/down", Security, (request, response) => this.down(request, response));
-        State.app?.get("/api/networks", Security, (_request, response) => this.networks(response));
-        State.app?.post("/api/wireless/enable", Security, (_request, response) => this.state(true, response));
-        State.app?.post("/api/wireless/disable", Security, (_request, response) => this.state(false, response));
-        State.app?.post("/api/wireless/:iface/connect", Security, (request, response) => this.connect(request, response));
-        State.app?.post("/api/wireless/:iface/disconnect", Security, (request, response) => this.disconnect(request, response));
+        State.app?.get("/api/network", (request, response, next) => Security(request, response, next), (_request, response) => this.status(response));
+        State.app?.post("/api/network/:iface/up", (request, response, next) => Security(request, response, next), (request, response) => this.up(request, response));
+        State.app?.post("/api/network/:iface/down", (request, response, next) => Security(request, response, next), (request, response) => this.down(request, response));
+        State.app?.get("/api/networks", (request, response, next) => Security(request, response, next), (_request, response) => this.networks(response));
+        State.app?.post("/api/wireless/enable", (request, response, next) => Security(request, response, next), (_request, response) => this.state(true, response));
+        State.app?.post("/api/wireless/disable", (request, response, next) => Security(request, response, next), (_request, response) => this.state(false, response));
+        State.app?.post("/api/wireless/:iface/connect", (request, response, next) => Security(request, response, next), (request, response) => this.connect(request, response));
+        State.app?.post("/api/wireless/:iface/disconnect", (request, response, next) => Security(request, response, next), (request, response) => this.disconnect(request, response));
     }
 
     networkCheck() {
