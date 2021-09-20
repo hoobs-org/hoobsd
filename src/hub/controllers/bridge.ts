@@ -22,11 +22,11 @@ import Security from "../../services/security";
 
 export default class BridgeController {
     constructor() {
-        State.app?.get("/api/bridge", Security, (request, response) => this.all(request, response));
-        State.app?.get("/api/bridge/:bridge", Security, (request, response) => this.status(request, response));
-        State.app?.post("/api/bridge/:bridge/start", Security, (request, response) => this.start(request, response));
-        State.app?.post("/api/bridge/:bridge/stop", Security, (request, response) => this.stop(request, response));
-        State.app?.post("/api/bridge/:bridge/restart", Security, (request, response) => this.restart(request, response));
+        State.app?.get("/api/bridge", (request, response, next) => Security(request, response, next), (request, response) => this.all(request, response));
+        State.app?.get("/api/bridge/:bridge", (request, response, next) => Security(request, response, next), (request, response) => this.status(request, response));
+        State.app?.post("/api/bridge/:bridge/start", (request, response, next) => Security(request, response, next), (request, response) => this.start(request, response));
+        State.app?.post("/api/bridge/:bridge/stop", (request, response, next) => Security(request, response, next), (request, response) => this.stop(request, response));
+        State.app?.post("/api/bridge/:bridge/restart", (request, response, next) => Security(request, response, next), (request, response) => this.restart(request, response));
     }
 
     async all(_request: Request, response: Response): Promise<Response> {

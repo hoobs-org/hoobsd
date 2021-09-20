@@ -26,14 +26,14 @@ import { cloneJson } from "../../services/json";
 
 export default class PluginsController {
     constructor() {
-        State.app?.get("/api/plugins", Security, (request, response) => this.all(request, response));
-        State.app?.get("/api/plugins/:bridge", Security, (request, response) => this.installed(request, response));
-        State.app?.put("/api/plugins/:bridge/:name", Security, (request, response) => this.install(request, response));
-        State.app?.put("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.install(request, response));
-        State.app?.post("/api/plugins/:bridge/:name", Security, (request, response) => this.upgrade(request, response));
-        State.app?.post("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.upgrade(request, response));
-        State.app?.delete("/api/plugins/:bridge/:name", Security, (request, response) => this.uninstall(request, response));
-        State.app?.delete("/api/plugins/:bridge/:scope/:name", Security, (request, response) => this.uninstall(request, response));
+        State.app?.get("/api/plugins", (request, response, next) => Security(request, response, next), (request, response) => this.all(request, response));
+        State.app?.get("/api/plugins/:bridge", (request, response, next) => Security(request, response, next), (request, response) => this.installed(request, response));
+        State.app?.put("/api/plugins/:bridge/:name", (request, response, next) => Security(request, response, next), (request, response) => this.install(request, response));
+        State.app?.put("/api/plugins/:bridge/:scope/:name", (request, response, next) => Security(request, response, next), (request, response) => this.install(request, response));
+        State.app?.post("/api/plugins/:bridge/:name", (request, response, next) => Security(request, response, next), (request, response) => this.upgrade(request, response));
+        State.app?.post("/api/plugins/:bridge/:scope/:name", (request, response, next) => Security(request, response, next), (request, response) => this.upgrade(request, response));
+        State.app?.delete("/api/plugins/:bridge/:name", (request, response, next) => Security(request, response, next), (request, response) => this.uninstall(request, response));
+        State.app?.delete("/api/plugins/:bridge/:scope/:name", (request, response, next) => Security(request, response, next), (request, response) => this.uninstall(request, response));
     }
 
     all(_request: Request, response: Response): void {

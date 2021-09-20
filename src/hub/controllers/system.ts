@@ -27,27 +27,26 @@ import Paths from "../../services/paths";
 import System from "../../services/system";
 import Bridges from "../../services/bridges";
 import Security from "../../services/security";
-import { Console } from "../../services/logger";
 
 export default class SystemController {
     constructor() {
-        State.app?.get("/api/system", Security, (request, response) => this.info(request, response));
-        State.app?.get("/api/system/hostname", Security, (request, response) => this.hostname("get", request, response));
-        State.app?.post("/api/system/hostname", Security, (request, response) => this.hostname("post", request, response));
-        State.app?.get("/api/system/cpu", Security, (request, response) => this.cpu(request, response));
-        State.app?.get("/api/system/memory", Security, (request, response) => this.memory(request, response));
-        State.app?.get("/api/system/network", Security, (request, response) => this.network(request, response));
-        State.app?.get("/api/system/filesystem", Security, (request, response) => this.filesystem(request, response));
-        State.app?.get("/api/system/activity", Security, (request, response) => this.activity(request, response));
-        State.app?.get("/api/system/temp", Security, (request, response) => this.temp(request, response));
-        State.app?.get("/api/system/backup", Security, (request, response) => this.backup(request, response));
-        State.app?.get("/api/system/backup/catalog", Security, (request, response) => this.catalog(request, response));
-        State.app?.get("/api/system/restore", Security, (request, response) => this.restore(request, response));
-        State.app?.post("/api/system/restore", Security, (request, response) => this.upload(request, response));
-        State.app?.post("/api/system/upgrade", Security, (request, response) => this.upgrade(request, response));
-        State.app?.put("/api/system/reboot", Security, (request, response) => this.reboot(request, response));
-        State.app?.put("/api/system/shutdown", Security, (request, response) => this.shutdown(request, response));
-        State.app?.put("/api/system/reset", Security, (request, response) => this.reset(request, response));
+        State.app?.get("/api/system", (request, response, next) => Security(request, response, next), (request, response) => this.info(request, response));
+        State.app?.get("/api/system/hostname", (request, response, next) => Security(request, response, next), (request, response) => this.hostname("get", request, response));
+        State.app?.post("/api/system/hostname", (request, response, next) => Security(request, response, next), (request, response) => this.hostname("post", request, response));
+        State.app?.get("/api/system/cpu", (request, response, next) => Security(request, response, next), (request, response) => this.cpu(request, response));
+        State.app?.get("/api/system/memory", (request, response, next) => Security(request, response, next), (request, response) => this.memory(request, response));
+        State.app?.get("/api/system/network", (request, response, next) => Security(request, response, next), (request, response) => this.network(request, response));
+        State.app?.get("/api/system/filesystem", (request, response, next) => Security(request, response, next), (request, response) => this.filesystem(request, response));
+        State.app?.get("/api/system/activity", (request, response, next) => Security(request, response, next), (request, response) => this.activity(request, response));
+        State.app?.get("/api/system/temp", (request, response, next) => Security(request, response, next), (request, response) => this.temp(request, response));
+        State.app?.get("/api/system/backup", (request, response, next) => Security(request, response, next), (request, response) => this.backup(request, response));
+        State.app?.get("/api/system/backup/catalog", (request, response, next) => Security(request, response, next), (request, response) => this.catalog(request, response));
+        State.app?.get("/api/system/restore", (request, response, next) => Security(request, response, next), (request, response) => this.restore(request, response));
+        State.app?.post("/api/system/restore", (request, response, next) => Security(request, response, next), (request, response) => this.upload(request, response));
+        State.app?.post("/api/system/upgrade", (request, response, next) => Security(request, response, next), (request, response) => this.upgrade(request, response));
+        State.app?.put("/api/system/reboot", (request, response, next) => Security(request, response, next), (request, response) => this.reboot(request, response));
+        State.app?.put("/api/system/shutdown", (request, response, next) => Security(request, response, next), (request, response) => this.shutdown(request, response));
+        State.app?.put("/api/system/reset", (request, response, next) => Security(request, response, next), (request, response) => this.reset(request, response));
     }
 
     async info(_request: Request, response: Response): Promise<Response> {
@@ -238,37 +237,17 @@ export default class SystemController {
         await Bridges.backup();
 
         const system = System.info();
+        const components: string[] = [];
 
-        let data = await System.runtime.info(system.repo === "edge" || system.repo === "bleeding");
+        if (system.package_manager === "apt-get") {
+            const gui = System.gui.info(system.repo === "edge" || system.repo === "bleeding");
 
-        if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get" && !data.node_upgraded) {
-            Console.info("upgrading node");
+            if (!System.runtime.info(system.repo === "edge" || system.repo === "bleeding").node_upgraded) components.push(...System.runtime.components);
+            if (!System.cli.info(system.repo === "edge" || system.repo === "bleeding").cli_upgraded) components.push(...System.cli.components);
+            if (gui.gui_version && !gui.gui_upgraded) components.push(...System.gui.components);
+            if (!System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").hoobsd_upgraded) components.push(...System.hoobsd.components);
 
-            await System.runtime.upgrade();
-        }
-
-        data = await System.cli.info(system.repo === "edge" || system.repo === "bleeding");
-
-        if (!data.cli_upgraded) {
-            Console.info("upgrading cli");
-
-            await System.cli.upgrade();
-        }
-
-        data = await System.gui.info(system.repo === "edge" || system.repo === "bleeding");
-
-        if (data.gui_version && !data.gui_upgraded) {
-            Console.info("upgrading gui");
-
-            await System.gui.upgrade();
-        }
-
-        data = await System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding");
-
-        if (!data.hoobsd_upgraded) {
-            Console.info("upgrading hoobsd");
-
-            await System.hoobsd.upgrade();
+            if (components.length > 0) await System.upgrade(...components);
         }
 
         response.send({ success: true });

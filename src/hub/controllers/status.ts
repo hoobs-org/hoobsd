@@ -24,7 +24,7 @@ import Security from "../../services/security";
 
 export default class StatusController {
     constructor() {
-        State.app?.get("/api/status", Security, (request, response) => this.status(request, response));
+        State.app?.get("/api/status", (request, response, next) => Security(request, response, next), (request, response) => this.status(request, response));
     }
 
     async status(_request: Request, response: Response): Promise<Response> {
@@ -64,44 +64,29 @@ export default class StatusController {
             }
         }
 
+        let cpu: any;
+        let memory: any;
+        let temp: any;
+
+        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((info: any) => { cpu = info; }).finally(() => { resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.mem().then((info: any) => { memory = info; }).finally(() => { resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.cpuTemperature().then((info: any) => { temp = info; }).finally(() => { resolve(); })));
+
+        await Promise.allSettled(waits);
+
         const system = System.info();
         const applications: { [key: string]: any } = State.cache?.get<{ [key: string]: any }>(key) || {};
 
-        if (!applications.cli) {
-            waits.push(new Promise((resolve) => {
-                System.cli.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.cli = info; }).finally(() => { resolve(); });
-            }));
-        }
-
-        if (!applications.gui) {
-            waits.push(new Promise((resolve) => {
-                System.gui.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.gui = info; }).finally(() => { resolve(); });
-            }));
-        }
-
-        if (!applications.hoobsd) {
-            waits.push(new Promise((resolve) => {
-                System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.hoobsd = info; }).finally(() => { resolve(); });
-            }));
-        }
-
-        if (!applications.runtime) {
-            waits.push(new Promise((resolve) => {
-                System.runtime.info(system.repo === "edge" || system.repo === "bleeding").then((info: { [key: string]: any }) => { applications.runtime = info; }).finally(() => { resolve(); });
-            }));
-        }
-
-        await Promise.allSettled(waits);
+        if (!applications.cli) applications.cli = System.cli.info();
+        if (!applications.gui) applications.gui = System.gui.info();
+        if (!applications.hoobsd) applications.hoobsd = System.hoobsd.info();
+        if (!applications.runtime) applications.runtime = System.runtime.info();
 
         let product = "custom";
         let upgraded = true;
 
         if (system.product === "box" || system.product === "card" || system.product === "headless") product = system.product;
-        if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
-
-        const cpu = await SystemInfo.currentLoad();
-        const memory = await SystemInfo.mem();
-        const temp = await SystemInfo.cpuTemperature();
+        if (system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
 
         if (applications.gui?.gui_version) {
             return response.send({

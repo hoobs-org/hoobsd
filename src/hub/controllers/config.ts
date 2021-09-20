@@ -27,9 +27,9 @@ import { cloneJson } from "../../services/json";
 export default class ConfigController {
     constructor() {
         State.app?.get("/api/config", (request, response) => this.getConsole(request, response));
-        State.app?.post("/api/config", Security, (request, response) => this.saveConsole(request, response));
-        State.app?.get("/api/config/:bridge", Security, (request, response) => this.getBridge(request, response));
-        State.app?.post("/api/config/:bridge", Security, (request, response) => this.saveBridge(request, response));
+        State.app?.post("/api/config", (request, response, next) => Security(request, response, next), (request, response) => this.saveConsole(request, response));
+        State.app?.get("/api/config/:bridge", (request, response, next) => Security(request, response, next), (request, response) => this.getBridge(request, response));
+        State.app?.post("/api/config/:bridge", (request, response, next) => Security(request, response, next), (request, response) => this.saveBridge(request, response));
     }
 
     getConsole(request: Request, response: Response): void {

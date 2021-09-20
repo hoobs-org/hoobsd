@@ -23,9 +23,9 @@ import Security from "../../services/security";
 
 export default class ThemesController {
     constructor() {
-        State.app?.get("/api/weather/location", Security, (request, response) => this.search(request, response));
-        State.app?.get("/api/weather/current", Security, (request, response) => this.current(request, response));
-        State.app?.get("/api/weather/forecast", Security, (request, response) => this.forecast(request, response));
+        State.app?.get("/api/weather/location", (request, response, next) => Security(request, response, next), (request, response) => this.search(request, response));
+        State.app?.get("/api/weather/current", (request, response, next) => Security(request, response, next), (request, response) => this.current(request, response));
+        State.app?.get("/api/weather/forecast", (request, response, next) => Security(request, response, next), (request, response) => this.forecast(request, response));
     }
 
     async search(request: Request, response: Response): Promise<void> {

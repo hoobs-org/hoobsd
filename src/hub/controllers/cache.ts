@@ -23,13 +23,13 @@ import Security from "../../services/security";
 
 export default class CacheController {
     constructor() {
-        State.app?.get("/api/cache", Security, (request, response) => this.all(request, response));
-        State.app?.get("/api/cache/:bridge", Security, (request, response) => this.list(request, response));
-        State.app?.get("/api/cache/:bridge/parings", Security, (request, response) => this.listParings(request, response));
-        State.app?.get("/api/cache/:bridge/accessories", Security, (request, response) => this.listAccessories(request, response));
-        State.app?.delete("/api/cache/purge", Security, (request, response) => this.clear(request, response));
-        State.app?.delete("/api/cache/:bridge/purge", Security, (request, response) => this.purge(request, response));
-        State.app?.delete("/api/cache/:bridge/purge/:uuid", Security, (request, response) => this.purge(request, response));
+        State.app?.get("/api/cache", (request, response, next) => Security(request, response, next), (request, response) => this.all(request, response));
+        State.app?.get("/api/cache/:bridge", (request, response, next) => Security(request, response, next), (request, response) => this.list(request, response));
+        State.app?.get("/api/cache/:bridge/parings", (request, response, next) => Security(request, response, next), (request, response) => this.listParings(request, response));
+        State.app?.get("/api/cache/:bridge/accessories", (request, response, next) => Security(request, response, next), (request, response) => this.listAccessories(request, response));
+        State.app?.delete("/api/cache/purge", (request, response, next) => Security(request, response, next), (request, response) => this.clear(request, response));
+        State.app?.delete("/api/cache/:bridge/purge", (request, response, next) => Security(request, response, next), (request, response) => this.purge(request, response));
+        State.app?.delete("/api/cache/:bridge/purge/:uuid", (request, response, next) => Security(request, response, next), (request, response) => this.purge(request, response));
     }
 
     all(request: Request, response: Response): Response {

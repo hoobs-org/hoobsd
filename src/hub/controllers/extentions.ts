@@ -25,9 +25,9 @@ import GUI from "../../extentions/gui";
 
 export default class ExtentionsController {
     constructor() {
-        State.app?.get("/api/extentions", Security, (request, response) => this.list(request, response));
-        State.app?.put("/api/extentions/:name", Security, (request, response) => this.enable(request, response));
-        State.app?.delete("/api/extentions/:name", Security, (request, response) => this.disable(request, response));
+        State.app?.get("/api/extentions", (request, response, next) => Security(request, response, next), (request, response) => this.list(request, response));
+        State.app?.put("/api/extentions/:name", (request, response, next) => Security(request, response, next), (request, response) => this.enable(request, response));
+        State.app?.delete("/api/extentions/:name", (request, response, next) => Security(request, response, next), (request, response) => this.disable(request, response));
     }
 
     list(request: Request, response: Response): Response {
