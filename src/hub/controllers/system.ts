@@ -27,7 +27,6 @@ import Paths from "../../services/paths";
 import System from "../../services/system";
 import Bridges from "../../services/bridges";
 import Security from "../../services/security";
-import { Console } from "../../services/logger";
 
 export default class SystemController {
     constructor() {
@@ -238,37 +237,17 @@ export default class SystemController {
         await Bridges.backup();
 
         const system = System.info();
+        const components: string[] = [];
 
-        let data = await System.runtime.info(system.repo === "edge" || system.repo === "bleeding");
+        if (system.package_manager === "apt-get") {
+            const gui = System.gui.info(system.repo === "edge" || system.repo === "bleeding");
 
-        if ((system.product === "box" || system.product === "card" || system.product === "headless") && system.package_manager === "apt-get" && !data.node_upgraded) {
-            Console.info("upgrading node");
+            if (!System.runtime.info(system.repo === "edge" || system.repo === "bleeding").node_upgraded) components.push(...System.runtime.components);
+            if (!System.cli.info(system.repo === "edge" || system.repo === "bleeding").cli_upgraded) components.push(...System.cli.components);
+            if (gui.gui_version && !gui.gui_upgraded) components.push(...System.gui.components);
+            if (!System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").hoobsd_upgraded) components.push(...System.hoobsd.components);
 
-            await System.runtime.upgrade();
-        }
-
-        data = await System.cli.info(system.repo === "edge" || system.repo === "bleeding");
-
-        if (!data.cli_upgraded) {
-            Console.info("upgrading cli");
-
-            await System.cli.upgrade();
-        }
-
-        data = await System.gui.info(system.repo === "edge" || system.repo === "bleeding");
-
-        if (data.gui_version && !data.gui_upgraded) {
-            Console.info("upgrading gui");
-
-            await System.gui.upgrade();
-        }
-
-        data = await System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding");
-
-        if (!data.hoobsd_upgraded) {
-            Console.info("upgrading hoobsd");
-
-            await System.hoobsd.upgrade();
+            if (components.length > 0) await System.upgrade(...components);
         }
 
         response.send({ success: true });
