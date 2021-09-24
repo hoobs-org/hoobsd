@@ -148,9 +148,9 @@ export default class System {
                     } else if (match && match.indexOf("bleeding")) {
                         results.repo = "bleeding";
                     }
-
-                    System.switch(results.package_manager, results.repo);
                 }
+
+                System.switch(results.package_manager, results.repo);
 
                 break;
 
@@ -245,7 +245,7 @@ export default class System {
 
     static shell(command: string, multiline?: boolean): string {
         try {
-            const results = execSync(command).toString().trim();
+            const results = execSync(command, { stdio: ["pipe", "pipe", "ignore"] }).toString().trim();
 
             if (!multiline) return results.replace(/\n/g, "");
 
@@ -294,19 +294,29 @@ export default class System {
     }
 
     static async upgrade(...components: string[]): Promise<void> {
+        if (components.length === 0) return;
+
         const system = System.info();
 
-        if (State.mode === "production" && system.package_manager === "apt-get" && components.length > 0) {
-            State.cache?.remove("system/info");
+        if (components.indexOf("hoobs-gui") >= 0) State.cache?.remove("system/gui");
+        if (components.indexOf("hoobs-cli") >= 0) State.cache?.remove("system/cli");
+        if (components.indexOf("hoobsd") >= 0) State.cache?.remove("system/hoobsd");
+        if (components.indexOf("nodejs") >= 0) State.cache?.remove("system/node");
 
-            if (components.indexOf("hoobs-gui") >= 0) State.cache?.remove("system/gui");
-            if (components.indexOf("hoobs-cli") >= 0) State.cache?.remove("system/cli");
-            if (components.indexOf("hoobsd") >= 0) State.cache?.remove("system/hoobsd");
-            if (components.indexOf("nodejs") >= 0) State.cache?.remove("system/node");
+        switch (system.package_manager) {
+            case "apt-get":
+                if (State.mode === "production") {
+                    await System.execute("apt-get update");
+                    await System.execute(`apt-get install -y ${components.join(" ")}`);
+                } else {
+                    Console.debug("apt-get update");
+                    Console.debug(`apt-get install -y ${components.join(" ")}`);
+                }
 
-            await System.execute("apt-get update");
-            await System.execute(`apt-get install -y ${components.join(" ")}`);
+                break;
         }
+
+        State.cache?.remove("system/info");
     }
 
     static restart(): void {
@@ -315,7 +325,7 @@ export default class System {
         if (!State.container && State.mode === "production") {
             exec(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`);
         } else {
-            exec(`touch ${Path.join(__dirname, "../../../src/main.ts")}`);
+            Console.debug(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`);
         }
     }
 
@@ -325,7 +335,7 @@ export default class System {
         if (!State.container && State.mode === "production") {
             exec("shutdown -r now");
         } else {
-            exec(`touch ${Path.join(__dirname, "../../../src/main.ts")}`);
+            Console.debug("shutdown -r now");
         }
     }
 
@@ -334,24 +344,21 @@ export default class System {
 
         if (!State.container && State.mode === "production") {
             exec("shutdown -h now");
+        } else {
+            Console.debug("shutdown -h now");
         }
     }
 
     static switch(manager: string, level: string): void {
-        if (State.mode === "production" && manager === "apt-get") {
-            switch (level) {
-                case "bleeding":
-                    execSync("wget -qO- https://dl.hoobs.org/bleeding | bash -", { stdio: "ignore" });
-                    break;
+        switch (manager) {
+            case "apt-get":
+                if (State.mode === "production") {
+                    execSync(`wget -qO- https://dl.hoobs.org/${level || "stable"} | bash -`, { stdio: "ignore" });
+                } else {
+                    Console.debug(`wget -qO- https://dl.hoobs.org/${level || "stable"} | bash -`);
+                }
 
-                case "edge":
-                    execSync("wget -qO- https://dl.hoobs.org/edge | bash -", { stdio: "ignore" });
-                    break;
-
-                default:
-                    execSync(" wget -qO- https://dl.hoobs.org/stable | bash -", { stdio: "ignore" });
-                    break;
-            }
+                break;
         }
     }
 
@@ -372,10 +379,7 @@ export default class System {
                 if (path) installed = (Paths.loadJson<{ [key: string]: any }>(Path.join(path, "package.json"), {})).version || "";
                 if (!Semver.valid(installed)) installed = undefined;
 
-                const release = System.gui.release();
-                const download = release.download || "";
-
-                let current = release.version || "";
+                let current = System.gui.release() || "";
 
                 if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed || "", current)) || !Semver.valid(current)) {
                     current = installed;
@@ -390,8 +394,7 @@ export default class System {
                     gui_prefix: "/usr/",
                     gui_version: installed,
                     gui_current: current,
-                    gui_upgraded: (installed || current) === current ? true : !Semver.gt(current, installed || ""),
-                    gui_download: download,
+                    gui_upgraded: !Semver.gt(current, installed || ""),
                     gui_mode: mode,
                 }, 60);
             },
@@ -454,10 +457,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = System.cli.release();
-                const download = release.download || "";
-
-                let current = release.version || "";
+                let current = System.cli.release() || "";
 
                 if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
                     current = installed;
@@ -472,8 +472,7 @@ export default class System {
                     cli_prefix: prefix,
                     cli_version: installed,
                     cli_current: current,
-                    cli_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
-                    cli_download: download,
+                    cli_upgraded: !Semver.gt(current, installed),
                     cli_mode: mode,
                 }, 4 * 60);
             },
@@ -536,10 +535,7 @@ export default class System {
                 if (installed && installed !== "") installed = installed.trim().split("\n").pop() || "";
                 if (!Semver.valid(installed)) installed = "";
 
-                const release = System.hoobsd.release();
-                const download = release.download || "";
-
-                let current = release.version || "";
+                let current = System.hoobsd.release() || "";
 
                 if ((Semver.valid(installed) && Semver.valid(current) && Semver.gt(installed, current)) || !Semver.valid(current)) {
                     current = installed;
@@ -554,8 +550,7 @@ export default class System {
                     hoobsd_prefix: prefix,
                     hoobsd_version: installed,
                     hoobsd_current: current,
-                    hoobsd_upgraded: installed === current || mode === "development" ? true : !Semver.gt(current, installed),
-                    hoobsd_download: download,
+                    hoobsd_upgraded: !Semver.gt(current, installed),
                     hoobsd_mode: mode,
                     hoobsd_running: (System.shell("command -v pidof") !== "" && System.shell("pidof hoobsd")) !== "",
                 }, 4 * 60);
@@ -615,7 +610,7 @@ export default class System {
                 return State.cache?.set(key, {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
                     node_current: current,
-                    node_upgraded: process.version.replace("v", "") === current || current === "" || process.version.replace("v", "") === "" ? true : !Semver.gt(current, process.version.replace("v", "")),
+                    node_upgraded: !Semver.gt(current, process.version.replace("v", "")),
                 }, 12 * 60);
             },
 
