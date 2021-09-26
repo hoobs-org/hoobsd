@@ -22,7 +22,7 @@ import { Console, Events } from "../../services/logger";
 
 const DEFAULT_POLLING = 5;
 
-export default async function Monitor() {
+export default function Monitor() {
     const waits: Promise<void>[] = [];
     const results: { [key: string]: any } = {};
 
@@ -48,7 +48,7 @@ export default async function Monitor() {
                             heap: 0,
                         };
                     }
-
+                }).finally(() => {
                     resolve();
                 });
             }));

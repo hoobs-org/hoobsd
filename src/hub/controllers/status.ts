@@ -57,7 +57,7 @@ export default class StatusController {
                                 uptime: 0,
                             };
                         }
-
+                    }).finally(() => {
                         resolve();
                     });
                 }));
