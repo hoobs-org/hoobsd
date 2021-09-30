@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --max-old-space-size=256
+#!/usr/bin/env -S node --max-old-space-size=256 --v8-pool-size=10
 
 /**************************************************************************************************
  * hoobsd                                                                                         *

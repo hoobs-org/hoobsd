@@ -150,8 +150,6 @@ export default class System {
                     }
                 }
 
-                System.switch(results.package_manager, results.repo);
-
                 break;
 
             case "fedora":
@@ -206,7 +204,7 @@ export default class System {
             results.mdns_broadcast = broadcast;
         }
 
-        return State.cache?.set(key, results, 14 * 24 * 60);
+        return State.cache?.set(key, results, 5 * 60);
     }
 
     static hostname(value: string) {
@@ -346,6 +344,16 @@ export default class System {
             exec("shutdown -h now");
         } else {
             Console.debug("shutdown -h now");
+        }
+    }
+
+    static tasks() {
+        const system = System.info();
+
+        switch (system.package_manager) {
+            case "apt-get":
+                System.execute("apt-get update --allow-releaseinfo-change");
+                break;
         }
     }
 

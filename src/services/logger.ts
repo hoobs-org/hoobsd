@@ -128,8 +128,8 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 4000) {
-                CACHE.splice(0, CACHE.length - 4000);
+            if (CACHE.length > 2000) {
+                CACHE.splice(0, CACHE.length - 2000);
             }
         }
     }
@@ -256,7 +256,7 @@ class Logger {
                 break;
         }
 
-        if (State.id === "hub" && CACHE.length > 4000) CACHE.splice(0, CACHE.length - 4000);
+        if (State.id === "hub" && CACHE.length > 2000) CACHE.splice(0, CACHE.length - 2000);
     }
 
     debug(message: string, ...parameters: any[]): void {

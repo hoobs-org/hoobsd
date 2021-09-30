@@ -19,7 +19,7 @@
 import File from "fs-extra";
 import { join } from "path";
 import { gzipSync, gunzipSync } from "zlib";
-import { createCipheriv, createDecipheriv } from "crypto";
+import { Cipher, createCipheriv, createDecipheriv } from "crypto";
 import State from "../state";
 import { parseJson, formatJson } from "./json";
 import { Console } from "./logger";
@@ -38,37 +38,60 @@ export default class Paths {
     static loadJson<T>(file: string, replacement: T, key?: string, compressed?: boolean): T {
         if (!File.existsSync(file)) return replacement;
 
-        let contents: Buffer;
+        let contents: Buffer | undefined;
 
         try {
-            contents = compressed ? gunzipSync(File.readFileSync(file)) : File.readFileSync(file);
-        } catch (error) {
+            contents = File.readFileSync(file);
+        } catch (error: any) {
             Console.error(error.message);
 
             return replacement;
         }
 
-        if (key) {
-            const cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
-            const decrypted = cipher.update(contents.toString(), "hex", "utf8") + cipher.final("utf8");
+        if (compressed) {
+            try {
+                contents = gunzipSync(contents);
+            } catch (error: any) {
+                Console.error(error.message);
 
-            return parseJson<T>(decrypted, replacement);
+                return replacement;
+            }
         }
 
-        return parseJson<T>(contents.toString(), replacement);
+        let result: T;
+        let cipher: Cipher | undefined;
+        let decrypted: string | Buffer | undefined;
+
+        if (key) {
+            cipher = createDecipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+            decrypted = cipher.update(contents.toString(), "hex", "utf8") + cipher.final("utf8");
+            result = parseJson<T>(decrypted, replacement);
+        } else {
+            result = parseJson<T>(contents.toString(), replacement);
+        }
+
+        contents = undefined;
+        cipher = undefined;
+        decrypted = undefined;
+
+        return result;
     }
 
     static saveJson<T>(file: string, value: T, pretty?: boolean, key?: string, compress?: boolean): void {
+        let contents: string | Buffer | undefined = formatJson(value, pretty);
+        let cipher: Cipher | undefined;
+
         if (key) {
-            const cipher = createCipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
-            const contents = cipher.update(formatJson(value, pretty), "utf8", "hex") + cipher.final("hex");
-
-            File.writeFileSync(file, compress ? gzipSync(contents) : contents);
-        } else {
-            const contents = formatJson(value, pretty);
-
-            File.writeFileSync(file, compress ? gzipSync(contents) : contents);
+            cipher = createCipheriv("aes-256-cbc", key, "XT2IN0SK62F1DK5G");
+            contents = cipher.update(formatJson(value, pretty), "utf8", "hex") + cipher.final("hex");
         }
+
+        if (compress) contents = gzipSync(contents);
+
+        File.writeFileSync(file, contents);
+
+        contents = undefined;
+        cipher = undefined;
     }
 
     static tryCommand(command: string): boolean {

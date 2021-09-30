@@ -58,6 +58,7 @@ export default class Socket {
                 this.ipc.on(session, (data) => {
                     if (timeout) clearTimeout(timeout);
 
+                    timeout = undefined;
                     resolve(data);
                 });
 
@@ -73,6 +74,7 @@ export default class Socket {
                 } catch (_error) {
                     if (timeout) clearTimeout(timeout);
 
+                    timeout = undefined;
                     resolve(undefined);
                 }
             } else {

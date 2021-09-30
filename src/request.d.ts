@@ -21,3 +21,5 @@ declare namespace Express {
         user?: { [key: string]: any };
     }
 }
+
+declare module "eiows";

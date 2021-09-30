@@ -23,6 +23,7 @@ import Express from "express";
 import Compression from "compression";
 import IO from "socket.io";
 import CORS from "cors";
+import EIOWS from "eiows";
 import Process from "child_process";
 import Path from "path";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
@@ -69,6 +70,7 @@ import WeatherController from "./controllers/weather";
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
 const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 const BRIDGE_RELAUNCH_DELAY = 7 * 1000;
+const REPO_UPDATE_INTERVAL = 24 * 60 * 60 * 1000;
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -89,6 +91,8 @@ export default class API extends EventEmitter {
 
     declare private terminator: HttpTerminator;
 
+    declare private tasks: NodeJS.Timeout | undefined;
+
     constructor(port: number | undefined) {
         super();
 
@@ -97,6 +101,31 @@ export default class API extends EventEmitter {
         this.settings = (this.config || {}).api || {};
         this.port = port || 80;
         this.bridges = {};
+
+        State.app = Express();
+        State.app.use(Compression());
+        State.app.disable("x-powered-by");
+
+        State.app?.use(CORS({
+            origin: this.settings.origin || "*",
+            credentials: false,
+        }));
+
+        this.listner = HTTP.createServer(State.app);
+
+        this.terminator = createHttpTerminator({
+            gracefulTerminationTimeout: 500,
+            server: this.listner,
+        });
+
+        State.io = new IO.Server(this.listner, {
+            wsEngine: EIOWS.Server,
+            perMessageDeflate: { threshold: false },
+            cors: {
+                origin: this.settings.origin || "*",
+                credentials: false,
+            },
+        });
 
         State.ipc = new IPC(this.bridges);
 
@@ -121,29 +150,6 @@ export default class API extends EventEmitter {
             const bridge = State.bridges.find((item) => item.id === data);
 
             if (bridge) this.launch(bridge);
-        });
-
-        State.app = Express();
-        State.app.use(Compression());
-        State.app.disable("x-powered-by");
-
-        State.app?.use(CORS({
-            origin: this.settings.origin || "*",
-            credentials: false,
-        }));
-
-        this.listner = HTTP.createServer(State.app);
-
-        this.terminator = createHttpTerminator({
-            gracefulTerminationTimeout: 500,
-            server: this.listner,
-        });
-
-        State.io = new IO.Server(this.listner, {
-            cors: {
-                origin: this.settings.origin || "*",
-                credentials: false,
-            },
         });
 
         const paths = [];
@@ -432,10 +438,8 @@ export default class API extends EventEmitter {
         });
     }
 
-    async start(): Promise<void> {
-        if (State.mode === "development") {
-            Console.warn("running in development mode");
-        }
+    start(): void {
+        if (State.mode === "development") Console.warn("running in development mode");
 
         System.kill(ProcessQuery.PORT, this.port);
 
@@ -444,19 +448,22 @@ export default class API extends EventEmitter {
             this.running = true;
 
             this.emit(Events.LISTENING, this.port);
+
+            setTimeout(() => {
+                const bridges = State.bridges.filter((item) => item.type === "bridge" || item.type === "dev");
+
+                for (let i = 0; i < bridges.length; i += 1) {
+                    this.launch(bridges[i]);
+                }
+
+                Monitor();
+                System.tasks();
+
+                this.tasks = setInterval(() => System.tasks(), REPO_UPDATE_INTERVAL);
+
+                System.led(LedStatus.GOOD);
+            }, BRIDGE_LAUNCH_DELAY);
         });
-
-        Monitor();
-
-        setTimeout(() => {
-            const bridges = State.bridges.filter((item) => item.type === "bridge" || item.type === "dev");
-
-            for (let i = 0; i < bridges.length; i += 1) {
-                this.launch(bridges[i]);
-            }
-
-            System.led(LedStatus.GOOD);
-        }, BRIDGE_LAUNCH_DELAY);
     }
 
     stop(): Promise<void> {
