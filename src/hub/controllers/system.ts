@@ -237,32 +237,36 @@ export default class SystemController {
         });
     }
 
-    async upgrade(request: Request, response: Response): Promise<void> {
+    upgrade(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            Bridges.backup().finally(() => {
+                const system = System.info();
+                const components: string[] = [];
 
-            return;
+                if (system.package_manager === "apt-get") {
+                    const gui = System.gui.info(system.repo === "edge" || system.repo === "bleeding");
+
+                    if (!System.runtime.info(system.repo === "edge" || system.repo === "bleeding").node_upgraded) components.push(...System.runtime.components);
+                    if (!System.cli.info(system.repo === "edge" || system.repo === "bleeding").cli_upgraded) components.push(...System.cli.components);
+                    if (gui.gui_version && !gui.gui_upgraded) components.push(...System.gui.components);
+                    if (!System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").hoobsd_upgraded) components.push(...System.hoobsd.components);
+
+                    if (components.length > 0) {
+                        System.upgrade(...components).finally(() => {
+                            System.restart();
+
+                            response.send({ success: true });
+                        });
+                    } else {
+                        response.send({ success: true });
+                    }
+                } else {
+                    response.send({ success: true });
+                }
+            });
         }
-
-        await Bridges.backup();
-
-        const system = System.info();
-        const components: string[] = [];
-
-        if (system.package_manager === "apt-get") {
-            const gui = System.gui.info(system.repo === "edge" || system.repo === "bleeding");
-
-            if (!System.runtime.info(system.repo === "edge" || system.repo === "bleeding").node_upgraded) components.push(...System.runtime.components);
-            if (!System.cli.info(system.repo === "edge" || system.repo === "bleeding").cli_upgraded) components.push(...System.cli.components);
-            if (gui.gui_version && !gui.gui_upgraded) components.push(...System.gui.components);
-            if (!System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").hoobsd_upgraded) components.push(...System.hoobsd.components);
-
-            if (components.length > 0) await System.upgrade(...components);
-        }
-
-        response.send({ success: true });
-
-        System.restart();
     }
 
     reboot(request: Request, response: Response): void {
