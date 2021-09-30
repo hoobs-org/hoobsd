@@ -27,10 +27,11 @@ export default class StatusController {
         State.app?.get("/api/status", (request, response, next) => Security(request, response, next), (request, response) => this.status(request, response));
     }
 
-    async status(_request: Request, response: Response): Promise<Response> {
+    status(_request: Request, response: Response): void {
         const key = "system/status";
         const results: { [key: string]: any } = {};
-        const waits: Promise<void>[] = [];
+
+        let waits: Promise<void>[] = [];
 
         for (let i = 0; i < State.bridges.length; i += 1) {
             if (State.bridges[i].type !== "hub") {
@@ -72,37 +73,33 @@ export default class StatusController {
         waits.push(new Promise((resolve) => SystemInfo.mem().then((info: any) => { memory = info; }).finally(() => { resolve(); })));
         waits.push(new Promise((resolve) => SystemInfo.cpuTemperature().then((info: any) => { temp = info; }).finally(() => { resolve(); })));
 
-        await Promise.allSettled(waits);
+        Promise.allSettled(waits).then(() => {
+            waits = [];
 
-        const system = System.info();
-        const applications: { [key: string]: any } = State.cache?.get<{ [key: string]: any }>(key) || {};
+            const system = System.info();
+            const applications: { [key: string]: any } = State.cache?.get<{ [key: string]: any }>(key) || {};
 
-        if (!applications.cli) applications.cli = System.cli.info();
-        if (!applications.gui) applications.gui = System.gui.info();
-        if (!applications.hoobsd) applications.hoobsd = System.hoobsd.info();
-        if (!applications.runtime) applications.runtime = System.runtime.info();
+            if (!applications.cli) applications.cli = System.cli.info();
+            if (!applications.gui) applications.gui = System.gui.info();
+            if (!applications.hoobsd) applications.hoobsd = System.hoobsd.info();
+            if (!applications.runtime) applications.runtime = System.runtime.info();
 
-        let product = "custom";
-        let upgraded = true;
+            let product = "custom";
+            let upgraded = true;
 
-        if (system.product === "box" || system.product === "card" || system.product === "headless") product = system.product;
-        if (system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
+            if (system.product === "box" || system.product === "card" || system.product === "headless") product = system.product;
+            if (system.package_manager === "apt-get") upgraded = applications.runtime?.node_upgraded;
 
-        if (applications.gui?.gui_version) {
-            return response.send({
+            let stats: { [key: string]: any } | undefined = {
                 product,
                 mdns: system.mdns,
                 broadcast: system.mdns_broadcast,
                 version: applications.hoobsd?.hoobsd_version,
                 current: applications.hoobsd?.hoobsd_current,
                 upgraded: applications.hoobsd?.hoobsd_upgraded,
-                repo: system.repo,
                 cli_version: applications.cli?.cli_version,
                 cli_current: applications.cli?.cli_current,
                 cli_upgraded: applications.cli?.cli_upgraded,
-                gui_version: applications.gui.gui_version,
-                gui_current: applications.gui.gui_current,
-                gui_upgraded: applications.gui.gui_upgraded,
                 homebridge_version: State.engine,
                 node_version: process.version.replace("v", ""),
                 node_current: applications.runtime?.node_current,
@@ -112,28 +109,17 @@ export default class StatusController {
                 cpu,
                 memory,
                 temp,
-            });
-        }
+            };
 
-        return response.send({
-            product,
-            mdns: system.mdns,
-            broadcast: system.mdns_broadcast,
-            version: applications.hoobsd?.hoobsd_version,
-            current: applications.hoobsd?.hoobsd_current,
-            upgraded: applications.hoobsd?.hoobsd_upgraded,
-            cli_version: applications.cli?.cli_version,
-            cli_current: applications.cli?.cli_current,
-            cli_upgraded: applications.cli?.cli_upgraded,
-            homebridge_version: State.engine,
-            node_version: process.version.replace("v", ""),
-            node_current: applications.runtime?.node_current,
-            node_upgraded: upgraded,
-            bridges: results,
-            terminal: (System.shell("command -v pidof") !== "" && System.shell("pidof helm")) !== "",
-            cpu,
-            memory,
-            temp,
+            if (applications.gui?.gui_version) {
+                stats.gui_version = applications.gui.gui_version;
+                stats.gui_current = applications.gui.gui_current;
+                stats.gui_upgraded = applications.gui.gui_upgraded;
+            }
+
+            response.send(stats);
+
+            stats = undefined;
         });
     }
 }

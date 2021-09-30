@@ -49,40 +49,50 @@ export default class SystemController {
         State.app?.put("/api/system/reset", (request, response, next) => Security(request, response, next), (request, response) => this.reset(request, response));
     }
 
-    async info(_request: Request, response: Response): Promise<Response> {
-        const operating: { [key: string]: any } = await SystemInfo.osInfo();
-        const system: { [key: string]: any } = await SystemInfo.system();
+    info(_request: Request, response: Response): void {
+        let waits: Promise<void>[] = [];
+
         const distro: { [key: string]: any } = System.info();
 
-        if (distro.product === "box" || distro.product === "card" || distro.product === "headless") {
-            system.manufacturer = "HOOBS.org";
-            system.model = distro.model;
-            system.sku = distro.sku;
-        }
+        let operating: { [key: string]: any } = {};
+        let system: { [key: string]: any } = {};
+        let mac: string | undefined;
 
-        system.manufacturer = system.manufacturer || operating.distro || operating.hostname;
-        system.model = system.model || operating.platform;
-        system.version = distro.version || system.version || operating.release;
+        waits.push(new Promise((resolve) => SystemInfo.osInfo().then((data: { [key: string]: any }) => { operating = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.system().then((data: { [key: string]: any }) => { system = data; resolve(); })));
+        waits.push(new Promise((resolve) => this.mac().then((data: string | undefined) => { mac = data; resolve(); })));
 
-        if (distro.mdns) {
-            system.hostname = distro.mdns_broadcast || operating.hostname;
-        } else {
-            system.hostname = operating.hostname;
-        }
+        Promise.allSettled(waits).then(() => {
+            waits = [];
 
-        delete system.serial;
-        delete system.uuid;
-        delete system.virtual;
-        delete system.distribution;
-        delete system.raspberry;
+            if (distro.product === "box" || distro.product === "card" || distro.product === "headless") {
+                system.manufacturer = "HOOBS.org";
+                system.model = distro.model;
+                system.sku = distro.sku;
+            }
 
-        const data = {
-            mac: await this.mac(),
-            ffmpeg_enabled: Paths.tryCommand("ffmpeg"),
-            system,
-        };
+            system.manufacturer = system.manufacturer || operating.distro || operating.hostname;
+            system.model = system.model || operating.platform;
+            system.version = distro.version || system.version || operating.release;
 
-        return response.send(data);
+            if (distro.mdns) {
+                system.hostname = distro.mdns_broadcast || operating.hostname;
+            } else {
+                system.hostname = operating.hostname;
+            }
+
+            delete system.serial;
+            delete system.uuid;
+            delete system.virtual;
+            delete system.distribution;
+            delete system.raspberry;
+
+            response.send({
+                mac,
+                ffmpeg_enabled: Paths.tryCommand("ffmpeg"),
+                system,
+            });
+        });
     }
 
     async hostname(method: string, request: Request, response: Response): Promise<Response> {

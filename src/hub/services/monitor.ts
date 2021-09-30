@@ -22,8 +22,11 @@ import { Console, Events } from "../../services/logger";
 
 const DEFAULT_POLLING = 5;
 
+let MONITOR_TIMEOUT: NodeJS.Timeout | undefined;
+
 export default function Monitor() {
-    const waits: Promise<void>[] = [];
+    let waits: Promise<void>[] = [];
+
     const results: { [key: string]: any } = {};
 
     for (let i = 0; i < State.bridges.length; i += 1) {
@@ -64,6 +67,8 @@ export default function Monitor() {
     waits.push(new Promise((resolve) => SystemInfo.cpuTemperature().then((value) => { temp = value; }).finally(() => resolve())));
 
     Promise.allSettled(waits).then(() => {
+        waits = [];
+
         Console.emit(Events.MONITOR, "hub", {
             bridges: results,
             cpu,
@@ -72,6 +77,14 @@ export default function Monitor() {
             heap: process.memoryUsage().heapUsed,
         });
 
-        setTimeout(() => Monitor(), (State.hub?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
+        if (MONITOR_TIMEOUT) clearTimeout(MONITOR_TIMEOUT);
+
+        MONITOR_TIMEOUT = undefined;
+
+        cpu = undefined;
+        memory = undefined;
+        temp = undefined;
+
+        MONITOR_TIMEOUT = setTimeout(() => Monitor(), (State.hub?.settings?.polling_seconds || DEFAULT_POLLING) * 1000);
     });
 }

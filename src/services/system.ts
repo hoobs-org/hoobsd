@@ -167,8 +167,6 @@ export default class System {
                     }
                 }
 
-                System.switch(results.package_manager, results.repo);
-
                 break;
 
             case "fedora":
@@ -223,7 +221,7 @@ export default class System {
             results.mdns_broadcast = broadcast;
         }
 
-        return State.cache?.set(key, results, 14 * 24 * 60);
+        return State.cache?.set(key, results, 5 * 60);
     }
 
     static hostname(value: string) {
@@ -305,6 +303,7 @@ export default class System {
             });
 
             proc.on("close", () => {
+                proc.kill();
                 resolve();
             });
         });
@@ -323,7 +322,6 @@ export default class System {
         switch (system.package_manager) {
             case "apt-get":
                 if (State.mode === "production") {
-                    await System.execute("apt-get update");
                     await System.execute(`apt-get install -y ${components.join(" ")}`);
                 } else {
                     Console.debug("apt-get update");
@@ -366,15 +364,12 @@ export default class System {
         }
     }
 
-    static switch(manager: string, level: string): void {
-        switch (manager) {
-            case "apt-get":
-                if (State.mode === "production") {
-                    execSync(`wget -qO- https://dl.hoobs.org/${level || "stable"} | bash -`, { stdio: "ignore" });
-                } else {
-                    Console.debug(`wget -qO- https://dl.hoobs.org/${level || "stable"} | bash -`);
-                }
+    static tasks() {
+        const system = System.info();
 
+        switch (system.package_manager) {
+            case "apt-get":
+                System.execute("apt-get update --allow-releaseinfo-change");
                 break;
         }
     }

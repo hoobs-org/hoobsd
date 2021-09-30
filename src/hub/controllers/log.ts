@@ -26,7 +26,7 @@ export default class LogController {
         State.app?.get("/api/log/:tail", (request, response) => this.cache(request, response));
     }
 
-    cache(request: Request, response: Response): Response {
-        return response.send(Console.cache(parseInt(request.params.tail, 10) || 500));
+    cache(request: Request, response: Response): void {
+        response.send(Console.cache(parseInt(request.params.tail, 10) || 500));
     }
 }
