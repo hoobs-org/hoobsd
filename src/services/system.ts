@@ -36,6 +36,8 @@ import State from "../state";
 import Paths from "./paths";
 import { Console } from "./logger";
 
+const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
+
 export const enum ProcessQuery {
     PID = "pid",
     PORT = "port",
@@ -338,7 +340,7 @@ export default class System {
         Console.warn("service restart command received");
 
         if (!State.container && State.mode === "production") {
-            exec(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`);
+            setTimeout(() => exec(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`), BRIDGE_TEARDOWN_DELAY);
         } else {
             Console.debug(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`);
         }
