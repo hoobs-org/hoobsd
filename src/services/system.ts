@@ -417,7 +417,7 @@ export default class System {
                 if (system.package_manager === "apt-get") {
                     let data: any = "";
 
-                    data = System.shell("apt-cache show hoobs-gui | grep Version");
+                    data = System.shell("apt-cache show hoobs-gui | grep Version", true);
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
 
@@ -495,7 +495,7 @@ export default class System {
                 if (system.package_manager === "apt-get") {
                     let data: any = "";
 
-                    data = System.shell("apt-cache show hoobs-cli | grep Version");
+                    data = System.shell("apt-cache show hoobs-cli | grep Version", true);
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
 
@@ -574,7 +574,7 @@ export default class System {
                 if (system.package_manager === "apt-get") {
                     let data: any = "";
 
-                    data = System.shell("apt-cache show hoobsd | grep Version");
+                    data = System.shell("apt-cache show hoobsd | grep Version", true);
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
 
@@ -632,7 +632,7 @@ export default class System {
                 if (system.package_manager === "apt-get") {
                     let data: any = "";
 
-                    data = System.shell("apt-cache show nodejs | grep Version | grep nodesource");
+                    data = System.shell("apt-cache show nodejs | grep Version | grep nodesource", true);
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
                     data = (data.split(/[-~]+/)[0] || "").trim();
