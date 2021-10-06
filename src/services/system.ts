@@ -326,7 +326,6 @@ export default class System {
                 if (State.mode === "production") {
                     await System.execute(`apt-get install -y ${components.join(" ")}`);
                 } else {
-                    Console.debug("apt-get update");
                     Console.debug(`apt-get install -y ${components.join(" ")}`);
                 }
 
@@ -372,6 +371,9 @@ export default class System {
         switch (system.package_manager) {
             case "apt-get":
                 System.execute("apt-get update --allow-releaseinfo-change");
+
+                if ((System.shell("apt-get -u upgrade --assume-no | grep ' ca-certificates'", true) || "") !== "") System.execute("apt-get install -y ca-certificates");
+
                 break;
         }
     }
