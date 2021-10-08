@@ -243,15 +243,15 @@ export default class SystemController {
         } else {
             Bridges.backup().finally(() => {
                 const system = System.info();
-                const components: string[] = [];
+                const components: string[] = system.upgradable.map((item: { [key: string]: string }) => item.package);
 
                 if (system.package_manager === "apt-get") {
                     const gui = System.gui.info(system.repo === "edge" || system.repo === "bleeding");
 
                     if (!System.runtime.info(system.repo === "edge" || system.repo === "bleeding").node_upgraded) components.push(...System.runtime.components);
+                    if (!System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").hoobsd_upgraded) components.push(...System.hoobsd.components);
                     if (!System.cli.info(system.repo === "edge" || system.repo === "bleeding").cli_upgraded) components.push(...System.cli.components);
                     if (gui.gui_version && !gui.gui_upgraded) components.push(...System.gui.components);
-                    if (!System.hoobsd.info(system.repo === "edge" || system.repo === "bleeding").hoobsd_upgraded) components.push(...System.hoobsd.components);
 
                     if (components.length > 0) {
                         System.upgrade(...components).finally(() => {

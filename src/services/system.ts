@@ -223,6 +223,8 @@ export default class System {
             results.mdns_broadcast = broadcast;
         }
 
+        results.upgradable = System.upgradable(results.package_manager);
+
         return State.cache?.set(key, results, 5 * 60);
     }
 
@@ -311,6 +313,40 @@ export default class System {
         });
     }
 
+    static upgradable(manager: string): { [key: string]: string }[] {
+        const results: { [key: string]: string }[] = [];
+
+        let command;
+        let shell;
+        let match;
+        let display;
+        let records: string[] = [];
+
+        switch (manager) {
+            case "apt-get":
+                command = "apt-get --just-print upgrade";
+                shell = "2>&1";
+                match = "/Inst\\s([\\w,\\-,\\d,\\.,~,:,\\+]+)\\s\\[([\\w,\\-,\\d,\\.,~,:,\\+]+)\\]\\s\\(([\\w,\\-,\\d,\\.,~,:,\\+]+)\\)? /i";
+                display = "{print \"{ \\\"package\\\": \\\"$1\\\", \\\"installed\\\": \\\"$2\\\", \\\"available\\\": \\\"$3\\\" }\\n\"}";
+                records = System.shell(`${command} ${shell} | perl -ne 'if (${match}) ${display}'`, true).split("\n");
+                break;
+        }
+
+        for (let i = 0; i < records.length; i += 1) {
+            let record;
+
+            try {
+                record = JSON.parse(records[i]);
+            } catch (_error) {
+                record = undefined;
+            }
+
+            if (record && record.package !== "hoobsd" && record.package !== "hoobs-cli" && record.package !== "hoobs-gui" && record.package !== "nodejs") results.push(record);
+        }
+
+        return results;
+    }
+
     static async upgrade(...components: string[]): Promise<void> {
         if (components.length === 0) return;
 
@@ -371,9 +407,6 @@ export default class System {
         switch (system.package_manager) {
             case "apt-get":
                 System.execute("apt-get update --allow-releaseinfo-change");
-
-                if ((System.shell("apt-get -u upgrade --assume-no | grep ' ca-certificates'", true) || "") !== "") System.execute("apt-get install -y ca-certificates");
-
                 break;
         }
     }

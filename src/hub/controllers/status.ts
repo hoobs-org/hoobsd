@@ -104,6 +104,7 @@ export default class StatusController {
                 node_version: process.version.replace("v", ""),
                 node_current: applications.runtime?.node_current,
                 node_upgraded: upgraded,
+                upgradable: system.upgradable,
                 bridges: results,
                 terminal: (System.shell("command -v pidof") !== "" && System.shell("pidof helm")) !== "",
                 cpu,
