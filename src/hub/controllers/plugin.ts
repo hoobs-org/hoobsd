@@ -35,11 +35,9 @@ export default class PluginController {
 
         if (existsSync(filename)) {
             response.sendFile(filename);
-
-            return;
+        } else {
+            response.send();
         }
-
-        response.send();
     }
 
     async execute(request: Request, response: Response, next: NextFunction): Promise<void> {
@@ -49,10 +47,8 @@ export default class PluginController {
             const results = await State.ipc?.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body);
 
             response.send(results);
-
-            return;
+        } else {
+            next();
         }
-
-        next();
     }
 }

@@ -33,9 +33,7 @@ export default class ConfigController {
     }
 
     getConsole(request: Request, response: Response): void {
-        Security(request, response, () => {
-            response.send(State.hub?.config);
-        }, () => {
+        Security(request, response, () => response.send(State.hub?.config), () => {
             const config = cloneJson(State.hub?.config);
 
             delete config.weather;
@@ -53,27 +51,31 @@ export default class ConfigController {
         response.send({ success: true });
     }
 
-    async getBridge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
-
-        return response.send(Config.configuration(request.params.bridge));
+    getBridge(request: Request, response: Response): void {
+        if (!request.user?.permissions?.config) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            response.send(Config.configuration(request.params.bridge));
+        }
     }
 
-    async saveBridge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
+    saveBridge(request: Request, response: Response): void {
+        if (!request.user?.permissions?.config) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            const bridge: BridgeRecord | undefined = State.bridges.find((item) => item.id === request.params.bridge);
 
-        const bridge: BridgeRecord | undefined = State.bridges.find((item) => item.id === request.params.bridge);
+            Console.notify(
+                request.params.bridge,
+                "Configuration Changed",
+                `The configuration for "${bridge?.display || "Undefined"}" has changed.`,
+                NotificationType.WARN,
+                "cog",
+            );
 
-        Console.notify(
-            request.params.bridge,
-            "Configuration Changed",
-            `The configuration for "${bridge?.display || "Undefined"}" has changed.`,
-            NotificationType.WARN,
-            "cog",
-        );
+            Config.saveConfig(request.body, request.params.bridge);
 
-        Config.saveConfig(request.body, request.params.bridge);
-
-        return response.send({ success: true });
+            response.send({ success: true });
+        }
     }
 }

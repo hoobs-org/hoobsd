@@ -43,22 +43,14 @@ export default class PluginsController {
             plugins.push(...this.list(State.bridges[i].id, State.bridges[i].type === "dev"));
         }
 
-        this.schemas(plugins).then((results) => {
-            response.send(results);
-        }).catch(() => {
-            response.send([]);
-        });
+        this.schemas(plugins).then((results) => response.send(results)).catch(() => response.send([]));
     }
 
     installed(request: Request, response: Response): void {
         const bridge = State.bridges.find((item) => item.id === request.params.bridge);
 
         if (bridge) {
-            this.schemas(this.list(bridge.id, bridge.type === "dev")).then((results) => {
-                response.send(results);
-            }).catch(() => {
-                response.send([]);
-            });
+            this.schemas(this.list(bridge.id, bridge.type === "dev")).then((results) => response.send(results)).catch(() => response.send([]));
         } else {
             response.send([]);
         }
@@ -67,118 +59,102 @@ export default class PluginsController {
     install(request: Request, response: Response): void {
         if (!request.user?.permissions?.plugins) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
+            let scope: string | undefined = "";
 
-            return;
+            if ((name || "").startsWith("@")) {
+                name = (name || "").substring(1);
+                scope = name.split("/").shift();
+                name = name.split("/").pop();
+            }
+
+            let tag: string | undefined = "latest";
+
+            if ((name || "").indexOf("@") >= 0) {
+                tag = (name || "").split("@").pop();
+                name = (name || "").split("@").shift();
+            }
+
+            const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+
+            State.cache?.remove(`plugin/definition:${identifier}`);
+            State.cache?.remove(`plugin/schema:${identifier}`);
+
+            Plugins.install(request.params.bridge, identifier, (tag || "")).then(() => response.send({ success: true })).catch(() => response.send({ error: "plugin can not be installed" }));
         }
-
-        let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
-        let scope: string | undefined = "";
-
-        if ((name || "").startsWith("@")) {
-            name = (name || "").substring(1);
-            scope = name.split("/").shift();
-            name = name.split("/").pop();
-        }
-
-        let tag: string | undefined = "latest";
-
-        if ((name || "").indexOf("@") >= 0) {
-            tag = (name || "").split("@").pop();
-            name = (name || "").split("@").shift();
-        }
-
-        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
-
-        State.cache?.remove(`plugin/definition:${identifier}`);
-        State.cache?.remove(`plugin/schema:${identifier}`);
-
-        Plugins.install(request.params.bridge, identifier, (tag || "")).then(() => {
-            response.send({ success: true });
-        }).catch(() => {
-            response.send({ error: "plugin can not be installed" });
-        });
     }
 
     upgrade(request: Request, response: Response): void {
         if (!request.user?.permissions?.plugins) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
+            let scope: string | undefined = "";
 
-            return;
+            if ((name || "").startsWith("@")) {
+                name = (name || "").substring(1);
+                scope = name.split("/").shift();
+                name = name.split("/").pop();
+            }
+
+            let tag: string | undefined = "latest";
+
+            if ((name || "").indexOf("@") >= 0) {
+                tag = (name || "").split("@").pop();
+                name = (name || "").split("@").shift();
+            }
+
+            const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+
+            State.cache?.remove(`plugin/definition:${identifier}`);
+            State.cache?.remove(`plugin/schema:${identifier}`);
+
+            Plugins.upgrade(request.params.bridge, identifier, (tag || "")).then(() => response.send({ success: true })).catch(() => response.send({ error: "plugin can not be upgraded" }));
         }
-
-        let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
-        let scope: string | undefined = "";
-
-        if ((name || "").startsWith("@")) {
-            name = (name || "").substring(1);
-            scope = name.split("/").shift();
-            name = name.split("/").pop();
-        }
-
-        let tag: string | undefined = "latest";
-
-        if ((name || "").indexOf("@") >= 0) {
-            tag = (name || "").split("@").pop();
-            name = (name || "").split("@").shift();
-        }
-
-        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
-
-        State.cache?.remove(`plugin/definition:${identifier}`);
-        State.cache?.remove(`plugin/schema:${identifier}`);
-
-        Plugins.upgrade(request.params.bridge, identifier, (tag || "")).then(async () => {
-            response.send({ success: true });
-        }).catch(() => {
-            response.send({ error: "plugin can not be upgraded" });
-        });
     }
 
     async uninstall(request: Request, response: Response): Promise<void> {
         if (!request.user?.permissions?.plugins) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
+            let scope: string | undefined = "";
 
-            return;
-        }
-
-        let name: string | undefined = request.params?.scope ? `${request.params.scope}/${request.params.name}` : request.params?.name;
-        let scope: string | undefined = "";
-
-        if ((name || "").startsWith("@")) {
-            name = (name || "").substring(1);
-            scope = name.split("/").shift();
-            name = name.split("/").pop();
-        }
-
-        if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
-
-        const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
-        const accessories = await this.accessories(request.params.bridge, identifier);
-
-        State.cache?.remove(`plugin/definition:${identifier}`);
-        State.cache?.remove(`plugin/schema:${identifier}`);
-
-        Plugins.uninstall(request.params.bridge, identifier).then(() => {
-            if (State.hub?.config.dashboard && State.hub?.config.dashboard.items) {
-                const config = cloneJson(State.hub?.config);
-
-                for (let i = 0; i < accessories.length; i += 1) {
-                    let index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === accessories[i]);
-
-                    while (index >= 0) {
-                        config.dashboard.items.splice(index, 1);
-
-                        index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === accessories[i]);
-                    }
-                }
-
-                Config.saveConfig(config);
+            if ((name || "").startsWith("@")) {
+                name = (name || "").substring(1);
+                scope = name.split("/").shift();
+                name = name.split("/").pop();
             }
 
-            response.send({ success: true, accessories });
-        }).catch(() => {
-            response.send({ error: "plugin can not be removed" });
-        });
+            if ((name || "").indexOf("@") >= 0) name = (name || "").split("@").shift();
+
+            const identifier = (scope || "") !== "" ? `@${scope}/${name}` : (name || "");
+            const accessories = await this.accessories(request.params.bridge, identifier);
+
+            State.cache?.remove(`plugin/definition:${identifier}`);
+            State.cache?.remove(`plugin/schema:${identifier}`);
+
+            Plugins.uninstall(request.params.bridge, identifier).then(() => {
+                if (State.hub?.config.dashboard && State.hub?.config.dashboard.items) {
+                    const config = cloneJson(State.hub?.config);
+
+                    for (let i = 0; i < accessories.length; i += 1) {
+                        let index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === accessories[i]);
+
+                        while (index >= 0) {
+                            config.dashboard.items.splice(index, 1);
+
+                            index = config.dashboard.items.findIndex((item: { [key: string]: any }) => item.component === "accessory-widget" && item.id === accessories[i]);
+                        }
+                    }
+
+                    Config.saveConfig(config);
+                }
+
+                response.send({ success: true, accessories });
+            }).catch(() => response.send({ error: "plugin can not be removed" }));
+        }
     }
 
     private list(id: string, development?: boolean): { [key:string]: any }[] {

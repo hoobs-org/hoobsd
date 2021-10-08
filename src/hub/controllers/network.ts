@@ -39,6 +39,7 @@ export default class NetworkController {
             System.reboot();
         } else {
             System.shell("systemctl restart avahi-daemon");
+
             State.cache?.remove("system/info");
         }
     }
@@ -97,6 +98,7 @@ export default class NetworkController {
                 }
 
                 System.shell("systemctl restart avahi-daemon");
+
                 State.cache?.remove("system/info");
             }
         }

@@ -55,6 +55,7 @@ export default class AuthController {
             if (!config.api) config.api = {};
 
             config.api.disable_auth = true;
+
             Config.saveConfig(config);
         }
 

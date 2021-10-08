@@ -25,7 +25,7 @@ export default class IndexController {
         State.app?.get("/api", (request, response) => this.info(request, response));
     }
 
-    info(_request: Request, response: Response): Response {
+    info(_request: Request, response: Response): void {
         const interfaces = OS.networkInterfaces();
         const network: { [key: string]: any } = [];
         const keys = Object.keys(interfaces);
@@ -39,14 +39,10 @@ export default class IndexController {
             if (current.length > 0) network.push(...current);
         }
 
-        return response.send({
+        response.send({
             application: "hoobsd",
             version: State.version,
-            authentication: {
-                state: "/api/auth",
-                login: "/api/auth/logon",
-                validate: "/api/auth/validate",
-            },
+            authentication: { state: "/api/auth", login: "/api/auth/logon", validate: "/api/auth/validate" },
             network,
         });
     }

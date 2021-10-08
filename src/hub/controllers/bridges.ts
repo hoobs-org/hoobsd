@@ -84,42 +84,30 @@ export default class BridgesController {
     import(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            const form = new Forms.IncomingForm({ multiples: false, maxFileSize: 2 * 1024 * 1024 * 1024 });
 
-            return;
+            form.parse(request, (_error, fields, files) => {
+                const file: Forms.File = <Forms.File>files.file;
+
+                Bridges.import(
+                    <string>fields.name,
+                    parseInt(<string>fields.port, 10),
+                    <string>fields.pin || "031-45-154",
+                    <string>fields.username || Config.generateUsername(),
+                    <string>fields.advertiser || "bonjour",
+                    file.path, true,
+                ).finally(() => response.send(Bridges.list().filter((item) => item.type !== "hub")));
+            });
         }
-
-        const form = new Forms.IncomingForm({
-            multiples: false,
-            maxFileSize: 2 * 1024 * 1024 * 1024,
-        });
-
-        form.parse(request, (_error, fields, files) => {
-            const file: Forms.File = <Forms.File>files.file;
-
-            Bridges.import(
-                <string>fields.name,
-                parseInt(<string>fields.port, 10),
-                <string>fields.pin || "031-45-154",
-                <string>fields.username || Config.generateUsername(),
-                <string>fields.advertiser || "bonjour",
-                file.path, true,
-            ).finally(() => response.send(Bridges.list().filter((item) => item.type !== "hub")));
-        });
     }
 
     export(request: Request, response: Response): void {
         if (!request.user?.permissions?.bridges) {
             response.send({ token: false, error: "Unauthorized." });
-
-            return;
+        } else {
+            Bridges.export(request.params.id).then((filename) => response.send({ success: true, filename })).catch((error) => response.send({ error: error.message || "Unable to create backup" }));
         }
-
-        Bridges.export(request.params.id).then((filename) => response.send({
-            success: true,
-            filename,
-        })).catch((error) => response.send({
-            error: error.message || "Unable to create backup",
-        }));
     }
 
     remove(request: Request, response: Response): void {

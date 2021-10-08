@@ -37,9 +37,7 @@ import { sanitize } from "./services/formatters";
 
 process.setMaxListeners(0);
 
-if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") {
-    State.container = true;
-}
+if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") State.container = true;
 
 function teardown() {
     let waits: Promise<void>[] = [];
@@ -88,6 +86,7 @@ export = function Daemon(): void {
             State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
+
             State.cache.load(Paths.data(State.id));
 
             const bridge = State.bridges.find((n) => n.id === State.id);
@@ -98,6 +97,7 @@ export = function Daemon(): void {
                 State.watchers.push(Watcher.watch(Paths.bridges).on("change", () => {
                     if (!State.restoring) {
                         State.bridges = Bridges.list();
+
                         State.hub?.sync();
                     }
                 }));
@@ -131,6 +131,7 @@ export = function Daemon(): void {
             State.bridges = Bridges.list();
             State.users = Users.list();
             State.cache = new Cache();
+
             State.cache.load(Paths.data(State.id));
 
             const bridge = State.bridges.find((n) => n.id === State.id);

@@ -28,22 +28,17 @@ export default class ThemesController {
         State.app?.get("/api/weather/forecast", (request, response, next) => Security(request, response, next), (request, response) => this.forecast(request, response));
     }
 
-    async search(request: Request, response: Response): Promise<void> {
-        const position = await Weather.geocode(decodeURIComponent(`${request.query.query}`));
-        const results = await Weather.search(position, parseInt(`${request.query.count || 5}`, 10));
-
-        response.send(results);
+    search(request: Request, response: Response): void {
+        Weather.geocode(decodeURIComponent(`${request.query.query}`)).then((position) => {
+            Weather.search(position, parseInt(`${request.query.count || 5}`, 10)).then((results) => response.send(results)).catch(() => response.send([]));
+        }).catch(() => response.send([]));
     }
 
-    async current(_request: Request, response: Response): Promise<void> {
-        const results = await Weather.current();
-
-        response.send(results);
+    current(_request: Request, response: Response): void {
+        Weather.current().then((results) => response.send(results)).catch(() => response.send({}));
     }
 
-    async forecast(_request: Request, response: Response): Promise<void> {
-        const results = await Weather.forecast();
-
-        response.send(results);
+    forecast(_request: Request, response: Response): void {
+        Weather.forecast().then((results) => response.send(results)).catch(() => response.send([]));
     }
 }

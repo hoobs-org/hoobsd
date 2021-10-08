@@ -52,15 +52,9 @@ export default class StatusController {
                                 bridge_path: status.bridge_path,
                             };
                         } else {
-                            results[State.bridges[i].id] = {
-                                running: false,
-                                status: "unavailable",
-                                uptime: 0,
-                            };
+                            results[State.bridges[i].id] = { running: false, status: "unavailable", uptime: 0 };
                         }
-                    }).finally(() => {
-                        resolve();
-                    });
+                    }).finally(() => resolve());
                 }));
             }
         }

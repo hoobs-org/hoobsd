@@ -87,33 +87,36 @@ export default class SystemController {
             delete system.distribution;
             delete system.raspberry;
 
-            response.send({
-                mac,
-                ffmpeg_enabled: Paths.tryCommand("ffmpeg"),
-                system,
-            });
+            response.send({ mac, ffmpeg_enabled: Paths.tryCommand("ffmpeg"), system });
         });
     }
 
-    async hostname(method: string, request: Request, response: Response): Promise<Response> {
-        const operating: { [key: string]: any } = await SystemInfo.osInfo();
-        const distro: { [key: string]: any } = System.info();
+    hostname(method: string, request: Request, response: Response): void {
+        SystemInfo.osInfo().then((system: { [key: string]: any }) => {
+            const distro: { [key: string]: any } = System.info();
 
-        switch (method) {
-            case "post":
-                if (((request.body || {}).hostname || "") !== "") {
-                    await System.hostname((request.body || {}).hostname || "");
+            switch (method) {
+                case "post":
+                    if (((request.body || {}).hostname || "") !== "") {
+                        System.hostname((request.body || {}).hostname || "");
 
-                    return response.send({ success: true });
-                }
+                        response.send({ success: true });
+                    } else {
+                        response.send({ error: "invalid hostname", success: false });
+                    }
 
-                return response.send({ error: "invalid hostname", success: false });
+                    break;
 
-            default:
-                if (distro.mdns) return response.send({ hostname: distro.mdns_broadcast || operating.hostname });
+                default:
+                    if (distro.mdns) {
+                        response.send({ hostname: distro.mdns_broadcast || system.hostname });
+                    } else {
+                        response.send({ hostname: system.hostname });
+                    }
 
-                return response.send({ hostname: operating.hostname });
-        }
+                    break;
+            }
+        });
     }
 
     mac(): Promise<string | undefined> {
@@ -128,47 +131,79 @@ export default class SystemController {
         });
     }
 
-    async temp(_request: Request, response: Response): Promise<Response> {
-        const temperature = await SystemInfo.cpuTemperature();
-
-        return response.send(temperature);
+    temp(_request: Request, response: Response): void {
+        SystemInfo.cpuTemperature().then((temperature) => response.send(temperature)).catch(() => response.send(-1));
     }
 
-    async cpu(_request: Request, response: Response): Promise<Response> {
-        const information = await SystemInfo.cpu();
-        const speed = await SystemInfo.cpuCurrentSpeed();
-        const load = await SystemInfo.currentLoad();
-        const cache = await SystemInfo.cpuCache();
+    cpu(_request: Request, response: Response): void {
+        let waits: Promise<void>[] = [];
 
-        return response.send({
-            information,
-            speed,
-            load,
-            cache,
+        let information: { [key: string]: any } = {};
+        let speed: { [key: string]: any } = {};
+        let load: { [key: string]: any } = {};
+        let cache: { [key: string]: any } = {};
+
+        waits.push(new Promise((resolve) => SystemInfo.osInfo().then((data: { [key: string]: any }) => { information = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.cpuCurrentSpeed().then((data: { [key: string]: any }) => { speed = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((data: { [key: string]: any }) => { load = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.cpuCache().then((data: { [key: string]: any }) => { cache = data; resolve(); })));
+
+        Promise.allSettled(waits).then(() => {
+            waits = [];
+
+            response.send({
+                information,
+                speed,
+                load,
+                cache,
+            });
         });
     }
 
-    async memory(_request: Request, response: Response): Promise<Response> {
-        const information = await SystemInfo.memLayout();
-        const load = await SystemInfo.mem();
+    memory(_request: Request, response: Response): void {
+        let waits: Promise<void>[] = [];
 
-        return response.send({ information, load });
+        let information: { [key: string]: any } = {};
+        let load: { [key: string]: any } = {};
+
+        waits.push(new Promise((resolve) => SystemInfo.memLayout().then((data: { [key: string]: any }) => { information = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.mem().then((data: { [key: string]: any }) => { load = data; resolve(); })));
+
+        Promise.allSettled(waits).then(() => {
+            waits = [];
+
+            response.send({ information, load });
+        });
     }
 
-    network(_request: Request, response: Response): Response {
-        return response.send(Bridges.network());
+    network(_request: Request, response: Response): void {
+        response.send(Bridges.network());
     }
 
-    async activity(_request: Request, response: Response): Promise<Response> {
-        const load = await SystemInfo.currentLoad();
+    activity(_request: Request, response: Response): void {
+        let waits: Promise<void>[] = [];
+        let load: { [key: string]: any } = {};
 
-        return response.send(load);
+        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((data: { [key: string]: any }) => { load = data; resolve(); })));
+
+        Promise.allSettled(waits).then(() => {
+            waits = [];
+
+            return response.send(load);
+        });
     }
 
-    async filesystem(_request: Request, response: Response): Promise<Response> {
-        const fs = await SystemInfo.fsSize();
+    filesystem(_request: Request, response: Response): void {
+        let waits: Promise<void>[] = [];
+        let fs: { [key: string]: any } = {};
 
-        return response.send(fs);
+        waits.push(new Promise((resolve) => SystemInfo.fsSize().then((data: { [key: string]: any }) => { fs = data; resolve(); })));
+
+        Promise.allSettled(waits).then(() => {
+            waits = [];
+
+            return response.send(fs);
+        });
     }
 
     catalog(_request: Request, response: Response): void {
@@ -185,56 +220,41 @@ export default class SystemController {
     backup(request: Request, response: Response): void {
         if (!request.user?.permissions?.controller) {
             response.send({ token: false, error: "Unauthorized." });
-
-            return;
+        } else {
+            Bridges.backup().then((filename) => response.send({ success: true, filename })).catch((error) => response.send({ error: error.message || "Unable to create backup" }));
         }
-
-        Bridges.backup().then((filename) => {
-            response.send({ success: true, filename });
-        }).catch((error) => {
-            response.send({ error: error.message || "Unable to create backup" });
-        });
     }
 
-    async restore(request: Request, response: Response): Promise<void> {
+    restore(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else if (existsSync(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)))) {
+            Bridges.restore(join(Paths.backups, decodeURIComponent(`${request.query.filename}`))).then(() => {
+                response.send({ success: true });
 
-            return;
-        }
-
-        if (existsSync(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)))) {
-            await Bridges.restore(join(Paths.backups, decodeURIComponent(`${request.query.filename}`)));
-
-            response.send({ success: true });
-
-            System.restart();
+                System.restart();
+            }).catch(() => response.send({ success: false, error: "Backup failed" }));
         } else {
             response.send({ success: false, error: "Backup file doesent exist" });
         }
     }
 
-    async upload(request: Request, response: Response): Promise<void> {
+    upload(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            const form = new Forms.IncomingForm({ multiples: false, maxFileSize: 2 * 1024 * 1024 * 1024 });
 
-            return;
+            form.parse(request, async (_error, _fields, files) => {
+                const file = <Forms.File>files.file;
+
+                Bridges.restore(file.path, true).then(() => {
+                    response.send({ success: true });
+
+                    System.restart();
+                }).catch(() => response.send({ success: false, error: "Restore failed" }));
+            });
         }
-
-        const form = new Forms.IncomingForm({
-            multiples: false,
-            maxFileSize: 2 * 1024 * 1024 * 1024,
-        });
-
-        form.parse(request, async (_error, _fields, files) => {
-            const file = <Forms.File>files.file;
-
-            await Bridges.restore(file.path, true);
-
-            response.send({ success: true });
-
-            System.restart();
-        });
     }
 
     upgrade(request: Request, response: Response): void {
@@ -272,38 +292,30 @@ export default class SystemController {
     reboot(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            response.send({ success: true });
 
-            return;
+            System.reboot();
         }
-
-        response.send({ success: true });
-
-        System.reboot();
     }
 
     shutdown(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            response.send({ success: true });
 
-            return;
+            System.shutdown();
         }
-
-        response.send({ success: true });
-
-        System.shutdown();
     }
 
-    async reset(request: Request, response: Response): Promise<void> {
+    reset(request: Request, response: Response): void {
         if (!request.user?.permissions?.reboot) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            response.send({ success: true });
 
-            return;
+            Bridges.reset().then(() => System.restart());
         }
-
-        response.send({ success: true });
-
-        await Bridges.reset();
-
-        System.restart();
     }
 }

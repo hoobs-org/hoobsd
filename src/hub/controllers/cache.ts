@@ -42,13 +42,7 @@ export default class CacheController {
                 const parings = Bridges.parings(State.bridges[i].id);
                 const accessories = Bridges.accessories(State.bridges[i].id);
 
-                if (parings || accessories) {
-                    results.push({
-                        bridge: State.bridges[i].id,
-                        parings,
-                        accessories,
-                    });
-                }
+                if (parings || accessories) results.push({ bridge: State.bridges[i].id, parings, accessories });
             }
         }
 
@@ -79,29 +73,29 @@ export default class CacheController {
     clear(request: Request, response: Response): void {
         if (!request.user?.permissions?.config) {
             response.send({ token: false, error: "Unauthorized." });
+        } else {
+            State.cache?.clear();
 
-            return;
+            response.send({ success: true });
         }
-
-        State.cache?.clear();
-
-        response.send({ success: true });
     }
 
-    async purge(request: Request, response: Response): Promise<Response> {
-        if (!request.user?.permissions?.config) return response.send({ token: false, error: "Unauthorized." });
+    purge(request: Request, response: Response): void {
+        if (!request.user?.permissions?.config) {
+            response.send({ token: false, error: "Unauthorized." });
+        } else {
+            State.hub?.teardown(request.params.bridge).finally(() => {
+                const bridge = State.bridges.find((item) => item.id === request.params.bridge);
 
-        await State.hub?.teardown(request.params.bridge);
+                if (bridge) {
+                    Bridges.purge(bridge.id, request.params?.uuid);
+                    State.hub?.launch(bridge);
 
-        const bridge = State.bridges.find((item) => item.id === request.params.bridge);
-
-        if (bridge) {
-            Bridges.purge(bridge.id, request.params?.uuid);
-            State.hub?.launch(bridge);
-
-            return response.send({ success: true });
+                    response.send({ success: true });
+                } else {
+                    response.send({ error: "bridge not found" });
+                }
+            });
         }
-
-        return response.send({ error: "bridge not found" });
     }
 }

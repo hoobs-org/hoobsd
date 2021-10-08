@@ -37,15 +37,8 @@ export default class BridgeController {
             if (State.bridges[i].type !== "hub") {
                 waits.push(new Promise((resolve) => {
                     State.ipc?.fetch(State.bridges[i].id, "status:get").then((status) => {
-                        if (status) {
-                            results.push({
-                                bridge: State.bridges[i].id,
-                                status,
-                            });
-                        }
-                    }).finally(() => {
-                        resolve();
-                    });
+                        if (status) results.push({ bridge: State.bridges[i].id, status });
+                    }).finally(() => resolve());
                 }));
             }
         }

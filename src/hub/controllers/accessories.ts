@@ -174,12 +174,11 @@ export default class AccessoriesController {
             stream.format("mp4");
             stream.videoCodec("copy");
 
-            stream.on("end", () => {
-                stream.kill("SIGTERM");
-            });
+            stream.on("end", () => stream.kill("SIGTERM"));
 
             stream.on("error", (error) => {
                 Console.debug(error.message);
+
                 stream.kill("SIGTERM");
             });
 
@@ -213,11 +212,7 @@ export default class AccessoriesController {
                     room = working.rooms.find((item: { [key: string]: any }) => item.id === sanitize(request.body.value));
 
                     if (!room) {
-                        working.rooms.unshift({
-                            id: sanitize(request.body.value),
-                            name: request.body.value,
-                            sequence: 1,
-                        });
+                        working.rooms.unshift({ id: sanitize(request.body.value), name: request.body.value, sequence: 1 });
 
                         for (let i = 0; i < working.rooms.length; i += 1) {
                             working.rooms[i].sequence = i + 1;
@@ -260,6 +255,7 @@ export default class AccessoriesController {
                 }
 
                 AccessoriesController.layout = working;
+
                 this.get(request, response, true, request.body.value);
                 break;
 
@@ -298,6 +294,7 @@ export default class AccessoriesController {
                 }
 
                 AccessoriesController.layout = working;
+
                 this.get(request, response, true, request.body.value);
                 break;
 
@@ -313,6 +310,7 @@ export default class AccessoriesController {
                 }
 
                 AccessoriesController.layout = working;
+
                 this.get(request, response, true, request.body.value);
                 break;
 
@@ -443,6 +441,7 @@ export default class AccessoriesController {
         }
 
         working.rooms.splice(index!, 1);
+
         AccessoriesController.layout = working;
 
         Console.emit(Events.ROOM_CHANGE, "hub", {
@@ -585,9 +584,7 @@ export default class AccessoriesController {
                         });
 
                         waits.push(new Promise((resolve) => {
-                            State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 }).finally(() => {
-                                resolve();
-                            });
+                            State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: "on" }, { value: 0 }).finally(() => resolve());
                         }));
 
                         await Promise.allSettled(waits);
@@ -598,8 +595,10 @@ export default class AccessoriesController {
 
             default:
                 console.log("HERE");
+
                 room = this.properties(working.rooms[index], (await this.accessories()).filter((item) => item.type !== "bridge"), true, true);
                 room.accessories = room.accessories || [];
+
                 value = request.body.value;
 
                 for (let i = 0; i < room.accessories.length; i += 1) {
@@ -612,9 +611,7 @@ export default class AccessoriesController {
                         });
 
                         waits.push(new Promise((resolve) => {
-                            State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value }).finally(() => {
-                                resolve();
-                            });
+                            State.ipc?.fetch(room.accessories[i].bridge, "accessory:set", { id: room.accessories[i].accessory_identifier, service: request.params.service }, { value }).finally(() => resolve());
                         }));
 
                         await Promise.allSettled(waits);
@@ -663,9 +660,7 @@ export default class AccessoriesController {
             waits.push(new Promise((resolve) => {
                 State.ipc?.fetch(bridge, "accessories:list").then((accessories) => {
                     if (Array.isArray(accessories) && accessories.length > 0) results.push(...accessories);
-                }).finally(() => {
-                    resolve();
-                });
+                }).finally(() => resolve());
             }));
         } else {
             for (let i = 0; i < State.bridges.length; i += 1) {
@@ -673,9 +668,7 @@ export default class AccessoriesController {
                     waits.push(new Promise((resolve) => {
                         State.ipc?.fetch(State.bridges[i].id, "accessories:list").then((accessories) => {
                             if (Array.isArray(accessories) && accessories.length > 0) results.push(...accessories);
-                        }).finally(() => {
-                            resolve();
-                        });
+                        }).finally(() => resolve());
                     }));
                 }
             }
