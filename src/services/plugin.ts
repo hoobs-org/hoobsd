@@ -18,6 +18,7 @@
 
 import State from "../state";
 import Config from "./config";
+import Paths from "./paths";
 import { Prefixed, PluginLogger } from "./logger";
 import { IPCRequest, IPCResponse } from "./ipc";
 
@@ -53,5 +54,9 @@ export default class Plugin {
         } else {
             this.logger.error(`Unable to register route '${action}', action is not formatted correctly.`);
         }
+    }
+
+    get storagePath() {
+        return Paths.data(State.id);
     }
 }
