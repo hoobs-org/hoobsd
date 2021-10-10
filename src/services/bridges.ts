@@ -58,6 +58,9 @@ export interface BridgeRecord {
     autostart?: number;
     host?: string;
     plugins?: string;
+    running?: boolean;
+    uptime?: number;
+    setup_id?: string;
     advertiser?: string;
     project?: string,
     debugging?: boolean,

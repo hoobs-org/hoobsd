@@ -35,8 +35,33 @@ export default class BridgesController {
         State.app?.delete("/api/bridge/:id", (request, response, next) => Security(request, response, next), (request, response) => this.remove(request, response));
     }
 
-    list(_request: Request, response: Response): void {
-        response.send(State.bridges.filter((item) => item.type !== "hub"));
+    list(request: Request, response: Response): void {
+        const bridges = State.bridges.filter((item) => item.type !== "hub");
+
+        let waits: Promise<void>[] = [];
+
+        if (request.query.extend === "true") {
+            for (let i = 0; i < bridges.length; i += 1) {
+                waits.push(new Promise((resolve) => {
+                    State.ipc?.fetch(bridges[i].id, "status:get").then((status) => {
+                        if (status) {
+                            bridges[i].running = status.running;
+                            bridges[i].uptime = status.uptime;
+                            bridges[i].setup_id = status.setup_id;
+                        } else {
+                            bridges[i].running = false;
+                            bridges[i].uptime = 0;
+                        }
+                    }).finally(() => resolve());
+                }));
+            }
+        }
+
+        Promise.allSettled(waits).then(() => {
+            waits = [];
+
+            response.send(bridges);
+        });
     }
 
     count(_request: Request, response: Response): void {
