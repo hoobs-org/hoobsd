@@ -193,7 +193,7 @@ export default class System {
         results.product = "";
         results.model = "";
         results.sku = "";
-        results.terminal = parseInt((System.shell("lsof -i | grep helm").match(/TCP \*:(.[0-9]*)/gi) || [])[0].replace(/\D/g, ""), 10) || false;
+        results.terminal = parseInt(((System.shell("lsof -i | grep helm").match(/TCP \*:(.[0-9]*)/gi) || [])[0] || "").replace(/\D/g, ""), 10) || false;
 
         if (existsSync("/etc/hoobs")) {
             const reader = new ReadLines("/etc/hoobs");
