@@ -100,7 +100,7 @@ export default class StatusController {
                 node_upgraded: upgraded,
                 upgradable: system.upgradable,
                 bridges: results,
-                terminal: (System.shell("command -v pidof") !== "" && System.shell("pidof helm")) !== "",
+                terminal: system.terminal,
                 cpu,
                 memory,
                 temp,
