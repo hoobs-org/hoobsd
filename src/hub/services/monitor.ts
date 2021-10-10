@@ -41,7 +41,6 @@ export default function Monitor() {
                             display: State.bridges[i].display,
                             uptime: status.uptime,
                             heap: status.heap,
-                            setup_id: status.setup_id,
                         };
                     } else {
                         results[State.bridges[i].id] = {
@@ -50,7 +49,6 @@ export default function Monitor() {
                             display: "Unavailable",
                             uptime: 0,
                             heap: 0,
-                            setup_id: undefined,
                         };
                     }
                 }).finally(() => {
