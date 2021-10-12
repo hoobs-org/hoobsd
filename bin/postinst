@@ -2,3 +2,5 @@
 
 cd /usr/lib/hoobsd
 yarn install --force --production --network-timeout 100000
+
+wget -qO- https://dl.hoobs.org/stable | bash -
