@@ -102,7 +102,7 @@ export default class System {
         if (!existsSync(file)) return undefined;
 
         const reader = new ReadLines(file);
-        const expression = new RegExp(`(${search.join("|")})`);
+        const expression = new RegExp(`(${search.join("|")})`, "gi");
 
         let line: false | Buffer = reader.next();
 
