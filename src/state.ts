@@ -67,7 +67,6 @@ export interface Application {
     users: UserRecord[];
     loggers: Loggers;
 
-    plugins: { [key: string]: any };
     project: string | undefined;
 }
 
@@ -103,7 +102,6 @@ const state: Application = {
     users: [],
     loggers: {},
 
-    plugins: {},
     project: undefined,
 };
 

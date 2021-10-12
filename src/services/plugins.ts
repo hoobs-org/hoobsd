@@ -93,7 +93,7 @@ export default class Plugins {
             }
         }
 
-        return State.cache?.set(key, results, 120);
+        return State.cache?.set(key, results, 720);
     }
 
     static async linkLibs(bridge?: string): Promise<void> {
@@ -332,7 +332,10 @@ export default class Plugins {
     }
 
     static async getPluginType(bridge: string, name: string, path: string, pjson: any): Promise<any[]> {
-        if (State.plugins[name] && Array.isArray(State.plugins[name]) && State.plugins[name].length > 0) return State.plugins[name];
+        const key = `plugin/interrogation:${name}`;
+        const cached = State.cache?.get<any[]>(key);
+
+        if (cached) return cached;
 
         const registered: any[] = [];
         const schema = Plugins.loadSchema(path);
@@ -406,7 +409,7 @@ export default class Plugins {
             delete require.cache[require.resolve(join(Paths.data(bridge), "node_modules", main))];
         }
 
-        if (registered.length > 0) State.plugins[name] = registered;
+        if (registered.length > 0) State.cache?.set(key, registered, 720);
 
         return registered;
     }
@@ -544,7 +547,7 @@ export default class Plugins {
 
                     results[items[i]].schema = response[items[i]];
 
-                    State.cache?.set(`plugin/schema:${items[i]}`, results[items[i]], 120);
+                    State.cache?.set(`plugin/schema:${items[i]}`, results[items[i]], 720);
                 }
             }
         }
@@ -594,7 +597,7 @@ export default class Plugins {
 
                     results[items[i]].definition = response[items[i]];
 
-                    State.cache?.set(`plugin/definition:${items[i]}`, response[items[i]], 120);
+                    State.cache?.set(`plugin/definition:${items[i]}`, response[items[i]], 720);
                 }
             }
         }
