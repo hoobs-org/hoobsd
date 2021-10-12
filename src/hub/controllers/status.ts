@@ -91,6 +91,7 @@ export default class StatusController {
                 version: applications.hoobsd?.hoobsd_version,
                 current: applications.hoobsd?.hoobsd_current,
                 upgraded: applications.hoobsd?.hoobsd_upgraded,
+                repo: system.repo,
                 cli_version: applications.cli?.cli_version,
                 cli_current: applications.cli?.cli_current,
                 cli_upgraded: applications.cli?.cli_upgraded,
