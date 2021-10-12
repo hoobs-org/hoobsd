@@ -11,7 +11,9 @@
     },
     "ignorePatterns": [
         "bin/",
-        "lib/"
+        "lib/",
+        "main",
+        "debug"
     ],
     "rules": {
         "quotes": [
