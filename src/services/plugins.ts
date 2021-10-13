@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import Axios from "axios";
 import { join } from "path";
 import { existsSync, readFileSync } from "fs-extra";
-import { CancelToken } from "cancel-token";
 
 import {
     uuid,
@@ -524,12 +524,12 @@ export default class Plugins {
 
         if (uncached.length > 0) {
             let response: { [key: string]: any } = {};
-            const source = CancelToken.source();
+            const source = Axios.CancelToken.source();
 
             setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
             try {
-                response = ((await Request({
+                response = (<{ [key: string]: any }>(await Request({
                     method: "get",
                     url: `https://plugins.hoobs.org/api/schemas?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
                     timeout: REQUEST_TIMEOUT,
@@ -574,12 +574,12 @@ export default class Plugins {
 
         if (uncached.length > 0) {
             let response: { [key: string]: any } = {};
-            const source = CancelToken.source();
+            const source = Axios.CancelToken.source();
 
             setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
             try {
-                response = ((await Request({
+                response = (<{ [key: string]: any }>(await Request({
                     method: "get",
                     url: `https://plugins.hoobs.org/api/plugins?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
                     timeout: REQUEST_TIMEOUT,

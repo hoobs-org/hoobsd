@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
-import { CancelToken } from "cancel-token";
+import Axios from "axios";
 import Request from "../../request";
 import State from "../../state";
 
@@ -31,12 +31,12 @@ export default class Weather {
     static async geocode(query: string): Promise<Position> {
         if (!query || query === "") return { lat: 0, lng: 0 };
 
-        const source = CancelToken.source();
+        const source = Axios.CancelToken.source();
 
         setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
         try {
-            const { results } = (await Request({
+            const { results } = <any>(await Request({
                 method: "get",
                 url: `http://open.mapquestapi.com/geocoding/v1/address?key=${State.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`,
                 timeout: REQUEST_TIMEOUT,
@@ -55,12 +55,12 @@ export default class Weather {
 
         if (cached) return cached;
 
-        const source = CancelToken.source();
+        const source = Axios.CancelToken.source();
 
         setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
         try {
-            const locations: { [key: string]: any } = (await Request({
+            const locations: { [key: string]: any } = <{ [key: string]: any }>(await Request({
                 method: "get",
                 url: `https://api.openweathermap.org/data/2.5/find?lat=${position.lat}&lon=${position.lng}&cnt=${count || 5}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`,
                 timeout: REQUEST_TIMEOUT,
@@ -89,12 +89,12 @@ export default class Weather {
 
         if (cached) return cached;
 
-        const source = CancelToken.source();
+        const source = Axios.CancelToken.source();
 
         setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
         try {
-            const weather = (await Request({
+            const weather = <any>(await Request({
                 method: "get",
                 url: `https://api.openweathermap.org/data/2.5/weather?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`,
                 timeout: REQUEST_TIMEOUT,
@@ -136,12 +136,12 @@ export default class Weather {
         if (cached) return cached;
 
         const results: { [key: string]: any }[] = [];
-        const source = CancelToken.source();
+        const source = Axios.CancelToken.source();
 
         setTimeout(() => source.cancel(), REQUEST_TIMEOUT);
 
         try {
-            const list = ((await Request({
+            const list = (<any>(await Request({
                 method: "get",
                 url: `https://api.openweathermap.org/data/2.5/forecast?id=${id}&units=${units === "fahrenheit" ? "imperial" : "metric"}&appid=${State.enviornment?.APP_OPENWEATHER || ""}`,
                 timeout: REQUEST_TIMEOUT,
