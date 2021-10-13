@@ -20,7 +20,6 @@ import _ from "lodash";
 
 import HTTP from "http";
 import Express from "express";
-import Compression from "compression";
 import IO from "socket.io";
 import CORS from "cors";
 import EIOWS from "eiows";
@@ -103,7 +102,6 @@ export default class API extends EventEmitter {
         this.bridges = {};
 
         State.app = Express();
-        State.app.use(Compression());
         State.app.disable("x-powered-by");
 
         State.app?.use(CORS({
@@ -200,17 +198,9 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static"), {
-            setHeaders: (response) => { response.setHeader("cache-control", "public, max-age=1209600000"); },
-        }));
-
-        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static"), {
-            setHeaders: (response) => { response.setHeader("cache-control", "public, max-age=1209600000"); },
-        }));
-
-        State.app?.use("/themes", Express.static(Paths.themes, {
-            setHeaders: (response) => { response.setHeader("cache-control", "public, max-age=0"); },
-        }));
+        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
+        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
+        State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
             setHeaders: (response, path) => {
