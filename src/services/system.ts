@@ -115,6 +115,11 @@ export default class System {
         return undefined;
     }
 
+    static clean() {
+        State.cache?.clear();
+        System.execute("apt-get update --allow-releaseinfo-change");
+    }
+
     static info(): { [key: string]: any } {
         const key = "system/info";
         const cached = State.cache?.get<{ [key: string]: any }>(key);

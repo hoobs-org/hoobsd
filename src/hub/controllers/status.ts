@@ -25,6 +25,7 @@ import Security from "../../services/security";
 export default class StatusController {
     constructor() {
         State.app?.get("/api/status", (request, response, next) => Security(request, response, next), (request, response) => this.status(request, response));
+        State.app?.get("/api/status/updates", (request, response, next) => Security(request, response, next), (request, response) => this.updates(request, response));
     }
 
     status(_request: Request, response: Response): void {
@@ -117,5 +118,11 @@ export default class StatusController {
 
             stats = undefined;
         });
+    }
+
+    updates(request: Request, response: Response): void {
+        System.clean();
+
+        this.status(request, response)        
     }
 }
