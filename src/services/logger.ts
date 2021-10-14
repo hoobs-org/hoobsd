@@ -156,12 +156,18 @@ class Logger {
             if (!message || message === "") return;
 
             if (message.match(/^(?=.*\binitializing\b)(?=.*\bhap-nodejs\b).*$/gmi)) return;
+
             if (message.match(/^(?=.*\bhoobs\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bnode\b).*$/gmi)) return;
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
+
             if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
             if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
-            if (message.match(/^(?=.*\bwarning\b)(?=.*\workspaces\b).*$/gmi)) return;
+
+            if (message.match(/^(?=.*\bwarning\b)(?=.*\bworkspaces\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bwarning\b)(?=.*\brequest\b)(?=.*\bdeprecated\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bwarning\b)(?=.*\brequest\b)(?=.*\bsupported\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bwarning\b)(?=.*\brequest\b)(?=.*\bupgrade\b).*$/gmi)) return;
 
             data = format(message);
         } else if ((message || {}).timestamp) {
