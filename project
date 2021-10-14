@@ -25,22 +25,7 @@ include() {
     if [[ -f "../repo/debian/pool/main/h/hoobsd/hoobsd_$2_$3.deb" ]]; then
         echo "$2-$3 already published"
     else
-        case $1 in
-            stable )
-                reprepro -b ../repo/debian includedeb bleeding builds/hoobsd-$2-hoobs-$3.deb
-                reprepro -b ../repo/debian includedeb edge builds/hoobsd-$2-hoobs-$3.deb
-                reprepro -b ../repo/debian includedeb stable builds/hoobsd-$2-hoobs-$3.deb
-                ;;
-
-            edge )
-                reprepro -b ../repo/debian includedeb bleeding builds/hoobsd-$2-hoobs-$3.deb
-                reprepro -b ../repo/debian includedeb edge builds/hoobsd-$2-hoobs-$3.deb
-                ;;
-
-            bleeding )
-                reprepro -b ../repo/debian includedeb bleeding builds/hoobsd-$2-hoobs-$3.deb
-                ;;
-        esac
+        reprepro -b ../repo/debian includedeb $1 builds/hoobsd-$2-hoobs-$3.deb
     fi
 }
 
