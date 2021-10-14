@@ -161,6 +161,7 @@ class Logger {
             if (message.match(/^(?=.*\brecommended\b)(?=.*\bhomebridge\b).*$/gmi)) return;
             if (message.match(/^(?=.*\bfetching snapshot took\b).*$/gmi)) return;
             if (message.match(/^(?=.*\baccessory is slow to respond\b).*$/gmi)) return;
+            if (message.match(/^(?=.*\bwarning\b)(?=.*\workspaces\b).*$/gmi)) return;
 
             data = format(message);
         } else if ((message || {}).timestamp) {
