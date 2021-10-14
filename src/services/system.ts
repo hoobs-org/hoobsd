@@ -116,8 +116,8 @@ export default class System {
     }
 
     static clean() {
-        State.cache?.clear();
         System.execute("apt-get update --allow-releaseinfo-change");
+        State.cache?.clear();
     }
 
     static info(): { [key: string]: any } {
