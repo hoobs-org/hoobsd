@@ -21,34 +21,14 @@ debug() {
     sudo ./debug --mode development $@
 }
 
-include() {
-    if [[ -f "../repo/debian/pool/main/h/hoobsd/hoobsd_$2_$3.deb" ]]; then
-        echo "$2-$3 already published"
-    else
-        reprepro -b ../repo/debian includedeb $1 builds/hoobsd-$2-hoobs-$3.deb
-    fi
-}
-
 publish() {
     current=$(version)
 
     case $1 in
-        stable )
-            include "stable" "$current" "amd64"
-            include "stable" "$current" "arm64"
-            include "stable" "$current" "armhf"
-            ;;
-
-        edge )
-            include "edge" "$current" "amd64"
-            include "edge" "$current" "arm64"
-            include "edge" "$current" "armhf"
-            ;;
-
-        bleeding )
-            include "bleeding" "$current" "amd64"
-            include "bleeding" "$current" "arm64"
-            include "bleeding" "$current" "armhf"
+        stable | edge | bleeding )
+            reprepro -b ../repo/debian includedeb $1 builds/hoobsd-$current-hoobs-amd64.deb
+            reprepro -b ../repo/debian includedeb $1 builds/hoobsd-$current-hoobs-arm64.deb
+            reprepro -b ../repo/debian includedeb $1 builds/hoobsd-$current-hoobs-armhf.deb
             ;;
 
         list )
