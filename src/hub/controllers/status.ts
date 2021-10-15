@@ -123,6 +123,6 @@ export default class StatusController {
     updates(request: Request, response: Response): void {
         System.clean();
 
-        this.status(request, response)        
+        this.status(request, response);
     }
 }
