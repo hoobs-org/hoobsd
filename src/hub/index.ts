@@ -69,7 +69,6 @@ import WeatherController from "./controllers/weather";
 const BRIDGE_LAUNCH_DELAY = 1 * 1000;
 const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 const BRIDGE_RELAUNCH_DELAY = 7 * 1000;
-const REPO_UPDATE_INTERVAL = 24 * 60 * 60 * 1000;
 
 export default class API extends EventEmitter {
     declare time: number;
@@ -447,10 +446,6 @@ export default class API extends EventEmitter {
                 }
 
                 Monitor();
-                System.tasks();
-
-                this.tasks = setInterval(() => System.tasks(), REPO_UPDATE_INTERVAL);
-
                 System.led(LedStatus.GOOD);
             }, BRIDGE_LAUNCH_DELAY);
         });

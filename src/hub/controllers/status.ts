@@ -121,7 +121,7 @@ export default class StatusController {
     }
 
     updates(request: Request, response: Response): void {
-        System.clean();
+        System.update();
 
         this.status(request, response);
     }

@@ -115,9 +115,12 @@ export default class System {
         return undefined;
     }
 
-    static clean() {
-        System.execute("apt-get update --allow-releaseinfo-change");
-        State.cache?.clear();
+    static update() {
+        if (System.commandExists("apt-get")) {
+            System.execute("apt-get update --allow-releaseinfo-change");
+            State.cache?.clear();
+            State.cache?.set("apt/update", (new Date()).getTime(), 60 * 24 * 14);
+        }
     }
 
     static info(): { [key: string]: any } {
@@ -128,6 +131,7 @@ export default class System {
 
         const results: { [key: string]: any } = {};
         const release = OS.platform().toLowerCase();
+        const updated = State.cache?.get<number>("apt/update") || 0;
 
         let values = [];
 
@@ -173,6 +177,8 @@ export default class System {
                         results.repo = "bleeding";
                     }
                 }
+
+                if (results.package_manager === "apt-get" && ((new Date()).getTime() - updated) / (1000 * 3600 * 24) >= 7) System.update();
 
                 break;
 
@@ -404,16 +410,6 @@ export default class System {
             exec("shutdown -h now");
         } else {
             Console.debug("shutdown -h now");
-        }
-    }
-
-    static tasks() {
-        const system = System.info();
-
-        switch (system.package_manager) {
-            case "apt-get":
-                System.execute("apt-get update --allow-releaseinfo-change");
-                break;
         }
     }
 
