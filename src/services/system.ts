@@ -50,6 +50,16 @@ export const enum LedStatus {
 }
 
 export default class System {
+    static get platform(): string {
+        const key = "system/platform";
+        const cached = State.cache?.get<string>(key);
+
+        if (cached) return cached;
+        if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") return State.cache?.set(key, "docker", 30 * 24 * 60);
+
+        return State.cache?.set(key, <string>process.platform, 30 * 24 * 60);
+    }
+
     static led(status: LedStatus) {
         if (existsSync("/sys/devices/platform/leds/leds/ACT/brightness") && existsSync("/sys/devices/platform/leds/leds/PWR/brightness")) {
             switch (status) {
@@ -386,7 +396,7 @@ export default class System {
     static restart(): void {
         Console.warn("service restart command received");
 
-        if (!State.container && State.mode === "production") {
+        if (State.mode === "production") {
             setTimeout(() => exec(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`), BRIDGE_TEARDOWN_DELAY);
         } else {
             Console.debug(`${Path.join(__dirname, "../../../bin/hoobsd")} service restart`);
@@ -396,7 +406,7 @@ export default class System {
     static reboot(): void {
         Console.warn("device reboot command received");
 
-        if (!State.container && State.mode === "production") {
+        if (System.platform !== "docker" && State.mode === "production") {
             exec("shutdown -r now");
         } else {
             Console.debug("shutdown -r now");
@@ -406,7 +416,7 @@ export default class System {
     static shutdown(): void {
         Console.warn("device shutdown command received");
 
-        if (!State.container && State.mode === "production") {
+        if (System.platform !== "docker" && State.mode === "production") {
             exec("shutdown -h now");
         } else {
             Console.debug("shutdown -h now");

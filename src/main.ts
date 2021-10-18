@@ -37,8 +37,6 @@ import { sanitize } from "./services/formatters";
 
 process.setMaxListeners(0);
 
-if (existsSync("/proc/1/cgroup") && System.shell("cat /proc/1/cgroup | grep 'docker\\|lxc'") !== "") State.container = true;
-
 function teardown() {
     let waits: Promise<void>[] = [];
 
@@ -68,7 +66,6 @@ export = function Daemon(): void {
 
     Program.option("-m, --mode <mode>", "set the enviornment", (mode: string) => { State.mode = mode; })
         .option("-d, --debug", "turn on debug level logging", () => { State.debug = true; })
-        .option("--container", "run in a container", () => { State.container = true; })
         .option("--orphans", "keep cached accessories for orphaned plugins", () => { State.orphans = false; })
         .option("--verbose", "turn on verbose logging", () => { State.verbose = true; });
 

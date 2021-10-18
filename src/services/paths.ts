@@ -21,6 +21,7 @@ import { join } from "path";
 import { gzipSync, gunzipSync } from "zlib";
 import { Cipher, createCipheriv, createDecipheriv } from "crypto";
 import State from "../state";
+import System from "./system";
 import { parseJson, formatJson } from "./json";
 import { Console } from "./logger";
 
@@ -143,7 +144,7 @@ export default class Paths {
     static data(bridge?: string): string {
         let path = "/var/lib/hoobs";
 
-        if (State.container) {
+        if (System.platform === "docker") {
             path = "/hoobs";
         } else if (process.env.USER !== "root") {
             path = join(process.env.HOME || "", ".hoobs");

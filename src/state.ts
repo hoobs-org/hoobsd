@@ -58,7 +58,6 @@ export interface Application {
     verbose: boolean;
     timestamps: boolean;
     orphans: boolean;
-    container: boolean;
     terminating: boolean;
     restoring: boolean;
     saving: boolean;
@@ -93,7 +92,6 @@ const state: Application = {
     verbose: false,
     timestamps: true,
     orphans: true,
-    container: false,
     terminating: false,
     restoring: false,
     saving: false,

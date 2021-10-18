@@ -87,6 +87,7 @@ export default class StatusController {
 
             let stats: { [key: string]: any } | undefined = {
                 product,
+                platform: System.platform,
                 mdns: system.mdns,
                 broadcast: system.mdns_broadcast,
                 version: applications.hoobsd?.hoobsd_version,
