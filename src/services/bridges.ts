@@ -34,7 +34,7 @@ import {
     copySync,
 } from "fs-extra";
 
-import { execSync, ChildProcess } from "child_process";
+import { execSync, ChildProcess, spawn } from "child_process";
 import Path from "path";
 import Socket from "../hub/services/socket";
 import State from "../state";
@@ -191,7 +191,7 @@ export default class Bridges {
 
                     case "restart":
                         try {
-                            execSync("/usr/local/lib/hoobsd/restart");
+                            spawn("/usr/local/lib/hoobsd/restart", [], { detached: true });
 
                             return resolve(true);
                         } catch (_error) {
