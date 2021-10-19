@@ -218,9 +218,7 @@ export default class API extends EventEmitter {
             },
         }));
 
-        State.app?.get("*", (_request, response) => {
-            response.sendFile(Path.resolve(Path.join(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static"), "index.html")));
-        });
+        State.app?.get("*", (_request, response) => response.sendFile(Path.resolve(Path.join(gui, "index.html"))));
     }
 
     static createServer(port: number): API {

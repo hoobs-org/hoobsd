@@ -49,6 +49,11 @@ export default async function Plugin(request: Request, response: Response, next:
     }
 
     if (!found) {
-        response.sendFile(resolve(join(State.hub?.settings.gui_path || existsSync("/usr/lib/hoobs") ? "/usr/lib/hoobs" : join(__dirname, "../../static"), "index.html")));
+        let gui: string = State.hub?.settings.gui_path || "/usr/lib/hoobs";
+
+        if (!existsSync(gui)) gui = "/usr/local/lib/hoobs";
+        if (!existsSync(gui)) gui = join(__dirname, "../static");
+
+        response.sendFile(resolve(join(gui, "index.html")));
     }
 }

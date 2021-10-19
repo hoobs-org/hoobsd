@@ -435,6 +435,7 @@ export default class System {
                 let path: string | undefined = "/usr/lib/hoobs";
                 let installed: string | undefined = "";
 
+                if (!existsSync(Path.join(path, "package.json"))) path = "/usr/local/lib/hoobs";
                 if (!existsSync(Path.join(path, "package.json"))) path = Path.join(__dirname, "../../../../gui");
                 if (!existsSync(Path.join(path, "package.json"))) path = undefined;
                 if (path) installed = (Paths.loadJson<{ [key: string]: any }>(Path.join(path, "package.json"), {})).version || "";
@@ -448,7 +449,7 @@ export default class System {
 
                 let mode = "none";
 
-                if (path === "/usr/lib/hoobs") mode = "production";
+                if (path === "/usr/lib/hoobs" || path === "/usr/local/lib/hoobs") mode = "production";
                 if (path === Path.join(__dirname, "../../../../gui")) mode = "development";
 
                 return State.cache?.set(key, {
