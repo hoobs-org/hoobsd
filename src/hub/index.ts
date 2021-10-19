@@ -197,8 +197,18 @@ export default class API extends EventEmitter {
         new ThemesController();
         new WeatherController();
 
-        State.app?.use("/", Express.static(existsSync(this.settings.gui_path || "/usr/lib/hoobs") ? this.settings.gui_path || "/usr/lib/hoobs" : Path.join(__dirname, "../static")));
-        State.app?.use("/touch", Express.static(existsSync(this.settings.touch_path || "/usr/lib/hoobs-touch") ? this.settings.touch_path || "/usr/lib/hoobs-touch" : Path.join(__dirname, "../static")));
+        let gui: string = this.settings.gui_path || "/usr/lib/hoobs";
+
+        if (!existsSync(gui)) gui = "/usr/local/lib/hoobs";
+        if (!existsSync(gui)) gui = Path.join(__dirname, "../static");
+
+        let touch: string = this.settings.touch_path || "/usr/lib/hoobs-touch";
+
+        if (!existsSync(touch)) touch = "/usr/local/lib/hoobs-touch";
+        if (!existsSync(touch)) touch = Path.join(__dirname, "../static");
+
+        State.app?.use("/", Express.static(gui));
+        State.app?.use("/touch", Express.static(touch));
         State.app?.use("/themes", Express.static(Paths.themes));
 
         State.app?.use("/backups", Express.static(Paths.backups, {
