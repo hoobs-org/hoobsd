@@ -191,7 +191,7 @@ export default class Bridges {
 
                     case "restart":
                         try {
-                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist && launchctl load /Library/LaunchDaemons/org.hoobsd.plist");
+                            execSync("/usr/local/lib/hoobsd/restart");
 
                             return resolve(true);
                         } catch (_error) {
