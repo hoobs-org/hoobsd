@@ -61,6 +61,13 @@ hoobsd-armhf.yaml:
 	sed "s/__DEPENDS__/nodejs (>= 14.15.0), lsof, git, python3, make, gcc, g++/" | \
 	sed "s/__ARCH__/armhf/" > cache/control
 
+hoobsd-darwin: clean lint paths package
+	./node_modules/.bin/tsc
+	cp -R var cache/hoobsd/static
+	cp LICENSE cache/hoobsd/
+	cp .env.development cache/hoobsd/
+	cp .env.production cache/hoobsd/
+
 lint:
 	./node_modules/.bin/eslint 'src/**/*.ts'
 
