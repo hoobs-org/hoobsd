@@ -12,6 +12,7 @@
     "ignorePatterns": [
         "bin/",
         "lib/",
+        "cache/",
         "main",
         "debug"
     ],
