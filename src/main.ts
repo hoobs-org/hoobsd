@@ -22,7 +22,6 @@ import * as Enviornment from "dotenv";
 import Program from "commander";
 import Watcher from "chokidar";
 import { join } from "path";
-import { existsSync } from "fs-extra";
 import { Console } from "./services/logger";
 import State from "./state";
 import Bridges from "./services/bridges";
