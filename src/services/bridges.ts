@@ -173,7 +173,7 @@ export default class Bridges {
                 switch (action) {
                     case "start":
                         try {
-                            execSync("launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+                            execSync("launchctl load /Library/LaunchDaemons/org.hoobsd.plist");
 
                             return resolve(true);
                         } catch (_error) {
@@ -191,7 +191,7 @@ export default class Bridges {
 
                     case "restart":
                         try {
-                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist && launchctl load -w /Library/LaunchDaemons/org.hoobsd.plist");
+                            execSync("launchctl unload /Library/LaunchDaemons/org.hoobsd.plist && launchctl load /Library/LaunchDaemons/org.hoobsd.plist");
 
                             return resolve(true);
                         } catch (_error) {

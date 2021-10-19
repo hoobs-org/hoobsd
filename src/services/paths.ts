@@ -144,12 +144,7 @@ export default class Paths {
     static data(bridge?: string): string {
         let path = "/var/lib/hoobs";
 
-        if (System.platform === "docker") {
-            path = "/hoobs";
-        } else if (process.env.USER !== "root") {
-            path = join(process.env.HOME || "", ".hoobs");
-        }
-
+        if (System.platform === "docker") path = "/hoobs";
         if (bridge && bridge !== "") path = join(path, bridge);
 
         File.ensureDirSync(path);
