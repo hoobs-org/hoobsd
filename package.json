@@ -1,6 +1,6 @@
 {
     "name": "hoobsd",
-    "version": "4.1.9",
+    "version": "4.1.10",
     "description": "Server component for the certified HOOBS smart home stack.",
     "license": "GPL-3.0",
     "repository": {

@@ -85,8 +85,10 @@ export default class Bridge extends EventEmitter {
                         const config = new Config(plugins[i].name);
 
                         initializer(logger, config, api);
-                    } catch (_error) {
+                    } catch (error: any) {
                         Console.error(`Error loading plugin ${plugins[i].identifier}`);
+                        Console.error(error.message || "");
+                        Console.error(error.stack.toString());
                     }
                 }
             }
