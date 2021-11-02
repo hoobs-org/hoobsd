@@ -44,7 +44,7 @@ export default class Plugin {
 
     registerRoute(action: string, controller: (request: IPCRequest, response: IPCResponse) => any) {
         if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            State.ipc?.route(`plugin:${this.name.replace(/[^a-zA-Z0-9-_]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
+            State.ipc?.route(`plugin:${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
                 try {
                     controller(request, response);
                 } catch (error: any) {
