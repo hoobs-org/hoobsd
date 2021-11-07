@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if [ -f /etc/apt/sources.list.d/nodesource.list ]; then
+    cat /etc/apt/sources.list.d/nodesource.list | sed "s/node_14.x/node_16.x/g" > /etc/apt/sources.list.d/nodesource.list
+fi

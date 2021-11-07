@@ -113,6 +113,10 @@ steps:
   - copy-file: /var/build/DEBIAN/control
     src: cache/control
 
+  - copy-file: /var/build/DEBIAN/postinst
+    src: postinst
+    perm: 0775
+
   - copy-file: /var/build/usr/bin/hoobsd
     src: main
     perm: 0775
