@@ -200,7 +200,8 @@ export default class Server extends EventEmitter {
                     this.pluginManager.plugins.set(plugins[i].identifier, plugin);
 
                     try {
-                        plugin.load();
+                        await plugin.load();
+
                         Console.info(`Loaded plugin '${plugins[i].identifier}'`);
                     } catch (error: any) {
                         Console.error(`Error loading plugin "${plugins[i].identifier}"`);
@@ -217,7 +218,7 @@ export default class Server extends EventEmitter {
                             // @ts-ignore
                             this.pluginManager.currentInitializingPlugin = plugin;
 
-                            plugin.initialize(this.api);
+                            await plugin.initialize(this.api);
                         } catch (error: any) {
                             Console.error(`Error initializing plugin '${plugins[i].identifier}'`);
                             Console.error(error.stack);
