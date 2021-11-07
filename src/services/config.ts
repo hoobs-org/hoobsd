@@ -26,20 +26,20 @@ import Paths from "./paths";
 import { jsonEquals } from "./json";
 
 export default class Config {
-    declare readonly name: string;
+    declare readonly identifier: string;
 
     declare readonly display: string;
 
     declare private config: any;
 
-    constructor(name: string) {
+    constructor(identifier: string) {
         this.config = Config.configuration();
 
-        const platform = this.config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
-        const accessory = this.config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
+        const platform = this.config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === identifier);
+        const accessory = this.config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === identifier);
 
-        this.name = name;
-        this.display = platform?.name || accessory?.name || name;
+        this.identifier = identifier;
+        this.display = platform?.name || accessory?.name || identifier;
     }
 
     static generateUsername(): string {
@@ -188,7 +188,7 @@ export default class Config {
                 data.name = data.name || this.display;
 
                 data.plugin_map = {
-                    plugin_name: this.name,
+                    plugin_name: this.identifier,
                 };
 
                 this.config.accessories.push(data);
@@ -200,7 +200,7 @@ export default class Config {
                 const indexes: number[] = [];
 
                 for (let i = 0; (this.config.accessories || []).length; i += 1) {
-                    if ((this.config.accessories[i].plugin_map || {}).plugin_name === this.name) {
+                    if ((this.config.accessories[i].plugin_map || {}).plugin_name === this.identifier) {
                         indexes.push(i);
                     }
                 }
@@ -222,7 +222,7 @@ export default class Config {
                 this.config.accessories[index][key] = value;
 
                 this.config.accessories[index].plugin_map = {
-                    plugin_name: this.name,
+                    plugin_name: this.identifier,
                 };
 
                 Config.saveConfig(this.config);
@@ -231,7 +231,7 @@ export default class Config {
     }
 
     get(key: string): any {
-        const index = this.config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === this.name);
+        const index = this.config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === this.identifier);
 
         if (index === -1) {
             return undefined;
@@ -241,13 +241,13 @@ export default class Config {
     }
 
     set(key: string, value: any) {
-        const index = this.config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === this.name);
+        const index = this.config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === this.identifier);
 
         if (index >= 0) {
             this.config.platforms[index][key] = value;
 
             this.config.platforms[index].plugin_map = {
-                plugin_name: this.name,
+                plugin_name: this.identifier,
             };
 
             Config.saveConfig(this.config);
