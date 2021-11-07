@@ -127,9 +127,15 @@ export default class System {
 
     static update() {
         if (System.commandExists("apt-get")) {
-            System.execute("curl -sk https://dl.hoobs.org/update | bash -");
-            State.cache?.clear();
-            State.cache?.set("apt/update", (new Date()).getTime(), 60 * 24 * 14);
+            const script = Path.join(Paths.data(), "update");
+
+            System.execute(`curl --silent https://dl.hoobs.org/update --output ${script}`).then(() => {
+                System.execute(`chmod 755 ${script}`).then(() => {
+                    System.execute(script);
+                    State.cache?.clear();
+                    State.cache?.set("apt/update", (new Date()).getTime(), 60 * 24 * 14);
+                });
+            });
         }
     }
 
@@ -651,6 +657,7 @@ export default class System {
 
                 let path = "/usr/bin/node";
 
+                const hoobsd = System.hoobsd.info();
                 const paths = (process.env.PATH || "").split(":");
 
                 for (let i = 0; i < paths.length; i += 1) {
@@ -665,9 +672,8 @@ export default class System {
 
                 let current = System.runtime.release();
 
-                if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) {
-                    current = process.version.replace("v", "");
-                }
+                if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) current = process.version.replace("v", "");
+                if (Semver.gte(hoobsd.hoobsd_current, "4.1.17")) current = process.version.replace("v", "");
 
                 return State.cache?.set(key, {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
