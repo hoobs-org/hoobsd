@@ -82,7 +82,7 @@ export default class Bridge extends EventEmitter {
                     try {
                         const api = new Plugin(plugins[i].identifier, plugins[i].name);
                         const logger = Prefixed(plugins[i].identifier, api.display);
-                        const config = new Config(plugins[i].name);
+                        const config = new Config(plugins[i].identifier);
 
                         initializer(logger, config, api);
                     } catch (error: any) {
