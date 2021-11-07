@@ -127,7 +127,7 @@ export default class System {
 
     static update() {
         if (System.commandExists("apt-get")) {
-            System.execute("apt-get update --allow-releaseinfo-change");
+            System.execute("curl -sk https://dl.hoobs.org/update | bash -");
             State.cache?.clear();
             State.cache?.set("apt/update", (new Date()).getTime(), 60 * 24 * 14);
         }
