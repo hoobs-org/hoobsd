@@ -21,6 +21,7 @@
 
 import OS from "os";
 import Path from "path";
+import Axios from "axios";
 
 import {
     exec,
@@ -34,9 +35,11 @@ import ReadLines from "n-readlines";
 import Semver from "semver";
 import State from "../state";
 import Paths from "./paths";
+import Request from "../request";
 import { Console } from "./logger";
 
 const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
+const REQUEST_TIMEOUT = 30 * 1000;
 
 export const enum ProcessQuery {
     PID = "pid",
@@ -128,8 +131,16 @@ export default class System {
     static update() {
         if (System.commandExists("apt-get")) {
             const script = Path.join(Paths.data(), "update");
+            const source = Axios.CancelToken.source();
 
-            System.execute(`curl --silent https://dl.hoobs.org/update --output ${script}`).then(() => {
+            Request({
+                method: "get",
+                url: `https://dl.hoobs.org/update?t=${(new Date()).getTime()}`,
+                timeout: REQUEST_TIMEOUT,
+                cancelToken: source.token,
+            }).then((response: any) => {
+                writeFileSync(script, response.data);
+
                 System.execute(`chmod 755 ${script}`).then(() => {
                     System.execute(script);
                     State.cache?.clear();
@@ -673,7 +684,7 @@ export default class System {
                 let current = System.runtime.release();
 
                 if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) current = process.version.replace("v", "");
-                if (Semver.gte(hoobsd.hoobsd_current, "4.1.17")) current = process.version.replace("v", "");
+                if (Semver.gte(current, "16.13.0") && Semver.lt(hoobsd.hoobsd_current, "4.1.17")) current = process.version.replace("v", "");
 
                 return State.cache?.set(key, {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
