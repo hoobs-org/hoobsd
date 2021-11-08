@@ -684,7 +684,7 @@ export default class System {
                 let current = System.runtime.release();
 
                 if ((Semver.valid(current) && Semver.gt(process.version.replace("v", ""), current)) || !Semver.valid(current)) current = process.version.replace("v", "");
-                if (Semver.gte(current, "16.13.0") && Semver.lt(hoobsd.hoobsd_current, "4.1.17")) current = process.version.replace("v", "");
+                if (Semver.gte(current, "16.0.0") && Semver.lt(hoobsd.hoobsd_current, "4.1.17")) current = process.version.replace("v", "");
 
                 return State.cache?.set(key, {
                     node_prefix: path !== "" ? path.replace("bin/node", "") : "",
