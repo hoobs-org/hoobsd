@@ -1807,10 +1807,10 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
-homebridge@^1.3.6:
-  version "1.3.6"
-  resolved "https://registry.yarnpkg.com/homebridge/-/homebridge-1.3.6.tgz#ded5be3fc8c31ef89255a965796a6ae318799389"
-  integrity sha512-5kax/4ex1qYwF6lfIrNrH4c117zwcCXqqsSQ8qWg+dUYmTXapmtp8Iknsl3vzm5nHq9t/U9HUb5yHCSShmyXxQ==
+homebridge@^1.3.8:
+  version "1.3.8"
+  resolved "https://registry.yarnpkg.com/homebridge/-/homebridge-1.3.8.tgz#ba1e1cd1bc697434292b07d4b98c5da9e16603c0"
+  integrity sha512-LGX5qbLAWRfNpifaO2EN5+h78d70BctXryDN9QXXlPOQQziGMrvo9rBLQmihTNtJQut+P2JnUg+cBgcR1HYmIQ==
   dependencies:
     chalk "^4.1.2"
     commander "5.1.0"
