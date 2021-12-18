@@ -190,15 +190,10 @@ export default class PluginsController {
         for (let i = 0; i < plugins.length; i += 1) {
             const record: { [key:string]: any } = definitions[plugins[i].identifier] || {};
 
-            if (plugins[i].bridge.type === "dev") {
-                record.schema = (Plugins.development(plugins[i].bridge, plugins[i].identifier) || {}).schema || {};
-                record.details = [{ name: plugins[i].identifier, alias: record.schema.alias, type: record.schema.accessory ? "accessory" : "platform" }];
-            } else if (!record.override_schema) {
-                record.schema = (Plugins.schema(plugins[i].bridge, plugins[i].identifier) || {}).schema || {};
-                record.details = await Plugins.getPluginType(plugins[i].bridge.id, plugins[i].identifier, plugins[i].directory, plugins[i].pjson);
-            } else {
-                record.details = await Plugins.getPluginType(plugins[i].bridge.id, plugins[i].identifier, plugins[i].directory, plugins[i].pjson);
-            }
+            if (plugins[i].bridge.type === "dev") record.schema = (Plugins.development(plugins[i].bridge, plugins[i].identifier) || {}).schema || {};
+            if (!record.schema) record.schema = (Plugins.schema(plugins[i].bridge, plugins[i].identifier) || {}).schema || {};
+
+            record.details = [{ name: plugins[i].identifier, alias: record.schema.alias, type: record.schema.accessory ? "accessory" : "platform" }];
 
             let latest = plugins[i].version;
             let certified = false;
@@ -206,12 +201,7 @@ export default class PluginsController {
             let icon = "";
 
             if (record.definition) {
-                if ((record.definition.tags || {}).latest) {
-                    latest = (record.definition.tags.latest || "").replace(/v/gi, "");
-                } else if (record.definition.versions) {
-                    latest = (Object.keys(record.definition.versions).pop() || "").replace(/v/gi, "");
-                }
-
+                latest = record.definition.version;
                 certified = record.definition.certified;
                 rating = record.definition.rating;
                 icon = record.definition.icon;

@@ -517,7 +517,7 @@ export default class Plugins {
 
             if (cached && cached.schema && Object.keys(cached.schema).length > 0) {
                 results[identifiers[i]].schema = cached.schema;
-            } else if (results[identifiers[i]].definition && results[identifiers[i]].definition.override_schema) {
+            } else if (results[identifiers[i]].definition) {
                 uncached.push(identifiers[i]);
             }
         }
@@ -531,7 +531,7 @@ export default class Plugins {
             try {
                 response = (<{ [key: string]: any }>(await Request({
                     method: "get",
-                    url: `https://plugins.hoobs.org/api/schemas?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
+                    url: `https://plugins.hoobs.org/api/list/schemas?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
                     timeout: REQUEST_TIMEOUT,
                     cancelToken: source.token,
                 })).data || {}).results;
@@ -581,7 +581,7 @@ export default class Plugins {
             try {
                 response = (<{ [key: string]: any }>(await Request({
                     method: "get",
-                    url: `https://plugins.hoobs.org/api/plugins?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
+                    url: `https://plugins.hoobs.org/api/list/plugins?identifier=${uncached.map((item) => encodeURIComponent(item)).join(",")}`,
                     timeout: REQUEST_TIMEOUT,
                     cancelToken: source.token,
                 })).data || {}).results;
