@@ -1757,10 +1757,10 @@ graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.2:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.8.tgz#e412b8d33f5e006593cbd3cee6df9f2cebbe802a"
   integrity sha512-qkIilPUYcNhJpd33n0GBXTB1MMPp14TxEsEs0pTrsSVucApsYzW5V+Q8Qxhik6KU3evy+qkAAowTByymK0avdg==
 
-hap-nodejs@0.9.7:
-  version "0.9.7"
-  resolved "https://registry.yarnpkg.com/hap-nodejs/-/hap-nodejs-0.9.7.tgz#5ae45b7ac9b87908524da12fe743bf7664011f47"
-  integrity sha512-DrXqNK+vrdjABKxKg0XNdgrycEHEwmSg81AMX8dmp86inex+rvx4qPd9fJRktt3Ed+u8I7ePDy26T4xGxdgc0g==
+hap-nodejs@0.9.8:
+  version "0.9.8"
+  resolved "https://registry.yarnpkg.com/hap-nodejs/-/hap-nodejs-0.9.8.tgz#ea2246eca1d3337fb512f1ca5f07b446f1320b68"
+  integrity sha512-+IENi8nFh/yOvVZEEIgY+nVppoXgY3mN8CfRh/I9tlhDbp3rXlsjdvHFVOgk7qJNa6cwzKu0KzNUs+n3XpO1Iw==
   dependencies:
     "@homebridge/ciao" "~1.1.3"
     bonjour-hap "~3.6.3"
@@ -1807,15 +1807,15 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
-homebridge@^1.3.8:
-  version "1.3.8"
-  resolved "https://registry.yarnpkg.com/homebridge/-/homebridge-1.3.8.tgz#ba1e1cd1bc697434292b07d4b98c5da9e16603c0"
-  integrity sha512-LGX5qbLAWRfNpifaO2EN5+h78d70BctXryDN9QXXlPOQQziGMrvo9rBLQmihTNtJQut+P2JnUg+cBgcR1HYmIQ==
+homebridge@^1.3.9:
+  version "1.3.9"
+  resolved "https://registry.yarnpkg.com/homebridge/-/homebridge-1.3.9.tgz#68c3a440a195955a5a2ec513f8cb98a15afd930b"
+  integrity sha512-/QYosrEmxao6EekPMU3la3j3qx0UWLcYQN01qbZ7s1ZrKp8aC+aShgNx1borFrY/0fHsZauGcbuNqFh+XSKNXw==
   dependencies:
     chalk "^4.1.2"
     commander "5.1.0"
     fs-extra "^10.0.0"
-    hap-nodejs "0.9.7"
+    hap-nodejs "0.9.8"
     qrcode-terminal "^0.12.0"
     semver "^7.3.5"
     source-map-support "^0.5.20"
