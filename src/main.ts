@@ -214,7 +214,7 @@ export = function Daemon(): void {
     process.on("uncaughtException", (error) => {
         Console.error(`${error.stack}`);
         teardown();
-        System.led(LedStatus.ERROR);
+        System.status(LedStatus.ERROR);
     });
 
     process.on("unhandledRejection", (reason) => {

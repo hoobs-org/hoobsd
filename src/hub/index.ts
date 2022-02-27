@@ -453,7 +453,7 @@ export default class API extends EventEmitter {
                 }
 
                 Monitor();
-                System.led(LedStatus.GOOD);
+                System.status(LedStatus.GOOD);
             }, BRIDGE_LAUNCH_DELAY);
         });
     }
@@ -489,7 +489,7 @@ export default class API extends EventEmitter {
                         Console.debug("Stopped");
                         Console.save();
 
-                        System.led(LedStatus.STOPPED);
+                        System.status(LedStatus.STOPPED);
 
                         resolve();
                     });

@@ -42,15 +42,29 @@ const BRIDGE_TEARDOWN_DELAY = 3 * 1000;
 const REQUEST_TIMEOUT = 30 * 1000;
 
 export const enum ProcessQuery {
-    PID = "pid",
-    PORT = "port",
+    PID,
+    PORT,
 }
 
 export const enum LedStatus {
-    GOOD = "good",
-    ERROR = "error",
-    STOPPED = "stopped",
+    GOOD,
+    ERROR,
+    STOPPED,
 }
+
+export const enum LedColor {
+    RED = "RED",
+    GREEN = "GREEN",
+    YELLOW = "YELLOW",
+    BLUE = "BLUE",
+}
+
+const LEDS = {
+    RED: ["led1", "bananapi:red:pwr", "pwr-led", "PWR"],
+    GREEN: ["led0", "bananapi:green:user", "act-led", "ACT"],
+    YELLOW: ["heartbeat-led"],
+    BLUE: ["bananapi:blue:user"],
+};
 
 export default class System {
     static get platform(): string {
@@ -63,41 +77,38 @@ export default class System {
         return State.cache?.set(key, <string>process.platform, 30 * 24 * 60);
     }
 
-    static led(status: LedStatus) {
-        if (existsSync("/sys/devices/platform/leds/leds/ACT/brightness") && existsSync("/sys/devices/platform/leds/leds/PWR/brightness")) {
-            switch (status) {
-                case LedStatus.GOOD:
-                    writeFileSync("/sys/devices/platform/leds/leds/ACT/brightness", "255");
-                    writeFileSync("/sys/devices/platform/leds/leds/PWR/brightness", "0");
-                    break;
+    static led(color: LedColor, on: boolean) {
+        const device = LEDS[color] || [];
 
-                case LedStatus.ERROR:
-                    writeFileSync("/sys/devices/platform/leds/leds/ACT/brightness", "0");
-                    writeFileSync("/sys/devices/platform/leds/leds/PWR/brightness", "255");
-                    break;
-
-                default:
-                    writeFileSync("/sys/devices/platform/leds/leds/ACT/brightness", "0");
-                    writeFileSync("/sys/devices/platform/leds/leds/PWR/brightness", "0");
-                    break;
+        for (let i = 0; i < device.length; i += 1) {
+            if (existsSync(`/sys/class/leds/${device[i]}/brightness`)) {
+                execSync(`sh -c 'echo "${on ? `$(cat /sys/class/leds/${device[i]}/max_brightness 2> /dev/null || echo 255)` : "0"}" | tee /sys/class/leds/${device[i]}/brightness'`, { stdio: ["pipe", "pipe", "ignore"] });
             }
-        } else if (existsSync("/sys/class/leds/led0/brightness") && existsSync("/sys/class/leds/led1/brightness")) {
-            switch (status) {
-                case LedStatus.GOOD:
-                    writeFileSync("/sys/class/leds/led0/brightness", "255");
-                    writeFileSync("/sys/class/leds/led1/brightness", "0");
-                    break;
+        }
+    }
 
-                case LedStatus.ERROR:
-                    writeFileSync("/sys/class/leds/led0/brightness", "0");
-                    writeFileSync("/sys/class/leds/led1/brightness", "255");
-                    break;
+    static status(status: LedStatus) {
+        switch (status) {
+            case LedStatus.GOOD:
+                System.led(LedColor.RED, false);
+                System.led(LedColor.GREEN, true);
+                System.led(LedColor.YELLOW, false);
+                System.led(LedColor.BLUE, false);
+                break;
 
-                default:
-                    writeFileSync("/sys/class/leds/led0/brightness", "0");
-                    writeFileSync("/sys/class/leds/led1/brightness", "0");
-                    break;
-            }
+            case LedStatus.ERROR:
+                System.led(LedColor.RED, true);
+                System.led(LedColor.GREEN, true);
+                System.led(LedColor.YELLOW, true);
+                System.led(LedColor.BLUE, false);
+                break;
+
+            default:
+                System.led(LedColor.RED, false);
+                System.led(LedColor.GREEN, false);
+                System.led(LedColor.YELLOW, true);
+                System.led(LedColor.BLUE, false);
+                break;
         }
     }
 

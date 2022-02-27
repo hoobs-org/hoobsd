@@ -119,7 +119,7 @@ export default class Bridge extends EventEmitter {
         });
 
         State.homebridge?.on(Events.LISTENING, () => {
-            System.led(LedStatus.GOOD);
+            System.status(LedStatus.GOOD);
         });
 
         if ((bridge?.autostart || 0) >= 0) {
