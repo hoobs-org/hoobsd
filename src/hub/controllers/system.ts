@@ -58,9 +58,9 @@ export default class SystemController {
         let system: { [key: string]: any } = {};
         let mac: string | undefined;
 
-        waits.push(new Promise((resolve) => SystemInfo.osInfo().then((data: { [key: string]: any }) => { operating = data; resolve(); })));
-        waits.push(new Promise((resolve) => SystemInfo.system().then((data: { [key: string]: any }) => { system = data; resolve(); })));
-        waits.push(new Promise((resolve) => this.mac().then((data: string | undefined) => { mac = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.osInfo().then((data: { [key: string]: any }) => { operating = data; }).finally(() => resolve())));
+        waits.push(new Promise((resolve) => SystemInfo.system().then((data: { [key: string]: any }) => { system = data; }).finally(() => resolve())));
+        waits.push(new Promise((resolve) => this.mac().then((data: string | undefined) => { mac = data; }).finally(() => resolve())));
 
         Promise.allSettled(waits).then(() => {
             waits = [];
@@ -143,10 +143,10 @@ export default class SystemController {
         let load: { [key: string]: any } = {};
         let cache: { [key: string]: any } = {};
 
-        waits.push(new Promise((resolve) => SystemInfo.osInfo().then((data: { [key: string]: any }) => { information = data; resolve(); })));
-        waits.push(new Promise((resolve) => SystemInfo.cpuCurrentSpeed().then((data: { [key: string]: any }) => { speed = data; resolve(); })));
-        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((data: { [key: string]: any }) => { load = data; resolve(); })));
-        waits.push(new Promise((resolve) => SystemInfo.cpuCache().then((data: { [key: string]: any }) => { cache = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.osInfo().then((data: { [key: string]: any }) => { information = data; }).finally(() => resolve())));
+        waits.push(new Promise((resolve) => SystemInfo.cpuCurrentSpeed().then((data: { [key: string]: any }) => { speed = data; }).finally(() => resolve())));
+        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((data: { [key: string]: any }) => { load = data; }).finally(() => resolve())));
+        waits.push(new Promise((resolve) => SystemInfo.cpuCache().then((data: { [key: string]: any }) => { cache = data; }).finally(() => resolve())));
 
         Promise.allSettled(waits).then(() => {
             waits = [];
@@ -166,8 +166,8 @@ export default class SystemController {
         let information: { [key: string]: any } = {};
         let load: { [key: string]: any } = {};
 
-        waits.push(new Promise((resolve) => SystemInfo.memLayout().then((data: { [key: string]: any }) => { information = data; resolve(); })));
-        waits.push(new Promise((resolve) => SystemInfo.mem().then((data: { [key: string]: any }) => { load = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.memLayout().then((data: { [key: string]: any }) => { information = data; }).finally(() => resolve())));
+        waits.push(new Promise((resolve) => SystemInfo.mem().then((data: { [key: string]: any }) => { load = data; }).finally(() => resolve())));
 
         Promise.allSettled(waits).then(() => {
             waits = [];
@@ -184,7 +184,7 @@ export default class SystemController {
         let waits: Promise<void>[] = [];
         let load: { [key: string]: any } = {};
 
-        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((data: { [key: string]: any }) => { load = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.currentLoad().then((data: { [key: string]: any }) => { load = data; }).finally(() => resolve())));
 
         Promise.allSettled(waits).then(() => {
             waits = [];
@@ -197,7 +197,7 @@ export default class SystemController {
         let waits: Promise<void>[] = [];
         let fs: { [key: string]: any } = {};
 
-        waits.push(new Promise((resolve) => SystemInfo.fsSize().then((data: { [key: string]: any }) => { fs = data; resolve(); })));
+        waits.push(new Promise((resolve) => SystemInfo.fsSize().then((data: { [key: string]: any }) => { fs = data; }).finally(() => resolve())));
 
         Promise.allSettled(waits).then(() => {
             waits = [];
