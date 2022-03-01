@@ -111,9 +111,7 @@ export default class Plugins {
 
                 identifiers.push(`${name}@${tag}`);
 
-                if ((definition || {}).sidecar) {
-                    identifiers.push(definition?.sidecar);
-                }
+                if ((definition || {}).sidecar) identifiers.push(definition?.sidecar);
 
                 System.execute(`${Paths.yarn} add --unsafe-perm --ignore-engines ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
                     const path = join(Paths.data(bridge), "node_modules", name);
@@ -144,10 +142,7 @@ export default class Plugins {
                                             const index = config.platforms.findIndex((p: any) => p.platform === details[i].alias);
 
                                             if (index >= 0) {
-                                                config.platforms[index].plugin_map = {
-                                                    plugin_name: name,
-                                                };
-
+                                                config.platforms[index].plugin_map = { plugin_name: name };
                                                 found = true;
                                             } else if (alias === "") {
                                                 alias = details[i].alias;
@@ -155,14 +150,7 @@ export default class Plugins {
                                         }
                                     }
 
-                                    if (!found && alias !== "") {
-                                        config.platforms.push({
-                                            platform: alias,
-                                            plugin_map: {
-                                                plugin_name: name,
-                                            },
-                                        });
-                                    }
+                                    if (!found && alias !== "") config.platforms.push({ platform: alias, plugin_map: { plugin_name: name } });
                                 }).finally(() => {
                                     Config.saveConfig(config, bridge, true);
 
@@ -212,9 +200,7 @@ export default class Plugins {
 
                 identifiers.push(name);
 
-                if ((definition || {}).sidecar) {
-                    identifiers.push(definition?.sidecar);
-                }
+                if ((definition || {}).sidecar) identifiers.push(definition?.sidecar);
 
                 System.execute(`${Paths.yarn} remove ${identifiers.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
                     if (!existsSync(join(Paths.data(bridge), "node_modules", name, "package.json"))) {
@@ -284,9 +270,7 @@ export default class Plugins {
                 flags.push(`${name}@${tag}`);
 
                 Plugins.definition(name).then((definition) => {
-                    if ((definition || {}).sidecar) {
-                        flags.push(definition?.sidecar);
-                    }
+                    if ((definition || {}).sidecar) flags.push(definition?.sidecar);
 
                     System.execute(`${Paths.yarn} ${flags.join(" ")}`, { cwd: Paths.data(bridge) }).then(() => {
                         if ((definition || {}).sidecar) {
@@ -500,9 +484,7 @@ export default class Plugins {
             };
         }
 
-        return {
-            schema: {},
-        };
+        return { schema: {} };
     }
 
     static async schemas(identifiers: string[]): Promise<{ [key: string]: any }> {

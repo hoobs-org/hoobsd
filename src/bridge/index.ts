@@ -112,10 +112,7 @@ export default class Bridge extends EventEmitter {
         });
 
         State.homebridge?.on(Events.ACCESSORY_CHANGE, (accessory, value) => {
-            Console.emit(Events.ACCESSORY_CHANGE, State.id, {
-                accessory,
-                value,
-            });
+            Console.emit(Events.ACCESSORY_CHANGE, State.id, { accessory, value });
         });
 
         State.homebridge?.on(Events.LISTENING, () => {

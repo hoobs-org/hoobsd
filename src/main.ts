@@ -55,6 +55,7 @@ function teardown() {
         waits = [];
         State.watchers = [];
 
+        Console.save();
         process.exit();
     });
 }

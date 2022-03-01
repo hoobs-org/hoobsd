@@ -27,9 +27,7 @@ export default async function Security(request: Request, response: Response, nex
         if (deny) {
             deny();
         } else {
-            response.status(403).json({
-                error: "unauthorized",
-            });
+            response.status(403).json({ error: "unauthorized" });
         }
     } else {
         next();

@@ -84,8 +84,10 @@ interface IntermediateLogger {
 
 const CONSOLE_LOG = console.log;
 const CONSOLE_ERROR = console.error;
+const UNSAVED_THRESHOLD = 50;
 
 let CACHE: Message[] = [];
+let UNSAVED = 0;
 
 class Logger {
     declare plugin?: string;
@@ -111,10 +113,10 @@ class Logger {
     save() {
         if (State.id === "hub" && !State.saving) {
             State.saving = true;
-
             Paths.saveJson(Paths.log, CACHE, false, undefined, true);
-
             State.saving = false;
+
+            UNSAVED = 0;
         }
     }
 
@@ -128,9 +130,7 @@ class Logger {
                 return -1;
             });
 
-            if (CACHE.length > 2000) {
-                CACHE.splice(0, CACHE.length - 2000);
-            }
+            if (CACHE.length > 2000) CACHE.splice(0, CACHE.length - 2000);
         }
     }
 
@@ -263,7 +263,12 @@ class Logger {
                 break;
         }
 
-        if (State.id === "hub" && CACHE.length > 2000) CACHE.splice(0, CACHE.length - 2000);
+        if (State.id === "hub") {
+            UNSAVED += 1;
+
+            if (CACHE.length > 2000) CACHE.splice(0, CACHE.length - 2000);
+            if (UNSAVED > UNSAVED_THRESHOLD) this.save();
+        }
     }
 
     debug(message: string, ...parameters: any[]): void {
@@ -329,19 +334,8 @@ class Logger {
     }
 
     emit(event: Events, bridge: string, data: any): void {
-        if (State.hub && State.hub.running) {
-            State.io?.sockets.emit(event, compressJson({
-                bridge,
-                data,
-            }));
-        }
-
-        if (State.bridge) {
-            State.ipc?.emit(event, {
-                bridge,
-                data,
-            });
-        }
+        if (State.hub && State.hub.running) State.io?.sockets.emit(event, compressJson({ bridge, data }));
+        if (State.bridge) State.ipc?.emit(event, { bridge, data });
     }
 }
 
