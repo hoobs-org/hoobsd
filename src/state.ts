@@ -19,10 +19,10 @@
 import IO from "socket.io";
 import { join } from "path";
 import { existsSync } from "fs-extra";
-import { Express } from "express-serve-static-core";
+import { Express, Request, Response } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
 import { FSWatcher } from "chokidar";
-import { IPC, IPCRequest, IPCResponse } from "./services/ipc";
+import { IPC } from "./services/ipc";
 import { Loggers } from "./services/logger";
 import Cache from "./services/cache";
 import Bridge from "./bridge";
@@ -67,7 +67,7 @@ export interface Application {
     loggers: Loggers;
 
     project: string | undefined;
-    plugins: { [key: string]: (request: IPCRequest, response: IPCResponse) => any }
+    plugins: { [key: string]: (request: Request, response: Response) => any }
 }
 
 const state: Application = {

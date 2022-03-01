@@ -26,6 +26,8 @@ import Paths from "./paths";
 import { jsonEquals } from "./json";
 
 export default class Config {
+    declare readonly bridge: BridgeRecord;
+
     declare readonly identifier: string;
 
     declare readonly display: string;
@@ -33,6 +35,7 @@ export default class Config {
     declare private config: any;
 
     constructor(bridge: BridgeRecord, identifier: string) {
+        this.bridge = bridge;
         this.config = Config.configuration(bridge.id);
 
         const platform = this.config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === identifier);
@@ -186,23 +189,18 @@ export default class Config {
         return {
             add: (data: any) => {
                 data.name = data.name || this.display;
-
-                data.plugin_map = {
-                    plugin_name: this.identifier,
-                };
+                data.plugin_map = { plugin_name: this.identifier };
 
                 this.config.accessories.push(data);
 
-                Config.saveConfig(this.config);
+                Config.saveConfig(this.config, this.bridge.id);
             },
 
             list: (): number[] => {
                 const indexes: number[] = [];
 
                 for (let i = 0; (this.config.accessories || []).length; i += 1) {
-                    if ((this.config.accessories[i].plugin_map || {}).plugin_name === this.identifier) {
-                        indexes.push(i);
-                    }
+                    if ((this.config.accessories[i].plugin_map || {}).plugin_name === this.identifier) indexes.push(i);
                 }
 
                 return indexes;
@@ -211,21 +209,16 @@ export default class Config {
     }
 
     accessory(index: number): any {
-        if (this.accessories().indexOf(index) === -1) {
-            return undefined;
-        }
+        if (this.accessories().indexOf(index) === -1) return undefined;
 
         return {
             get: (key: string): any => this.config.accessories[index][key],
 
             set: (key: string, value: any): void => {
                 this.config.accessories[index][key] = value;
+                this.config.accessories[index].plugin_map = { plugin_name: this.identifier };
 
-                this.config.accessories[index].plugin_map = {
-                    plugin_name: this.identifier,
-                };
-
-                Config.saveConfig(this.config);
+                Config.saveConfig(this.config, this.bridge.id);
             },
         };
     }
@@ -233,9 +226,7 @@ export default class Config {
     get(key: string): any {
         const index = this.config.platforms.findIndex((p: any) => (p.plugin_map || {}).plugin_name === this.identifier);
 
-        if (index === -1) {
-            return undefined;
-        }
+        if (index === -1) return undefined;
 
         return this.config.platforms[index][key];
     }
@@ -245,12 +236,9 @@ export default class Config {
 
         if (index >= 0) {
             this.config.platforms[index][key] = value;
+            this.config.platforms[index].plugin_map = { plugin_name: this.identifier };
 
-            this.config.platforms[index].plugin_map = {
-                plugin_name: this.identifier,
-            };
-
-            Config.saveConfig(this.config);
+            Config.saveConfig(this.config, this.bridge.id);
         }
     }
 }

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.                          *
  **************************************************************************************************/
 
+import { Request, Response } from "express-serve-static-core";
 import State from "../state";
 import Config from "./config";
 import Paths from "./paths";
 import { Console, Prefixed, PluginLogger } from "./logger";
-import { IPCRequest, IPCResponse } from "./ipc";
 import { BridgeRecord } from "./bridges";
 
 export default class Plugin {
@@ -46,11 +46,11 @@ export default class Plugin {
         this.logger = Prefixed(identifier, this.display);
     }
 
-    registerRoute(action: string, controller: (request: IPCRequest, response: IPCResponse) => any) {
+    registerRoute(action: string, controller: (request: Request, response: Response) => any) {
         if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
             Console.debug(`Registering route '${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}' on '${this.bridge.id}'`);
 
-            State.plugins[`${this.bridge.id}:plugin:${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}`] = (request: IPCRequest, response: IPCResponse) => {
+            State.plugins[`${this.bridge.id}:plugin:${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}`] = (request: Request, response: Response) => {
                 try {
                     controller(request, response);
                 } catch (error: any) {

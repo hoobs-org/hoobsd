@@ -43,9 +43,7 @@ export default class PluginController {
         const directory = response.locals.sidecar || join(response.locals.directory, "hoobs");
 
         if (existsSync(join(directory, "routes.js"))) {
-            const results = await State.plugins[`${response.locals.bridge}:plugin:${response.locals.identifier}:${request.params.action}`](request.params, request.body);
-
-            response.send(results);
+            State.plugins[`${response.locals.bridge}:plugin:${response.locals.identifier}:${request.params.action}`](request, response);
         } else {
             next();
         }
