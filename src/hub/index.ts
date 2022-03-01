@@ -46,8 +46,16 @@ import Socket from "./services/socket";
 import Monitor from "./services/monitor";
 import Pipe from "../services/pipe";
 import Bridges, { BridgeRecord, BridgeProcess } from "../services/bridges";
-import { Console, Events, NotificationType } from "../services/logger";
+import Plugin from "../services/plugin";
+import Plugins from "../services/plugins";
 import { cloneJson, compressJson } from "../services/json";
+
+import {
+    Console,
+    Prefixed,
+    Events,
+    NotificationType,
+} from "../services/logger";
 
 import IndexController from "./controllers/index";
 import AuthController from "./controllers/auth";
@@ -146,7 +154,10 @@ export default class API extends EventEmitter {
 
             const bridge = State.bridges.find((item) => item.id === data);
 
-            if (bridge) this.launch(bridge);
+            if (bridge) {
+                this.ui(bridge);
+                this.launch(bridge);
+            }
         });
 
         const paths = [];
@@ -236,6 +247,43 @@ export default class API extends EventEmitter {
         this.settings = (this.config || {}).api || {};
     }
 
+    ui(bridge: BridgeRecord): void {
+        const plugins = Plugins.load(bridge.id, bridge.type === "dev");
+        const sidecars = Paths.loadJson<{ [key: string]: string }>(Path.join(Paths.data(bridge.id), "sidecars.json"), {});
+
+        for (let i = 0; i < plugins.length; i += 1) {
+            const directory = sidecars[plugins[i].identifier] ? Path.join(Paths.data(bridge.id), "node_modules", sidecars[plugins[i].identifier]) : Path.join(plugins[i].directory, "hoobs");
+
+            if (existsSync(Path.join(directory, "routes.js"))) {
+                const plugin = require(Path.join(directory, "routes.js"));
+
+                let initializer;
+
+                if (typeof plugin === "function") {
+                    initializer = plugin;
+                } else if (plugin && typeof plugin.default === "function") {
+                    initializer = plugin.default;
+                }
+
+                if (initializer) {
+                    try {
+                        const api = new Plugin(bridge, plugins[i].identifier, plugins[i].name);
+                        const logger = Prefixed(plugins[i].identifier, api.display);
+                        const config = new Config(bridge, plugins[i].identifier);
+
+                        Console.debug(`Initilizing interface '${plugins[i].identifier}'`);
+
+                        initializer(logger, config, api);
+                    } catch (error: any) {
+                        Console.error(`Error loading plugin ${plugins[i].identifier}`);
+                        Console.error(error.message || "");
+                        Console.error(error.stack.toString());
+                    }
+                }
+            }
+        }
+    }
+
     launch(bridge: BridgeRecord): void {
         const hoobsd = State.mode === "development" ? Path.join(Path.resolve(Paths.application), "debug") : Path.join(__dirname, "../../../bin/hoobsd");
 
@@ -316,6 +364,8 @@ export default class API extends EventEmitter {
             setTimeout(() => {
                 if (Bridges.running(this.bridges[bridge.id].process.pid)) {
                     this.bridges[bridge.id].process.once("exit", () => {
+                        this.ui(bridge);
+
                         setTimeout(() => this.launch(bridge), BRIDGE_RELAUNCH_DELAY);
                     });
                 }
@@ -421,6 +471,8 @@ export default class API extends EventEmitter {
             }
 
             for (let i = 0; i < bridges.length; i += 1) {
+                this.ui(bridges[i]);
+
                 if (!this.bridges[bridges[i].id] || !Bridges.running(this.bridges[bridges[i].id].process.pid)) {
                     this.launch(bridges[i]);
                 }
@@ -449,6 +501,7 @@ export default class API extends EventEmitter {
                 const bridges = State.bridges.filter((item) => item.type === "bridge" || item.type === "dev");
 
                 for (let i = 0; i < bridges.length; i += 1) {
+                    this.ui(bridges[i]);
                     this.launch(bridges[i]);
                 }
 

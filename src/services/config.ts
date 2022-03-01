@@ -32,8 +32,8 @@ export default class Config {
 
     declare private config: any;
 
-    constructor(identifier: string) {
-        this.config = Config.configuration();
+    constructor(bridge: BridgeRecord, identifier: string) {
+        this.config = Config.configuration(bridge.id);
 
         const platform = this.config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === identifier);
         const accessory = this.config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === identifier);

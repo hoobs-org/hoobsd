@@ -97,6 +97,16 @@
         },
         {
             "files": [
+                "src/hub/index.ts"
+            ],
+            "rules": {
+                "@typescript-eslint/no-var-requires": "off",
+                "import/no-dynamic-require": "off",
+                "global-require": "off"
+            }
+        },
+        {
+            "files": [
                 "src/bridge/index.ts"
             ],
             "rules": {

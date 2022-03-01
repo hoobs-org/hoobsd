@@ -19,10 +19,13 @@
 import State from "../state";
 import Config from "./config";
 import Paths from "./paths";
-import { Prefixed, PluginLogger } from "./logger";
+import { Console, Prefixed, PluginLogger } from "./logger";
 import { IPCRequest, IPCResponse } from "./ipc";
+import { BridgeRecord } from "./bridges";
 
 export default class Plugin {
+    declare readonly bridge: BridgeRecord;
+
     declare readonly identifier: string;
 
     declare readonly name: string;
@@ -31,11 +34,12 @@ export default class Plugin {
 
     declare readonly logger: PluginLogger;
 
-    constructor(identifier: string, name: string) {
-        const config = Config.configuration();
+    constructor(bridge: BridgeRecord, identifier: string, name: string) {
+        const config = Config.configuration(bridge.id);
         const platform = config.platforms.find((p: any) => (p.plugin_map || {}).plugin_name === name);
         const accessory = config.accessories.find((p: any) => (p.plugin_map || {}).plugin_name === name);
 
+        this.bridge = bridge;
         this.identifier = identifier;
         this.name = name;
         this.display = platform?.name || accessory?.name || name;
@@ -44,13 +48,15 @@ export default class Plugin {
 
     registerRoute(action: string, controller: (request: IPCRequest, response: IPCResponse) => any) {
         if ((/^([a-zA-Z0-9-_]*)$/).test(action)) {
-            State.ipc?.route(`plugin:${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}`, (request: IPCRequest, response: IPCResponse) => {
+            Console.debug(`Registering route '${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}' on '${this.bridge.id}'`);
+
+            State.plugins[`${this.bridge.id}:plugin:${this.identifier.replace(/[^a-zA-Z0-9-_@/]/, "")}:${action}`] = (request: IPCRequest, response: IPCResponse) => {
                 try {
                     controller(request, response);
                 } catch (error: any) {
                     this.logger.error(error?.message || "Error running route");
                 }
-            });
+            };
         } else {
             this.logger.error(`Unable to register route '${action}', action is not formatted correctly.`);
         }

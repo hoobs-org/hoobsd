@@ -22,7 +22,7 @@ import { existsSync } from "fs-extra";
 import { Express } from "express-serve-static-core";
 import { DotenvParseOutput } from "dotenv";
 import { FSWatcher } from "chokidar";
-import { IPC } from "./services/ipc";
+import { IPC, IPCRequest, IPCResponse } from "./services/ipc";
 import { Loggers } from "./services/logger";
 import Cache from "./services/cache";
 import Bridge from "./bridge";
@@ -67,6 +67,7 @@ export interface Application {
     loggers: Loggers;
 
     project: string | undefined;
+    plugins: { [key: string]: (request: IPCRequest, response: IPCResponse) => any }
 }
 
 const state: Application = {
@@ -101,6 +102,7 @@ const state: Application = {
     loggers: {},
 
     project: undefined,
+    plugins: {},
 };
 
 export default state;

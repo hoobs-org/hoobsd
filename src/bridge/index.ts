@@ -18,17 +18,13 @@
 
 import { EventEmitter } from "events";
 import { HAPStorage } from "hap-nodejs";
-import { existsSync } from "fs-extra";
-import { join } from "path";
 import State from "../state";
 import Paths from "../services/paths";
 import Homebridge from "./server";
 import System, { LedStatus } from "../services/system";
 import Config from "../services/config";
-import Plugin from "../services/plugin";
-import Plugins from "../services/plugins";
 import IPC from "./services/ipc";
-import { Console, Prefixed, Events } from "../services/logger";
+import { Console, Events } from "../services/logger";
 import StatusController from "./controllers/status";
 import AccessoriesController from "./controllers/accessories";
 
@@ -60,39 +56,6 @@ export default class Bridge extends EventEmitter {
 
         new StatusController();
         new AccessoriesController();
-
-        const plugins = Plugins.load(State.id, this.development);
-        const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.id), "sidecars.json"), {});
-
-        for (let i = 0; i < plugins.length; i += 1) {
-            const directory = sidecars[plugins[i].identifier] ? join(Paths.data(State.id), "node_modules", sidecars[plugins[i].identifier]) : join(plugins[i].directory, "hoobs");
-
-            if (existsSync(join(directory, "routes.js"))) {
-                const plugin = require(join(directory, "routes.js"));
-
-                let initializer;
-
-                if (typeof plugin === "function") {
-                    initializer = plugin;
-                } else if (plugin && typeof plugin.default === "function") {
-                    initializer = plugin.default;
-                }
-
-                if (initializer) {
-                    try {
-                        const api = new Plugin(plugins[i].identifier, plugins[i].name);
-                        const logger = Prefixed(plugins[i].identifier, api.display);
-                        const config = new Config(plugins[i].identifier);
-
-                        initializer(logger, config, api);
-                    } catch (error: any) {
-                        Console.error(`Error loading plugin ${plugins[i].identifier}`);
-                        Console.error(error.message || "");
-                        Console.error(error.stack.toString());
-                    }
-                }
-            }
-        }
     }
 
     restart() {

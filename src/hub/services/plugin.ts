@@ -22,38 +22,50 @@ import { Request, Response, NextFunction } from "express-serve-static-core";
 import State from "../../state";
 import Paths from "../../services/paths";
 import Plugins from "../../services/plugins";
+import { BridgeRecord } from "../../services/bridges";
+import { sanitize } from "../../services/formatters";
+
+export function Locals(bridge: BridgeRecord | undefined, identifier: string, response: Response) {
+    if (bridge && bridge.type !== "hub") {
+        const plugin: { [key: string]: any } | undefined = Plugins.load(bridge.id, bridge.type === "dev").find((item) => item.identifier === identifier);
+
+        if (plugin) {
+            const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(bridge.id), "sidecars.json"), {});
+
+            response.locals.bridge = bridge.id;
+            response.locals.identifier = plugin.identifier;
+            response.locals.sidecar = sidecars[plugin.identifier] ? join(Paths.data(bridge.id), "node_modules", sidecars[plugin.identifier]) : null;
+            response.locals.directory = plugin.directory;
+            response.locals.library = plugin.library;
+
+            return true;
+        }
+    }
+
+    return false;
+}
 
 export default async function Plugin(request: Request, response: Response, next: NextFunction): Promise<void> {
     const identifier: string = decodeURIComponent(request.params.identifier);
 
     let found = false;
 
+    const id = sanitize(request.body.bridge, "hub");
+
+    found = Locals(State.bridges.find((item) => item.id === id), identifier, response);
+
+    if (found) return next();
+
     for (let i = 0; i < State.bridges.length; i += 1) {
-        if (State.bridges[i].type !== "hub") {
-            const plugin: { [key: string]: any } | undefined = Plugins.load(State.bridges[i].id, State.bridges[i].type === "dev").find((item) => item.identifier === identifier);
+        found = Locals(State.bridges[i], identifier, response);
 
-            if (plugin) {
-                const sidecars = Paths.loadJson<{ [key: string]: string }>(join(Paths.data(State.bridges[i].id), "sidecars.json"), {});
-
-                response.locals.bridge = State.bridges[i].id;
-                response.locals.identifier = plugin.identifier;
-                response.locals.sidecar = sidecars[plugin.identifier] ? join(Paths.data(State.bridges[i].id), "node_modules", sidecars[plugin.identifier]) : null;
-                response.locals.directory = plugin.directory;
-                response.locals.library = plugin.library;
-
-                found = true;
-
-                next();
-            }
-        }
+        if (found) return next();
     }
 
-    if (!found) {
-        let gui: string = State.hub?.settings.gui_path || "/usr/lib/hoobs";
+    let gui: string = State.hub?.settings.gui_path || "/usr/lib/hoobs";
 
-        if (!existsSync(gui)) gui = "/usr/local/lib/hoobs";
-        if (!existsSync(gui)) gui = join(__dirname, "../static");
+    if (!existsSync(gui)) gui = "/usr/local/lib/hoobs";
+    if (!existsSync(gui)) gui = join(__dirname, "../static");
 
-        response.sendFile(resolve(join(gui, "index.html")));
-    }
+    return response.sendFile(resolve(join(gui, "index.html")));
 }

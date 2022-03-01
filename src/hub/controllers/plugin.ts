@@ -21,12 +21,11 @@ import { existsSync } from "fs-extra";
 import { Request, Response, NextFunction } from "express-serve-static-core";
 import State from "../../state";
 import Plugin from "../services/plugin";
-import Security from "../../services/security";
 
 export default class PluginController {
     constructor() {
-        State.app?.get("/ui/plugin/:identifier/*", Plugin, (request, response) => this.ui(request, response));
-        State.app?.post("/api/plugin/:identifier/:action", (request, response, next) => Security(request, response, next), Plugin, (request, response, next) => this.execute(request, response, next));
+        State.app?.get("/ui/plugin/:identifier/*", (request, response, next) => Plugin(request, response, next), (request, response) => this.ui(request, response));
+        State.app?.post("/api/plugin/:identifier/:action", (request, response, next) => Plugin(request, response, next), (request, response, next) => this.execute(request, response, next));
     }
 
     ui(request: Request, response: Response): void {
@@ -44,7 +43,7 @@ export default class PluginController {
         const directory = response.locals.sidecar || join(response.locals.directory, "hoobs");
 
         if (existsSync(join(directory, "routes.js"))) {
-            const results = await State.ipc?.fetch(response.locals.bridge, `plugin:${response.locals.identifier}:${request.params.action}`, request.params, request.body);
+            const results = await State.plugins[`${response.locals.bridge}:plugin:${response.locals.identifier}:${request.params.action}`](request.params, request.body);
 
             response.send(results);
         } else {
