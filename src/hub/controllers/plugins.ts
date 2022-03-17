@@ -135,6 +135,8 @@ export default class PluginsController {
             State.cache?.remove(`plugin/definition:${identifier}`);
             State.cache?.remove(`plugin/schema:${identifier}`);
 
+            State.restoring = true;
+
             Plugins.uninstall(request.params.bridge, identifier).then(() => {
                 if (State.hub?.config.dashboard && State.hub?.config.dashboard.items) {
                     const config = cloneJson(State.hub?.config);
@@ -151,6 +153,8 @@ export default class PluginsController {
 
                     Config.saveConfig(config);
                 }
+
+                State.restoring = false;
 
                 response.send({ success: true, accessories });
             }).catch(() => response.send({ error: "plugin can not be removed" }));
