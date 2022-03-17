@@ -63,6 +63,6 @@ export default class Plugin {
     }
 
     get storagePath() {
-        return Paths.data(State.id);
+        return Paths.data(this.bridge.id);
     }
 }
