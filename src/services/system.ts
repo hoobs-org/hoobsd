@@ -410,9 +410,9 @@ export default class System {
         switch (system.package_manager) {
             case "apt-get":
                 if (State.mode === "production") {
-                    await System.execute(`apt-get install -y ${components.join(" ")}`);
+                    await System.execute("apt-get upgrade -y --fix-missing");
                 } else {
-                    Console.debug(`apt-get install -y ${components.join(" ")}`);
+                    Console.debug("apt-get upgrade -y --fix-missing");
                 }
 
                 break;
