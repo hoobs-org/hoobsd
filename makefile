@@ -32,7 +32,7 @@ hoobsd-amd64.yaml:
 	sed "s/__NODE_REPO__/$(shell project version nodesource)/" > cache/amd64.yaml
 	cat control | \
 	sed "s/__VERSION__/$(shell project version)/" | \
-	sed "s/__DEPENDS__/nodejs (>= 16.13.0), lsof, git, python3, make, gcc, g++, curl/" | \
+	sed "s/__DEPENDS__/nodejs (>= 16.13.0), lsof, git, python3, make, gcc, g++, curl, ntp/" | \
 	sed "s/__ARCH__/amd64/" > cache/control
 
 hoobsd-arm64.yaml:
@@ -45,7 +45,7 @@ hoobsd-arm64.yaml:
 	sed "s/__NODE_REPO__/$(shell project version nodesource)/" > cache/arm64.yaml
 	cat control | \
 	sed "s/__VERSION__/$(shell project version)/" | \
-	sed "s/__DEPENDS__/nodejs (>= 16.13.0), lsof, git, python3, make, gcc, g++, curl/" | \
+	sed "s/__DEPENDS__/nodejs (>= 16.13.0), lsof, git, python3, make, gcc, g++, curl, ntp/" | \
 	sed "s/__ARCH__/arm64/" > cache/control
 
 hoobsd-armhf.yaml:
@@ -58,7 +58,7 @@ hoobsd-armhf.yaml:
 	sed "s/__NODE_REPO__/$(shell project version nodesource)/" > cache/armhf.yaml
 	cat control | \
 	sed "s/__VERSION__/$(shell project version)/" | \
-	sed "s/__DEPENDS__/nodejs (>= 16.13.0), lsof, git, python3, make, gcc, g++, curl/" | \
+	sed "s/__DEPENDS__/nodejs (>= 16.13.0), lsof, git, python3, make, gcc, g++, curl, ntp/" | \
 	sed "s/__ARCH__/armhf/" > cache/control
 
 hoobsd-darwin: clean lint paths package
