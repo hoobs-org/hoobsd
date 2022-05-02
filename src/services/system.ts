@@ -499,7 +499,7 @@ export default class System {
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
 
-                    return data || "";
+                    return Semver.valid(data) ? data : "";
                 }
 
                 return "";
@@ -562,7 +562,7 @@ export default class System {
                     cli_prefix: prefix,
                     cli_version: installed,
                     cli_current: current,
-                    cli_upgraded: !Semver.gt(current, installed),
+                    cli_upgraded: Semver.valid(installed) && Semver.valid(current) ? !Semver.gt(current, installed) : true,
                     cli_mode: mode,
                 }, 4 * 60);
             },
@@ -577,7 +577,7 @@ export default class System {
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
 
-                    return data || "";
+                    return Semver.valid(data) ? data : "";
                 }
 
                 return "";
@@ -640,7 +640,7 @@ export default class System {
                     hoobsd_prefix: prefix,
                     hoobsd_version: installed,
                     hoobsd_current: current,
-                    hoobsd_upgraded: !Semver.gt(current, installed),
+                    hoobsd_upgraded: !Semver.gt(current, installed), // Semver.valid(installed) && Semver.valid(current) ? !Semver.gt(current, installed) : true,
                     hoobsd_mode: mode,
                     hoobsd_running: (System.shell("command -v pidof") !== "" && System.shell("pidof hoobsd")) !== "",
                 }, 4 * 60);
@@ -652,11 +652,11 @@ export default class System {
                 if (system.package_manager === "apt-get") {
                     let data: any = "";
 
-                    data = System.shell("apt-cache show hoobsd | grep Version", true);
+                    data = System.shell("apt-cache show hoobsd2 | grep Version", true);
                     data = data.split("\n")[0] || "";
                     data = (data.split(":")[1] || "").trim();
 
-                    return data || "";
+                    return Semver.valid(data) ? data : "";
                 }
 
                 return "";
@@ -715,7 +715,7 @@ export default class System {
                     data = (data.split(":")[1] || "").trim();
                     data = (data.split(/[-~]+/)[0] || "").trim();
 
-                    return data || "";
+                    return Semver.valid(data) ? data : "";
                 }
 
                 return "";
