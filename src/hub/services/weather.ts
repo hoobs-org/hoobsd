@@ -38,7 +38,7 @@ export default class Weather {
         try {
             const { results } = <any>(await Request({
                 method: "get",
-                url: `http://open.mapquestapi.com/geocoding/v1/address?key=${State.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`,
+                url: `http://mapquestapi.com/geocoding/v1/address?key=${State.enviornment?.APP_MAPQUEST || ""}&location=${encodeURIComponent(query)}`,
                 timeout: REQUEST_TIMEOUT,
                 cancelToken: source.token,
             })).data;

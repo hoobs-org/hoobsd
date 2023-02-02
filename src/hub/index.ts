@@ -22,7 +22,6 @@ import HTTP from "http";
 import Express from "express";
 import IO from "socket.io";
 import CORS from "cors";
-import EIOWS from "eiows";
 import Process from "child_process";
 import Path from "path";
 import { createHttpTerminator, HttpTerminator } from "http-terminator";
@@ -124,7 +123,6 @@ export default class API extends EventEmitter {
         });
 
         State.io = new IO.Server(this.listner, {
-            wsEngine: EIOWS.Server,
             perMessageDeflate: { threshold: false },
             cors: {
                 origin: this.settings.origin || "*",
