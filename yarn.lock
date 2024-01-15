@@ -63,10 +63,10 @@
     source-map-support "^0.5.21"
     tslib "^2.4.0"
 
-"@homebridge/dbus-native@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@homebridge/dbus-native/-/dbus-native-0.5.0.tgz#7c20500bd8486fbb389ee01ba63c3768958a5add"
-  integrity sha512-ei0jyHE/uNDl/6D6heRwsqnESrrXuSlfp+xlwGfg3mo1OqhKvyb/Kp73uxQyOJ3f1T1ocLSyA5uzoR1AbfaXIQ==
+"@homebridge/dbus-native@^0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@homebridge/dbus-native/-/dbus-native-0.5.1.tgz#63560e134a555fe4d93fbc71e9e7c482a3f44f33"
+  integrity sha512-7xXz3R1W/kcbfQOGp32y4K7etqtowICR1vpx8j85KwPYXbNQrgiZ3zcwDYgDGBWq3FD9xzsW7h4YWJ4vTR2seQ==
   dependencies:
     "@homebridge/long" "^5.2.1"
     "@homebridge/put" "~0.0.8"
@@ -74,7 +74,7 @@
     hexy "^0.2.10"
     minimist "^1.2.6"
     safe-buffer "^5.1.1"
-    xml2js "^0.4.17"
+    xml2js "^0.5.0"
 
 "@homebridge/long@^5.2.1":
   version "5.2.1"
@@ -914,11 +914,6 @@ commander@*:
   version "8.1.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-8.1.0.tgz#db36e3e66edf24ff591d639862c6ab2c52664362"
   integrity sha512-mf45ldcuHSYShkplHHGKWb4TrmwQadxOn7v4WuhDJy0ZVoY5JFajaRDKD0PNe5qXzBX0rhovjTnP6Kz9LETcuA==
-
-commander@5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-5.1.0.tgz#46abbd1652f8e059bddaef99bbdcb2ad9cf179ae"
-  integrity sha512-P0CysNDQ7rtVw4QIQtm+MRxV66vKFSvlsQvGYXZWR3qFU0jlMKHZZZgw8e+8DSah4UDKMqnknRDQz+xuQXQ/Zg==
 
 commander@^7.2.0:
   version "7.2.0"
@@ -1842,13 +1837,13 @@ graceful-fs@^4.1.2, graceful-fs@^4.1.6, graceful-fs@^4.2.0, graceful-fs@^4.2.2:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.8.tgz#e412b8d33f5e006593cbd3cee6df9f2cebbe802a"
   integrity sha512-qkIilPUYcNhJpd33n0GBXTB1MMPp14TxEsEs0pTrsSVucApsYzW5V+Q8Qxhik6KU3evy+qkAAowTByymK0avdg==
 
-hap-nodejs@~0.11.0:
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/hap-nodejs/-/hap-nodejs-0.11.0.tgz#a2c252ed2953c364879570d0b49b09b6e5a7d147"
-  integrity sha512-ZKSc/DIECXH1vSlruv6tBVcO+LF/BDtjdVk7IIiAAS+KKjw9PylkXbtdU23mmLhM69BsWl9u+BuToAfkf0voSw==
+hap-nodejs@~0.11.1:
+  version "0.11.1"
+  resolved "https://registry.yarnpkg.com/hap-nodejs/-/hap-nodejs-0.11.1.tgz#faedd805f11cb33b12150b41a508ac1158aace51"
+  integrity sha512-hJuGyjng2jlzhZsviWCldaokT7l7BE3iGmWdlE6DNmQFDTmiBN3deNksAZ2nt7qp5jYEv7ZUvW7WBZqJsLh3ww==
   dependencies:
     "@homebridge/ciao" "^1.1.5"
-    "@homebridge/dbus-native" "^0.5.0"
+    "@homebridge/dbus-native" "^0.5.1"
     bonjour-hap "~3.6.4"
     debug "^4.3.4"
     fast-srp-hap "~2.0.4"
@@ -1897,17 +1892,17 @@ hexy@^0.2.10:
   resolved "https://registry.yarnpkg.com/hexy/-/hexy-0.2.11.tgz#9939c25cb6f86a91302f22b8a8a72573518e25b4"
   integrity sha512-ciq6hFsSG/Bpt2DmrZJtv+56zpPdnq+NQ4ijEFrveKN0ZG1mhl/LdT1NQZ9se6ty1fACcI4d4vYqC9v8EYpH2A==
 
-homebridge@^1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/homebridge/-/homebridge-1.6.0.tgz#c5a3c743dc9406fba59c4a7c5c0ad95976797947"
-  integrity sha512-n47db4ndrBOSxuF6zRFbBypuhW7dZjCoGJz03O9PfGrwsqjyzJyxkzSIAjT9HgbTdvNYDNGz/tMXSLoX0m5zGw==
+homebridge@^1.7.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/homebridge/-/homebridge-1.7.0.tgz#94af0dd426a600e1000a9d90695698362bf21bd1"
+  integrity sha512-2QikXnmpnFe2s33Q8TeYE5+sXyKHUZ+9l5WfDmpuupHdct6H/G6b6z3HCj+2rlMRKKY5ElLv5XtLoxOcafnL0g==
   dependencies:
     chalk "^4.1.2"
-    commander "5.1.0"
+    commander "^7.2.0"
     fs-extra "^10.1.0"
-    hap-nodejs "~0.11.0"
+    hap-nodejs "~0.11.1"
     qrcode-terminal "^0.12.0"
-    semver "^7.3.7"
+    semver "^7.5.4"
     source-map-support "^0.5.21"
 
 hosted-git-info@^2.1.4:
@@ -3042,6 +3037,13 @@ semver@^7.3.7:
   dependencies:
     lru-cache "^6.0.0"
 
+semver@^7.5.4:
+  version "7.5.4"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.5.4.tgz#483986ec4ed38e1c6c48c34894a9182dbff68a6e"
+  integrity sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==
+  dependencies:
+    lru-cache "^6.0.0"
+
 send@0.18.0:
   version "0.18.0"
   resolved "https://registry.yarnpkg.com/send/-/send-0.18.0.tgz#670167cc654b05f5aa4a767f9113bb371bc706be"
@@ -3612,10 +3614,10 @@ ws@~7.4.2:
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.4.6.tgz#5654ca8ecdeee47c33a9a4bf6d28e2be2980377c"
   integrity sha512-YmhHDO4MzaDLB+M9ym/mDA5z0naX8j7SIlT8f8z+I0VtzsRbekxEutHSme7NPS2qE8StCYQNUnfWdXta/Yu85A==
 
-xml2js@^0.4.17:
-  version "0.4.23"
-  resolved "https://registry.yarnpkg.com/xml2js/-/xml2js-0.4.23.tgz#a0c69516752421eb2ac758ee4d4ccf58843eac66"
-  integrity sha512-ySPiMjM0+pLDftHgXY4By0uswI3SPKLDw/i3UXbnO8M/p28zqexCUoPmQFrYD+/1BzhGJSs2i1ERWKJAtiLrug==
+xml2js@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/xml2js/-/xml2js-0.5.0.tgz#d9440631fbb2ed800203fad106f2724f62c493b7"
+  integrity sha512-drPFnkQJik/O+uPKpqSgr22mpuFHqKdbS835iAQrUC73L2F5WkboIRd63ai/2Yg6I1jzifPFKH2NTK+cfglkIA==
   dependencies:
     sax ">=0.6.0"
     xmlbuilder "~11.0.0"
