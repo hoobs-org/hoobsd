@@ -50,7 +50,7 @@ steps:
 
   - chroot: /
     shell: |
-      apt-get update
+      apt-get update --allow-releaseinfo-change
 
   - apt: install
     packages:
@@ -92,16 +92,16 @@ steps:
 
   - create-file: /etc/apt/sources.list.d/nodesource.list
     contents: |
-      deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/__NODE_REPO__ __RELEASE__ main
-      deb-src [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/__NODE_REPO__ __RELEASE__ main
+      deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/__NODE_REPO__ __RELEASE__ main
+      deb-src [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/__NODE_REPO__ __RELEASE__ main
 
   - create-file: /etc/apt/sources.list.d/yarn.list
     contents: |
-      deb [signed-by=/usr/share/keyrings/yarn.gpg] https://dl.yarnpkg.com/debian stable main
+      deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/debian stable main
 
   - chroot: /
     shell: |
-      apt-get update
+      apt-get update --allow-releaseinfo-change
 
   - apt: install
     packages:
@@ -130,7 +130,7 @@ steps:
 
   - chroot: /
     shell: |
-      (cd /var/build/usr/lib/hoobsd && yarn install --unsafe-perm)
+      (cd /var/build/usr/lib/hoobsd && yarn install --ignore-engines --unsafe-perm)
       (cd /var && dpkg-deb --build build)
 
   - shell: |
